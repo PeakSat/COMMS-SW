@@ -6,15 +6,18 @@
 #include "app_main.h"
 #include "TransceiverTask.hpp"
 #include "UARTGatekeeperTask.hpp"
+#include "eMMCTask.hpp"
 
 
 void app_main( void )
 {
     transceiverTask.emplace();
     uartGatekeeperTask.emplace();
+    eMMCTask.emplace();
 
     transceiverTask->createTask();
     uartGatekeeperTask->createTask();
+    eMMCTask->createTask();
 
     /* Start the scheduler. */
     vTaskStartScheduler();

@@ -41,6 +41,10 @@
 
 /* Private variables ---------------------------------------------------------*/
 
+FDCAN_HandleTypeDef hfdcan1;
+
+MMC_HandleTypeDef hmmc1;
+
 SPI_HandleTypeDef hspi4;
 
 UART_HandleTypeDef huart4;
@@ -55,6 +59,8 @@ void PeriphCommonClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI4_Init(void);
 static void MX_UART4_Init(void);
+static void MX_SDMMC1_MMC_Init(void);
+static void MX_FDCAN1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -98,6 +104,8 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI4_Init();
   MX_UART4_Init();
+//  MX_SDMMC1_MMC_Init();
+  MX_FDCAN1_Init();
   /* USER CODE BEGIN 2 */
     app_main();
   /* USER CODE END 2 */
@@ -140,13 +148,13 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 30;
+  RCC_OscInitStruct.PLL.PLLN = 12;
   RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 2;
+  RCC_OscInitStruct.PLL.PLLQ = 3;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
-  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
-  RCC_OscInitStruct.PLL.PLLFRACN = 0;
+  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOMEDIUM;
+  RCC_OscInitStruct.PLL.PLLFRACN = 4096;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -160,12 +168,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV2;
+  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
-  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
+  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -196,6 +204,90 @@ void PeriphCommonClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief FDCAN1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_FDCAN1_Init(void)
+{
+
+  /* USER CODE BEGIN FDCAN1_Init 0 */
+
+  /* USER CODE END FDCAN1_Init 0 */
+
+  /* USER CODE BEGIN FDCAN1_Init 1 */
+
+  /* USER CODE END FDCAN1_Init 1 */
+  hfdcan1.Instance = FDCAN1;
+  hfdcan1.Init.FrameFormat = FDCAN_FRAME_CLASSIC;
+  hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
+  hfdcan1.Init.AutoRetransmission = DISABLE;
+  hfdcan1.Init.TransmitPause = DISABLE;
+  hfdcan1.Init.ProtocolException = DISABLE;
+  hfdcan1.Init.NominalPrescaler = 16;
+  hfdcan1.Init.NominalSyncJumpWidth = 1;
+  hfdcan1.Init.NominalTimeSeg1 = 2;
+  hfdcan1.Init.NominalTimeSeg2 = 2;
+  hfdcan1.Init.DataPrescaler = 1;
+  hfdcan1.Init.DataSyncJumpWidth = 1;
+  hfdcan1.Init.DataTimeSeg1 = 1;
+  hfdcan1.Init.DataTimeSeg2 = 1;
+  hfdcan1.Init.MessageRAMOffset = 0;
+  hfdcan1.Init.StdFiltersNbr = 0;
+  hfdcan1.Init.ExtFiltersNbr = 0;
+  hfdcan1.Init.RxFifo0ElmtsNbr = 0;
+  hfdcan1.Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_8;
+  hfdcan1.Init.RxFifo1ElmtsNbr = 0;
+  hfdcan1.Init.RxFifo1ElmtSize = FDCAN_DATA_BYTES_8;
+  hfdcan1.Init.RxBuffersNbr = 0;
+  hfdcan1.Init.RxBufferSize = FDCAN_DATA_BYTES_8;
+  hfdcan1.Init.TxEventsNbr = 0;
+  hfdcan1.Init.TxBuffersNbr = 0;
+  hfdcan1.Init.TxFifoQueueElmtsNbr = 0;
+  hfdcan1.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
+  hfdcan1.Init.TxElmtSize = FDCAN_DATA_BYTES_8;
+  if (HAL_FDCAN_Init(&hfdcan1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN FDCAN1_Init 2 */
+
+  /* USER CODE END FDCAN1_Init 2 */
+
+}
+
+/**
+  * @brief SDMMC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SDMMC1_MMC_Init(void)
+{
+
+  /* USER CODE BEGIN SDMMC1_Init 0 */
+
+  /* USER CODE END SDMMC1_Init 0 */
+
+  /* USER CODE BEGIN SDMMC1_Init 1 */
+
+  /* USER CODE END SDMMC1_Init 1 */
+  hmmc1.Instance = SDMMC1;
+  hmmc1.Init.ClockEdge = SDMMC_CLOCK_EDGE_RISING;
+  hmmc1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
+  hmmc1.Init.BusWide = SDMMC_BUS_WIDE_4B;
+  hmmc1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
+  hmmc1.Init.ClockDiv = 0;
+  if (HAL_MMC_Init(&hmmc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SDMMC1_Init 2 */
+
+  /* USER CODE END SDMMC1_Init 2 */
+
 }
 
 /**
@@ -307,23 +399,27 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, RF_SPI_SEL_Pin|RF_RST_Pin|ALERT_T_PA_U_Pin|FLAGB_TX_UHF_Pin
                           |FLAGB_RX_UHF_Pin|EN_RX_UHF_Pin|ALERT_T_PCB_Pin|P5V_RF_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, EN_UHF_AMP_RX_Pin|VSET_AGC_UHF_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, MMC_RST_Pin|GAIN_SET_UHF_Pin|AGC_TEMP_UHF_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GAIN_SET_UHF_Pin|AGC_TEMP_UHF_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, EN_UHF_AMP_RX_Pin|VSET_AGC_UHF_Pin|MEM_SEL_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, EN_AGC_UHF_Pin|EN_PA_UHF_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(MMC_EN_GPIO_Port, MMC_EN_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : RF_SPI_SEL_Pin RF_RST_Pin ALERT_T_PA_U_Pin FLAGB_TX_UHF_Pin
                            FLAGB_RX_UHF_Pin EN_RX_UHF_Pin ALERT_T_PCB_Pin P5V_RF_EN_Pin */
@@ -334,25 +430,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : MMC_RST_Pin GAIN_SET_UHF_Pin AGC_TEMP_UHF_Pin */
+  GPIO_InitStruct.Pin = MMC_RST_Pin|GAIN_SET_UHF_Pin|AGC_TEMP_UHF_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pin : RF_IRQ_Pin */
   GPIO_InitStruct.Pin = RF_IRQ_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(RF_IRQ_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : EN_UHF_AMP_RX_Pin VSET_AGC_UHF_Pin */
-  GPIO_InitStruct.Pin = EN_UHF_AMP_RX_Pin|VSET_AGC_UHF_Pin;
+  /*Configure GPIO pins : EN_UHF_AMP_RX_Pin VSET_AGC_UHF_Pin MEM_SEL_Pin */
+  GPIO_InitStruct.Pin = EN_UHF_AMP_RX_Pin|VSET_AGC_UHF_Pin|MEM_SEL_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : GAIN_SET_UHF_Pin AGC_TEMP_UHF_Pin */
-  GPIO_InitStruct.Pin = GAIN_SET_UHF_Pin|AGC_TEMP_UHF_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : EN_AGC_UHF_Pin EN_PA_UHF_Pin */
   GPIO_InitStruct.Pin = EN_AGC_UHF_Pin|EN_PA_UHF_Pin;
@@ -360,6 +456,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : MMC_EN_Pin */
+  GPIO_InitStruct.Pin = MMC_EN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(MMC_EN_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);

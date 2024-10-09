@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <etl/cstring.h>
+#include "etl/cstring.h"
 
 /**
  * A fixed-size string

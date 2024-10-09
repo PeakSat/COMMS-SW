@@ -39,8 +39,12 @@ add_executable(${CMAKE_PROJECT_NAME})
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
+
+# Add the eMMC Drivers
+add_subdirectory(Drivers/eMMC)
 # Add the AT Drivers
 add_subdirectory(Drivers/AT86RF215)
+
 # Add the FreeRTOS
 add_subdirectory(Lib/FreeRTOS)
 #
@@ -65,3 +69,4 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
 )
 
+set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -T \"${CMAKE_SOURCE_DIR}/STM32H743VITx_RAM.ld\"")

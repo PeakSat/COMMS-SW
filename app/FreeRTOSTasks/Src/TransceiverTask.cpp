@@ -135,7 +135,7 @@ void TransceiverTask::modulationConfig(){
 
 void TransceiverTask::execute(){
     // ENABLE THE RF 5V
-    vTaskDelay(pdMS_TO_TICKS(5000));
+    vTaskDelay(pdMS_TO_TICKS(10000));
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     LOG_DEBUG << "RF 5V ENABLED " ;
     vTaskDelay(pdMS_TO_TICKS(1000));

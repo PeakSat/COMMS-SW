@@ -65,6 +65,8 @@ void Error_Handler(void);
 #define RF_SPI_MISO_GPIO_Port GPIOE
 #define RF_SPI_MOSI_Pin GPIO_PIN_6
 #define RF_SPI_MOSI_GPIO_Port GPIOE
+#define MMC_RST_Pin GPIO_PIN_13
+#define MMC_RST_GPIO_Port GPIOC
 #define RF_IRQ_Pin GPIO_PIN_1
 #define RF_IRQ_GPIO_Port GPIOC
 #define RF_IRQ_EXTI_IRQn EXTI1_IRQn
@@ -94,6 +96,18 @@ void Error_Handler(void);
 #define ALERT_T_PCB_GPIO_Port GPIOE
 #define P5V_RF_EN_Pin GPIO_PIN_13
 #define P5V_RF_EN_GPIO_Port GPIOE
+#define MMC_EN_Pin GPIO_PIN_6
+#define MMC_EN_GPIO_Port GPIOC
+#define MEM_SEL_Pin GPIO_PIN_10
+#define MEM_SEL_GPIO_Port GPIOA
+#define MCU_MMC_D2_Pin GPIO_PIN_10
+#define MCU_MMC_D2_GPIO_Port GPIOC
+#define MCU_MMC_D3_Pin GPIO_PIN_11
+#define MCU_MMC_D3_GPIO_Port GPIOC
+#define MMC_MCU_CK_Pin GPIO_PIN_12
+#define MMC_MCU_CK_GPIO_Port GPIOC
+#define MCU_MMC_CMD_Pin GPIO_PIN_2
+#define MCU_MMC_CMD_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
 
