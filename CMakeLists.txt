@@ -19,7 +19,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Set the project name
-set(CMAKE_PROJECT_NAME eqm-comms-sw)
+set(CMAKE_PROJECT_NAME comms-sw)
 
 # Include toolchain file
 include("cmake/gcc-arm-none-eabi.cmake")
@@ -66,7 +66,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         PRIVATE
         stm32cubemx
         app_main
-    # Add user defined libraries
+        # Add user defined libraries
 )
 
-set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -T \"${CMAKE_SOURCE_DIR}/STM32H743VITx_RAM.ld\"")
+

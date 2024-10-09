@@ -1,6 +1,5 @@
-cmake-build-debug/
-
 .idea/
 
-.mxproject
+cmake-build-debug/
 
+.mxproject

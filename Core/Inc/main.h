@@ -104,8 +104,8 @@ void Error_Handler(void);
 #define MCU_MMC_D2_GPIO_Port GPIOC
 #define MCU_MMC_D3_Pin GPIO_PIN_11
 #define MCU_MMC_D3_GPIO_Port GPIOC
-#define MMC_MCU_CK_Pin GPIO_PIN_12
-#define MMC_MCU_CK_GPIO_Port GPIOC
+#define MCU_MMC_CK_Pin GPIO_PIN_12
+#define MCU_MMC_CK_GPIO_Port GPIOC
 #define MCU_MMC_CMD_Pin GPIO_PIN_2
 #define MCU_MMC_CMD_GPIO_Port GPIOD
 

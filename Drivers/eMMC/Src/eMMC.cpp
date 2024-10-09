@@ -10,7 +10,6 @@ using namespace eMMC;
 extern MMC_HandleTypeDef hmmc1;
 
 uint8_t eMMC::initializeEMMC(){
-//    vTaskDelay(2500);
     HAL_GPIO_WritePin(MMC_EN_GPIO_Port, MMC_EN_Pin, static_cast<GPIO_PinState>(RESET));
     LOG_DEBUG << "MMC_EN_GPIO_Port ENABLED";
     vTaskDelay(1500);

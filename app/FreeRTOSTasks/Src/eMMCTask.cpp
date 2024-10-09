@@ -17,8 +17,6 @@ void eMMCTask::execute() {
     while (eMMC::initializeEMMC() != 0) {
         vTaskDelay(10);
     };
-    vTaskDelay(1000);
-
 
     uint32_t block_address_a = 10;
     uint32_t block_address_b = 11;
