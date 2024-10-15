@@ -99,6 +99,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_SDMMC1_MMC_Init();
   MX_SPI4_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
@@ -210,18 +211,23 @@ static void MX_SDMMC1_MMC_Init(void)
 {
 
   /* USER CODE BEGIN SDMMC1_Init 0 */
-
+    HAL_GPIO_WritePin(MMC_EN_GPIO_Port, MMC_EN_Pin, ((GPIO_PinState) RESET));
+    HAL_Delay(1500);
+    HAL_GPIO_WritePin(MEM_SEL_GPIO_Port, MEM_SEL_Pin, ((GPIO_PinState) SET));
+    HAL_Delay(1500);
+    HAL_GPIO_WritePin(MMC_RST_GPIO_Port, MMC_RST_Pin, ((GPIO_PinState) RESET));
+    HAL_Delay(1500);
   /* USER CODE END SDMMC1_Init 0 */
 
   /* USER CODE BEGIN SDMMC1_Init 1 */
 
-  /* USER CODE END SDMMC1_Init 1 */
+  /* USER CODE END : */
   hmmc1.Instance = SDMMC1;
   hmmc1.Init.ClockEdge = SDMMC_CLOCK_EDGE_RISING;
-  hmmc1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
+  hmmc1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_ENABLE;
   hmmc1.Init.BusWide = SDMMC_BUS_WIDE_4B;
-  hmmc1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-  hmmc1.Init.ClockDiv = 0;
+  hmmc1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_ENABLE;
+  hmmc1.Init.ClockDiv = 1;
   if (HAL_MMC_Init(&hmmc1) != HAL_OK)
   {
     Error_Handler();
@@ -352,10 +358,13 @@ static void MX_GPIO_Init(void)
                           |FLAGB_RX_UHF_Pin|EN_RX_UHF_Pin|ALERT_T_PCB_Pin|P5V_RF_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, MMC_RST_Pin|GAIN_SET_UHF_Pin|AGC_TEMP_UHF_Pin|MMC_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, MMC_RST_Pin|MMC_EN_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, EN_UHF_AMP_RX_Pin|VSET_AGC_UHF_Pin|MEM_SEL_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GAIN_SET_UHF_Pin|AGC_TEMP_UHF_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, EN_AGC_UHF_Pin|EN_PA_UHF_Pin, GPIO_PIN_RESET);
