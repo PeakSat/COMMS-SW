@@ -57,7 +57,7 @@ void eMMCTask::execute() {
         LOG_DEBUG << "Writing to block address: " << block_address_a;
         status = eMMC::writeBlockEMMC(data_buff, block_address_a,1);
         if(status.has_value()){
-            //read was successful
+            // write was successful
 
         }else if(status.error() != eMMC::Error::NO_ERRORS){
             //handle the errors
