@@ -1,7 +1,5 @@
 #pragma once
-
 #include "Task.hpp"
-#include "etl/array.h"
 #include "etl/optional.h"
 
 
