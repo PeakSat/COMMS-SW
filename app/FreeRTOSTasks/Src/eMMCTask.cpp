@@ -28,7 +28,7 @@ void eMMCTask::execute() {
         LOG_DEBUG <<"Reading from block address: " << block_address_a;
         auto status = eMMC::readBlockEMMC(read_data_buff, block_address_a,1);
         if(status.has_value()){
-            //read was successful
+            // read was successful
 
         }else if(status.error() != eMMC::Error::NO_ERRORS)
         {
