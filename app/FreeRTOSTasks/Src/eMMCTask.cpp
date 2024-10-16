@@ -72,7 +72,7 @@ void eMMCTask::execute() {
 
         }else if(status.error() != eMMC::Error::NO_ERRORS){
             // handle the errors
-            LOG_DEBUG <<"read error";
+            LOG_DEBUG << "write  error";
         }
 
 
