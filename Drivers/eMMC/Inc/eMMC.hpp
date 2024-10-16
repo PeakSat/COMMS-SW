@@ -1,13 +1,7 @@
 #pragma once
 
 #include "stm32h7xx_hal_mmc.h"
-#include "etl/utility.h"
 #include "etl/expected.h"
-#include "etl/optional.h"
-#include "etl/array.h"
-#include <cstdint>
-#include <type_traits>
-#include <tuple>
 
 
 
