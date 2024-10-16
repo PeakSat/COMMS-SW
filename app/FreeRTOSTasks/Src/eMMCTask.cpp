@@ -71,7 +71,7 @@ void eMMCTask::execute() {
             //read was successful
 
         }else if(status.error() != eMMC::Error::NO_ERRORS){
-            //handle the errors
+            // handle the errors
             LOG_DEBUG <<"read error";
         }
 
