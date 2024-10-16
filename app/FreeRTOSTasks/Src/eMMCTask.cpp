@@ -3,14 +3,6 @@
 #include "eMMCTask.hpp"
 #include "eMMC.hpp"
 
-void eMMC_info_show(HAL_MMC_CardInfoTypeDef info){
-    LOG_DEBUG << "*** EMMC INFO ***";
-    LOG_DEBUG << "Card Type: " << info.CardType;
-    LOG_DEBUG << "Card Class: " << info.Class;
-    LOG_DEBUG << "Card Relative Address: " << info.RelCardAdd;
-    LOG_DEBUG << "Capacity in Blocks: " << info.BlockNbr;
-    LOG_DEBUG << "Block size: " << info.BlockSize;
-}
 
 void eMMCTask::execute() {
 
@@ -21,7 +13,7 @@ void eMMCTask::execute() {
     for(uint8_t i = 0; i < 50; i++){
         data_buff[i] = i;
     }
-    // HAL_StatusTypeDef  status;
+
     uint8_t read_data_buff[512];
 
     while(true){
@@ -43,10 +35,10 @@ void eMMCTask::execute() {
         LOG_DEBUG << "Reading from block address: " << block_address_b;
         status = eMMC::readBlockEMMC(read_data_buff, block_address_b,1);
         if(status.has_value()){
-            //read was successful
+            // read was successful
 
         }else if(status.error() != eMMC::Error::NO_ERRORS){
-            //handle the errors
+            // handle the errors
             LOG_DEBUG <<"read error";
         }
         for(uint8_t i = 0; i < 50; i++){
