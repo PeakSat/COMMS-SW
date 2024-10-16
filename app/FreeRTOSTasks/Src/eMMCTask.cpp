@@ -32,7 +32,7 @@ void eMMCTask::execute() {
 
         }else if(status.error() != eMMC::Error::NO_ERRORS)
         {
-            //handle the errors
+            // handle the errors
             LOG_DEBUG <<"read error";
         }
         for(uint8_t i = 0; i < 50; i++){
