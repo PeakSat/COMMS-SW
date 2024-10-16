@@ -17,19 +17,19 @@ namespace eMMC{
      * 
      * @param write_data 
      * @param block_address 
-     * @param NumberOfBlocks 
+     * @param numberOfBlocks
      * @return 
      */
-    etl::expected<void, Error>  writeBlockEMMC(uint8_t* write_data, uint32_t block_address, uint32_t NumberOfBlocks);
+    etl::expected<void, Error>  writeBlockEMMC(uint8_t* write_data, uint32_t block_address, uint32_t numberOfBlocks);
 
     /**
      * 
      * @param read_data 
      * @param block_address 
-     * @param NumberOfBlocks 
+     * @param numberOfBlocks
      * @return 
      */
-    etl::expected<void, Error> readBlockEMMC(uint8_t* read_data, uint32_t block_address, uint32_t NumberOfBlocks);
+    etl::expected<void, Error> readBlockEMMC(uint8_t* read_data, uint32_t block_address, uint32_t numberOfBlocks);
 
     /**
      * 
