@@ -17,7 +17,7 @@ extern MMC_HandleTypeDef hmmc1;
  * @return 
  */
 etl::expected<void, Error> eMMC::writeBlockEMMC(uint8_t* write_data, uint32_t block_address, uint32_t NumberOfBlocks){
-    if(HAL_MMC_WriteBlocks(&hmmc1, write_data, block_address, NumberOfBlocks, 1000) != HAL_OK)
+    if(HAL_MMC_WriteBlocks(&hmmc1, write_data, block_address, NumberOfBlocks, 1000*NumberOfBlocks) != HAL_OK)
     {
         return etl::unexpected<Error>(Error::EMMC_WRITE_FAILURE);
     }
@@ -32,7 +32,7 @@ etl::expected<void, Error> eMMC::writeBlockEMMC(uint8_t* write_data, uint32_t bl
  * @return 
  */
 etl::expected<void, Error> eMMC::readBlockEMMC(uint8_t* read_data, uint32_t block_address, uint32_t NumberOfBlocks){
-    if(HAL_MMC_ReadBlocks(&hmmc1, read_data, block_address, NumberOfBlocks, 1000)!= HAL_OK)
+    if(HAL_MMC_ReadBlocks(&hmmc1, read_data, block_address, NumberOfBlocks, 1000*NumberOfBlocks)!= HAL_OK)
     {
         return etl::unexpected<Error>(Error::EMMC_READ_FAILURE);
     }
