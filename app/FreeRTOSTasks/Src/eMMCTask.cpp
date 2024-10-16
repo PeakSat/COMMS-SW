@@ -25,7 +25,7 @@ void eMMCTask::execute() {
     uint8_t read_data_buff[512];
 
     while(true){
-        LOG_DEBUG <<"Reading from block address: " << block_address_a;
+        LOG_DEBUG << "Reading from block address: " << block_address_a;
         auto status = eMMC::readBlockEMMC(read_data_buff, block_address_a,1);
         if(status.has_value()){
             // read was successful
