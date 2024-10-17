@@ -96,6 +96,14 @@ void Error_Handler(void);
 #define ALERT_T_PCB_GPIO_Port GPIOE
 #define P5V_RF_EN_Pin GPIO_PIN_13
 #define P5V_RF_EN_GPIO_Port GPIOE
+#define GNSS_UART_RX_Pin GPIO_PIN_12
+#define GNSS_UART_RX_GPIO_Port GPIOB
+#define GNSS_UART_TX_Pin GPIO_PIN_13
+#define GNSS_UART_TX_GPIO_Port GPIOB
+#define GNSS_RSTN_Pin GPIO_PIN_14
+#define GNSS_RSTN_GPIO_Port GPIOB
+#define GNSS_EN_Pin GPIO_PIN_15
+#define GNSS_EN_GPIO_Port GPIOB
 #define MMC_EN_Pin GPIO_PIN_6
 #define MMC_EN_GPIO_Port GPIOC
 #define MEM_SEL_Pin GPIO_PIN_10

@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
+extern DMA_HandleTypeDef hdma_uart5_rx;
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
@@ -278,6 +279,52 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 
   /* USER CODE END UART4_MspInit 1 */
   }
+  else if(huart->Instance==UART5)
+  {
+  /* USER CODE BEGIN UART5_MspInit 0 */
+
+  /* USER CODE END UART5_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_UART5_CLK_ENABLE();
+
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    /**UART5 GPIO Configuration
+    PB12     ------> UART5_RX
+    PB13     ------> UART5_TX
+    */
+    GPIO_InitStruct.Pin = GNSS_UART_RX_Pin|GNSS_UART_TX_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF14_UART5;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    /* UART5 DMA Init */
+    /* UART5_RX Init */
+    hdma_uart5_rx.Instance = DMA1_Stream0;
+    hdma_uart5_rx.Init.Request = DMA_REQUEST_UART5_RX;
+    hdma_uart5_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_uart5_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_uart5_rx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_uart5_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_uart5_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_uart5_rx.Init.Mode = DMA_NORMAL;
+    hdma_uart5_rx.Init.Priority = DMA_PRIORITY_MEDIUM;
+    hdma_uart5_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    if (HAL_DMA_Init(&hdma_uart5_rx) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_LINKDMA(huart,hdmarx,hdma_uart5_rx);
+
+    /* UART5 interrupt Init */
+    HAL_NVIC_SetPriority(UART5_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(UART5_IRQn);
+  /* USER CODE BEGIN UART5_MspInit 1 */
+
+  /* USER CODE END UART5_MspInit 1 */
+  }
 
 }
 
@@ -306,6 +353,29 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
   /* USER CODE BEGIN UART4_MspDeInit 1 */
 
   /* USER CODE END UART4_MspDeInit 1 */
+  }
+  else if(huart->Instance==UART5)
+  {
+  /* USER CODE BEGIN UART5_MspDeInit 0 */
+
+  /* USER CODE END UART5_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_UART5_CLK_DISABLE();
+
+    /**UART5 GPIO Configuration
+    PB12     ------> UART5_RX
+    PB13     ------> UART5_TX
+    */
+    HAL_GPIO_DeInit(GPIOB, GNSS_UART_RX_Pin|GNSS_UART_TX_Pin);
+
+    /* UART5 DMA DeInit */
+    HAL_DMA_DeInit(huart->hdmarx);
+
+    /* UART5 interrupt DeInit */
+    HAL_NVIC_DisableIRQ(UART5_IRQn);
+  /* USER CODE BEGIN UART5_MspDeInit 1 */
+
+  /* USER CODE END UART5_MspDeInit 1 */
   }
 
 }
