@@ -1,15 +1,26 @@
 #pragma once
-#define GNSSPayloadSize 512
-#define GNSSMessageSize 512
-#define GNSSQueueSize 64
 #include "etl/vector.h"
+
+inline const uint8_t GNSSQueueSize = 64;
+
+/**
+ * The maximum size for the data field of a GNSS Payload.
+ */
+inline const uint16_t GNSSPayloadSize = 1024;
+
+/**
+ * The maximum size for the data field of a GNSS Message.
+ */
+inline const uint16_t GNSSMessageSize = GNSSPayloadSize + 16;
+
+
 
 
 namespace GNSSDefinitions {
 
     typedef etl::vector<uint8_t, GNSSPayloadSize> Payload;
 
-    enum GNSSMessagesID : uint8_t {
+    enum GNSSMessages : uint8_t {
         SystemRestart = 0x1,
         QuerySoftwareVersion = 0x2,
         QuerySoftwareCRC = 0x3,

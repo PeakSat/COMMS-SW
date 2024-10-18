@@ -301,7 +301,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 
     /* UART5 DMA Init */
     /* UART5_RX Init */
-    hdma_uart5_rx.Instance = DMA1_Stream0;
+    hdma_uart5_rx.Instance = DMA1_Stream1;
     hdma_uart5_rx.Init.Request = DMA_REQUEST_UART5_RX;
     hdma_uart5_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_uart5_rx.Init.PeriphInc = DMA_PINC_DISABLE;

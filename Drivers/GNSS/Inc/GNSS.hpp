@@ -3,12 +3,14 @@
 #include "etl/vector.h"
 #include "GNSSMessage.hpp"
 
+#include "GNSSDefinitions.hpp"
 
 using namespace GNSSDefinitions;
 
 class GNSSReceiver {
 public:
     GNSSReceiver();
+
     // Configure
     static GNSSMessage configureSerialPort(uint8_t COMPort, BaudRate baudRate, Attributes attributes);
 
@@ -19,16 +21,16 @@ public:
     static GNSSMessage configureSystemPositionRate(uint8_t rate, Attributes attributes);
 
     static GNSSMessage configureDOPMask(DOPModeSelect mode, uint16_t PDOPvalue, uint16_t HDOPvalue, uint16_t GDOPvalue,
-                                 Attributes attributes);
+                                        Attributes attributes);
 
     static GNSSMessage configureElevationAndCNRMask(ElevationAndCNRModeSelect mode, uint8_t elevationMask, uint8_t CNRMask,
-                                             Attributes attributes);
+                                                    Attributes attributes);
 
     static GNSSMessage configurePositionPinning(PositionPinning positionPinning, Attributes attributes);
 
     static GNSSMessage configurePositionPinningParameters(uint16_t pinningSpeed, uint16_t pinningCnt, uint16_t unpiningSpeed,
-                                                   uint16_t unpiningCnt, uint16_t unpinningDistance,
-                                                   Attributes attributes);
+                                                          uint16_t unpiningCnt, uint16_t unpinningDistance,
+                                                          Attributes attributes);
 
     static GNSSMessage configure1PPSCableDelay(uint32_t cableDelay, Attributes attributes);
 
@@ -42,7 +44,7 @@ public:
 
     // Messages with Sub ID
     static GNSSMessage configureSBAS(EnableSBAS enable, RangingSBAS ranging, uint8_t URAMask, CorrectionSBAS correction,
-                              uint8_t numberOfTrackingChannels, uint8_t subsystemMask, Attributes attributes);
+                                     uint8_t numberOfTrackingChannels, uint8_t subsystemMask, Attributes attributes);
 
     static GNSSMessage configureQZSS(EnableQZSS enable, uint8_t noOfTrackingChannels, Attributes attributes);
 
@@ -63,15 +65,15 @@ public:
                                       Attributes attributes);
 
     static GNSSMessage configureUTCReferenceTimeSyncToGPSTime(EnableSyncToGPSTime enable, uint16_t utcYear, uint8_t utcMonth,
-                                                       uint8_t utcDay, Attributes attributes);
+                                                              uint8_t utcDay, Attributes attributes);
 
     static GNSSMessage configureGNSSNavigationMode(NavigationMode mode, Attributes attributes);
 
     static GNSSMessage configureGNSSConstellationTypeForNavigationSolution(uint8_t constellationType, Attributes attributes);
 
     static GNSSMessage SoftwareImageDownloadUsingROMExternalLoader(BaudRate baud, FlashType flashType, uint16_t flashID,
-                                                            BufferUsedIndex bufferUsedIndex,
-                                                            Attributes attributes);
+                                                                   BufferUsedIndex bufferUsedIndex,
+                                                                   Attributes attributes);
 
     static GNSSMessage configureGNSSDozeMode();
 
@@ -91,12 +93,12 @@ public:
     static GNSSMessage configureNMEAStringInterval(uint16_t nmeaString, uint8_t interval, Attributes attributes);
 
     static GNSSMessage SoftwareImageDownloadUsingInternalLoader(BaudRate baud, FlashType flashType, uint16_t flashID,
-                                                         BufferUsedIndex bufferUsedIndex,
-                                                         Attributes attributes);
+                                                                BufferUsedIndex bufferUsedIndex,
+                                                                Attributes attributes);
 
     static GNSSMessage SoftwareImageDownloadUsingExternalLoader(BaudRate baud, FlashType flashType, uint16_t flashID,
-                                                         BufferUsedIndex bufferUsedIndex,
-                                                         Attributes attributes);
+                                                                BufferUsedIndex bufferUsedIndex,
+                                                                Attributes attributes);
 
     // Query
     static GNSSMessage querySoftwareVersion(SoftwareType softwareType);

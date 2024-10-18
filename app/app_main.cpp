@@ -12,13 +12,13 @@
 
 void app_main( void )
 {
-//    transceiverTask.emplace();
+    transceiverTask.emplace();
     uartGatekeeperTask.emplace();
 //    eMMCTask.emplace();
     gnssTask.emplace();
 
 
-//    transceiverTask->createTask();
+    transceiverTask->createTask();
     uartGatekeeperTask->createTask();
 //    eMMCTask->createTask();
     gnssTask->createTask();
@@ -38,15 +38,9 @@ extern "C" [[maybe_unused]] void EXTI1_IRQHandler(void) {
 }
 
 extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size){
-    // Size is used for copying the correct size of data to the TcCommand buffer,
-    // of the TC Handling Task
-    BaseType_t xHigherPriorityTaskWoken;
-
-    xHigherPriorityTaskWoken = pdFALSE;
-    xTaskNotifyFromISR(gnssTask->taskHandle, 0, eNoAction,  &xHigherPriorityTaskWoken);
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-    // Reset the DMA to receive the next chunk of data
     HAL_UARTEx_ReceiveToIdle_DMA(&huart5, gnssTask->incomingMessage, 512);
+}
 
+extern "C" void UART5_IRQHandler(void) {
+    HAL_UART_IRQHandler(&huart5);
 }
