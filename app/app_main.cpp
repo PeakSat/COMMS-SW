@@ -41,6 +41,3 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t S
     HAL_UARTEx_ReceiveToIdle_DMA(&huart5, gnssTask->incomingMessage, 512);
 }
 
-extern "C" void UART5_IRQHandler(void) {
-    HAL_UART_IRQHandler(&huart5);
-}

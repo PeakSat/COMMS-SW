@@ -51,7 +51,6 @@ public:
         // disabling the full buffer interrupt //
         __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_TC);
 
-//        HAL_UARTEx_ReceiveToIdle_DMA(&huart5, this->incomingMessage, 512);
     }
 
     /**

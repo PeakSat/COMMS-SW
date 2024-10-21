@@ -9,6 +9,8 @@ void GNSSTask::execute() {
     HAL_GPIO_WritePin(GNSS_RSTN_GPIO_Port, GNSS_RSTN_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_RESET);
 
+    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+
     HAL_UARTEx_ReceiveToIdle_DMA(&huart5, this->incomingMessage, 512);
     while(true){
         LOG_DEBUG << "GNSS TASK";
