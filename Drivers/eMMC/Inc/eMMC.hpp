@@ -1,6 +1,10 @@
 #pragma once
 #include "stm32h7xx_hal.h"
 #include "etl/expected.h"
+// #include "Task.hpp"
+
+
+// #include <portmacro.h>
 
 namespace eMMC{
     // Error status
@@ -10,7 +14,8 @@ namespace eMMC{
         EMMC_WRITE_FAILURE,
         EMMC_ERASE_BLOCK_FAILURE,
         EMMC_INVALID_NUM_OF_BLOCKS,
-        EMMC_INVALID_START_ADDRESS_ON_ERASE
+        EMMC_INVALID_START_ADDRESS_ON_ERASE,
+        EMMC_TRANSACTION_TIMED_OUT
     };
 
     /**
