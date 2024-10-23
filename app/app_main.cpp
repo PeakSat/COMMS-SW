@@ -3,7 +3,6 @@
 #include "main.h"
 
 /* App includes. */
-#pragma once
 #include "app_main.h"
 #include "TransceiverTask.hpp"
 #include "UARTGatekeeperTask.hpp"
