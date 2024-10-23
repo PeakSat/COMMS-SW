@@ -1,18 +1,41 @@
 #pragma once
-
 #include "stm32h7xx_hal_mmc.h"
+#include "etl/expected.h"
 
-namespace eMMC{
-    /*
-     * Initialize eMMC instance
-     * returns: uint8_t [0 on success, 1-3 on error]
+
+namespace eMMC {
+	// Error status
+	enum class Error : uint8_t {
+		NO_ERRORS = 0,
+		EMMC_READ_FAILURE,
+		EMMC_WRITE_FAILURE,
+		EMMC_ERASE_BLOCK_FAILURE,
+	};
+
+	/**
+     * 
+     * @param write_data 
+     * @param block_address 
+     * @param NumberOfBlocks 
+     * @return 
      */
-    uint8_t initializeEMMC();
+	etl::expected<void, Error> writeBlockEMMC(uint8_t* write_data, uint32_t block_address, uint32_t NumberOfBlocks);
 
-    HAL_MMC_CardInfoTypeDef checkEMMC();
+	/**
+     * 
+     * @param read_data 
+     * @param block_address 
+     * @param NumberOfBlocks 
+     * @return 
+     */
+	etl::expected<void, Error> readBlockEMMC(uint8_t* read_data, uint32_t block_address, uint32_t NumberOfBlocks);
 
-    HAL_StatusTypeDef writeBlockEMMC(uint8_t* write_data, uint32_t block_address);
-    HAL_StatusTypeDef readBlockEMMC(uint8_t* read_data, uint32_t block_address);
-    HAL_StatusTypeDef eraseBlocksEMMC(uint32_t block_address_start, uint32_t block_address_end);
+	/**
+     * 
+     * @param block_address_start 
+     * @param block_address_end 
+     * @return 
+     */
+	etl::expected<void, Error> eraseBlocksEMMC(uint32_t block_address_start, uint32_t block_address_end);
 
-}
+} // namespace eMMC

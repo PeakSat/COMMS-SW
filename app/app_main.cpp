@@ -9,9 +9,7 @@
 #include "eMMCTask.hpp"
 #include "GNSSTask.hpp"
 
-
-void app_main( void )
-{
+void app_main(void) {
     transceiverTask.emplace();
     uartGatekeeperTask.emplace();
 //    eMMCTask.emplace();
@@ -27,10 +25,10 @@ void app_main( void )
     vTaskStartScheduler();
 
     /* Should not get here. */
-    for(;;);
+    for (;;)
+        ;
 }
 /*-----------------------------------------------------------*/
-
 
 extern "C" [[maybe_unused]] void EXTI1_IRQHandler(void) {
     HAL_GPIO_EXTI_IRQHandler(RF_IRQ_Pin);
