@@ -9,13 +9,13 @@ private:
     const static inline uint16_t TaskStackDepth = 4000;
 
     StackType_t taskStack[TaskStackDepth];
-public:
 
+public:
     void execute();
 
     eMMCTask() : Task("eMMC Memory Functions") {}
 
-    void createTask(){
+    void createTask() {
         xTaskCreateStatic(vClassTask<eMMCTask>, this->TaskName,
                           eMMCTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
                           this->taskStack, &(this->taskBuffer));
