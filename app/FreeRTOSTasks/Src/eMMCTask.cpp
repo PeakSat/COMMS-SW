@@ -1,7 +1,7 @@
-#include "eMMCTask.hpp"
 #include "Logger.hpp"
-#include "eMMC.hpp"
 #include "main.h"
+#include "eMMCTask.hpp"
+#include "eMMC.hpp"
 
 void eMMC_info_show(HAL_MMC_CardInfoTypeDef info) {
 	LOG_DEBUG << "*** EMMC INFO ***";

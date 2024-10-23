@@ -1,9 +1,9 @@
 #pragma once
-#include "Task.hpp"
-#include "etl/optional.h"
-#include "etl/string.h"
-#include "queue.h"
 
+#include "Task.hpp"
+#include "queue.h"
+#include "etl/string.h"
+#include "etl/optional.h"
 #define UARTQueueSize 5
 #define LOGGER_MAX_MESSAGE_SIZE 512
 

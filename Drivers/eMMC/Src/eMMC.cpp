@@ -1,10 +1,8 @@
-#include "eMMC.hpp"
 #include "FreeRTOS.h"
-#include "Logger.hpp"
-#include "main.h"
 #include "task.h"
-
-
+#include "main.h"
+#include "eMMC.hpp"
+#include "Logger.hpp"
 using namespace eMMC;
 
 extern MMC_HandleTypeDef hmmc1;

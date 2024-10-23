@@ -1,11 +1,11 @@
 #include "FreeRTOS.h"
-#include "main.h"
 #include "task.h"
+#include "main.h"
 
 /* App includes. */
+#include "app_main.h"
 #include "TransceiverTask.hpp"
 #include "UARTGatekeeperTask.hpp"
-#include "app_main.h"
 #include "eMMCTask.hpp"
 
 void app_main(void) {

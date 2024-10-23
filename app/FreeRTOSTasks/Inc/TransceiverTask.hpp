@@ -1,12 +1,14 @@
 #pragma once
 
-#include <etl/array.h>
-#include <etl/optional.h>
+#pragma once
+
 #include "Task.hpp"
+#include "main.h"
 #include "at86rf215.hpp"
 #include "at86rf215config.hpp"
-#include "main.h"
 #include "queue.h"
+#include <etl/optional.h>
+#include <etl/array.h>
 
 extern SPI_HandleTypeDef hspi4;
 
