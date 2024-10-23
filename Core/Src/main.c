@@ -221,7 +221,7 @@ static void MX_SDMMC1_MMC_Init(void)
 
   /* USER CODE BEGIN SDMMC1_Init 1 */
 
-  /* USER CODE END : */
+  /* USER CODE END SDMMC1_Init 1 */
   hmmc1.Instance = SDMMC1;
   hmmc1.Init.ClockEdge = SDMMC_CLOCK_EDGE_RISING;
   hmmc1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_ENABLE;
@@ -444,6 +444,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
   /* USER CODE END Callback 1 */
 }
+
+// /* Callback in non blocking modes (DMA) */
+// void HAL_MMC_TxCpltCallback(MMC_HandleTypeDef *hmmc)
+// {
+//   __NOP();
+// }
+// void HAL_MMC_RxCpltCallback(MMC_HandleTypeDef *hmmc)
+// {
+//   __NOP();
+// }
+// void HAL_MMC_ErrorCallback(MMC_HandleTypeDef *hmmc)
+// {
+//   __NOP();
+// }
+// void HAL_MMC_AbortCallback(MMC_HandleTypeDef *hmmc)
+// {
+//   __NOP();
+// }
 
 /**
   * @brief  This function is executed in case of error occurrence.
