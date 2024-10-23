@@ -1,7 +1,6 @@
 #pragma once
-
-#include "etl/expected.h"
 #include "stm32h7xx_hal_mmc.h"
+#include "etl/expected.h"
 
 
 namespace eMMC {
