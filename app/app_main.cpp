@@ -40,8 +40,16 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     if (huart->Instance == UART5) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
             gnssTask->size = Size;
-            // this flag triggers the GNSS task to start the processing of GNSS data //
-            gnssTask->gnss_flag = true;
+            // Declare a variable to track if a higher priority task is woken up
+            BaseType_t xHigherPriorityTaskWoken;
+            // Initialize xHigherPriorityTaskWoken to pdFALSE (no higher-priority task woken yet)
+            xHigherPriorityTaskWoken = pdFALSE;
+            // notify the gnssTask
+            // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
+            xTaskNotifyFromISR(gnssTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+            // Perform a context switch if a higher-priority task was woken up by the notification
+            // portYIELD_FROM_ISR will yield the processor to the higher-priority task immediately if xHigherPriorityTaskWoken is pdTRUE
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             // restart the DMA //
             HAL_UARTEx_ReceiveToIdle_DMA(&huart5, gnssTask->incomingMessage, 512);
             // disabling the half buffer interrupt //

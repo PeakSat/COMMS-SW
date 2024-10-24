@@ -4,12 +4,16 @@
 
 
 void GNSSTask::printing() {
-    for (uint16_t i = 0; i < size; i++) {
-        GNSSMessage.push_back(incomingMessage[i]);
+    printing_counter++;
+    if (printing_counter == 5) {
+        printing_counter = 0;
+        for (uint16_t i = 0; i < size; i++) {
+            GNSSMessage.push_back(incomingMessage[i]);
+        }
+        LOG_DEBUG << GNSSMessage.c_str();
+        // Clear the previous data
+        GNSSMessage.clear();
     }
-    LOG_DEBUG << GNSSMessage.c_str();
-    // Clear the previous data
-    GNSSMessage.clear();
 }
 void GNSSTask::execute() {
 
@@ -27,14 +31,7 @@ void GNSSTask::execute() {
     __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_TC);
 
     while (true) {
-        if (gnss_flag) {
-            gnss_flag = false;
-            printing_counter++;
-            if (printing_counter == 5) {
-                printing();
-                printing_counter = 0;
-            }
-        }
-        vTaskDelay(10);
+        xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
+        printing();
     }
 }
