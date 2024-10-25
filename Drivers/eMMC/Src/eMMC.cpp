@@ -1,6 +1,8 @@
 
 #include "eMMC.hpp"
 #include "app_main.h"
+#include "FreeRTOS.h"
+#include <semphr.h>
 
 using namespace eMMC;
 extern MMC_HandleTypeDef hmmc1;
@@ -10,6 +12,7 @@ namespace eMMC {
     uint32_t memoryCapacity = 0xE90E80;
     uint32_t memoryPageSize = 512; // bytes
     std::array<memoryItemHandler, memoryItemCount> memoryMap;
+    struct eMMCTransactionHandler eMMCTransactionHandler;
 } // namespace eMMC
 
 
@@ -17,6 +20,8 @@ namespace eMMC {
  *
  */
 void eMMC::eMMCMemoryInit() {
+
+    eMMCTransactionHandler.eMMC_semaphore = xSemaphoreCreateMutex();
 
     // Initialize the memoryMap array using the sizes from MemoryItems.def
 #define MEMORY_ITEM(name, size) memoryMap[name] = memoryItemHandler(size);

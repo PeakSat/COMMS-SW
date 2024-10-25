@@ -4,9 +4,24 @@
 
 #include <array>
 #include <cstdint>
+#include "FreeRTOS.h"
+#include <semphr.h>
 
 
 namespace eMMC {
+
+    struct eMMCTransactionHandler {
+        SemaphoreHandle_t eMMC_semaphore;
+        bool WriteComplete = false;
+        bool ReadComplete = false;
+        bool ErrorOccured = false;
+        bool transactionAborted = false;
+        MMC_HandleTypeDef hmmcSnapshot;
+        uint32_t transactionTimeoutPerBlock = 100; // ms
+        uint32_t getSemaphoreTimeout = 1000;       //ms
+    };
+    extern eMMCTransactionHandler eMMCTransactionHandler;
+
     // Declare constants
     extern uint32_t memoryCapacity;
     extern uint32_t memoryPageSize; // bytes

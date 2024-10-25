@@ -9,7 +9,6 @@
 #include "eMMCTask.hpp"
 #include "eMMC.hpp"
 
-struct eMMCTransactionHandler eMMCTransactionHandler;
 
 void app_main(void) {
 
@@ -17,7 +16,6 @@ void app_main(void) {
     if (eMMC::memoryMap[eMMC::firmware].endAddress != 0) {
         __NOP();
     }
-    eMMCTransactionHandler.eMMC_semaphore = xSemaphoreCreateMutex();
 
     transceiverTask.emplace();
     uartGatekeeperTask.emplace();
@@ -43,20 +41,20 @@ extern "C" [[maybe_unused]] void EXTI1_IRQHandler(void) {
 
 /* Callback in non blocking modes (DMA) */
 extern "C" [[maybe_unused]] void HAL_MMC_TxCpltCallback(MMC_HandleTypeDef* hmmc) {
-    struct eMMCTransactionHandler* test = &eMMCTransactionHandler;
+    struct eMMC::eMMCTransactionHandler* test = &eMMC::eMMCTransactionHandler;
     test->WriteComplete = true;
     // __NOP();
 }
 extern "C" [[maybe_unused]] void HAL_MMC_RxCpltCallback(MMC_HandleTypeDef* hmmc) {
-    eMMCTransactionHandler.ReadComplete = true;
+    eMMC::eMMCTransactionHandler.ReadComplete = true;
     // __NOP();
 }
 extern "C" [[maybe_unused]] void HAL_MMC_ErrorCallback(MMC_HandleTypeDef* hmmc) {
-    eMMCTransactionHandler.ErrorOccured = true;
-    eMMCTransactionHandler.hmmcSnapshot = *hmmc;
+    eMMC::eMMCTransactionHandler.ErrorOccured = true;
+    eMMC::eMMCTransactionHandler.hmmcSnapshot = *hmmc;
     // __NOP();
 }
 extern "C" [[maybe_unused]] void HAL_MMC_AbortCallback(MMC_HandleTypeDef* hmmc) {
-    eMMCTransactionHandler.transactionAborted = true;
+    eMMC::eMMCTransactionHandler.transactionAborted = true;
     // __NOP();
 }
