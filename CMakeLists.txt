@@ -44,6 +44,8 @@ add_subdirectory(cmake/stm32cubemx)
 add_subdirectory(Drivers/eMMC)
 # Add the AT Drivers
 add_subdirectory(Drivers/AT86RF215)
+# Add the INA3221 Drivers
+add_subdirectory(Drivers/INA3221)
 
 # Add the FreeRTOS
 add_subdirectory(Lib/FreeRTOS)

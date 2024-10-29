@@ -7,6 +7,8 @@
 #include "TransceiverTask.hpp"
 #include "UARTGatekeeperTask.hpp"
 #include "eMMCTask.hpp"
+#include "INA3221Task.hpp"
+#include "../Drivers/INA3221/Inc/ina3221.hpp"
 
 struct eMMCTransactionHandler eMMCTransactionHandler;
 
@@ -16,10 +18,12 @@ void app_main(void) {
     transceiverTask.emplace();
     uartGatekeeperTask.emplace();
     eMMCTask.emplace();
+    INA3221Task.emplace();
 
     transceiverTask->createTask();
     uartGatekeeperTask->createTask();
     eMMCTask->createTask();
+    INA3221Task->createTask();
 
     /* Start the scheduler. */
     vTaskStartScheduler();
