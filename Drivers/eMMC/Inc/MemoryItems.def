@@ -2,6 +2,6 @@
 
 MEMORY_ITEM(firmware, 1000000)
 MEMORY_ITEM(GNSSData, 3000000)
-MEMORY_ITEM(test, 123)
+MEMORY_ITEM(test, 1000000)
 MEMORY_ITEM(test2, 1234)
 // Add more items here...

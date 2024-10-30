@@ -151,7 +151,11 @@ etl::expected<void, Error> eMMC::readBlockEMMC(uint8_t* read_data, uint32_t bloc
  */
 etl::expected<void, Error> eMMC::getItem(memoryItemHandler itemHandler, uint8_t* dataBuffer, uint32_t bufferSize, uint32_t startBlock, uint32_t numOfBlocks) {
 
-    if (bufferSize < itemHandler.size - (startBlock * memoryPageSize)) {
+    uint32_t storeDataSize = numOfBlocks * memoryPageSize;
+    if ((startBlock + numOfBlocks) * memoryPageSize > itemHandler.size) {
+        storeDataSize -= memoryPageSize - (itemHandler.size % memoryPageSize);
+    }
+    if (bufferSize < storeDataSize) {
         return etl::unexpected<Error>(Error::EMMC_BUFFER_TOO_SMALL);
     }
     if ((startBlock * memoryPageSize) + (numOfBlocks * memoryPageSize) > itemHandler.size) {
@@ -232,9 +236,22 @@ etl::expected<void, Error> eMMC::getItem(memoryItemHandler itemHandler, uint8_t*
     return {}; // success
 }
 
+/**
+ * 
+ * @param itemHandler 
+ * @param dataBuffer 
+ * @param bufferSize 
+ * @param startBlock 
+ * @param numOfBlocks 
+ * @return 
+ */
 etl::expected<void, Error> eMMC::storeItem(memoryItemHandler itemHandler, uint8_t* dataBuffer, uint32_t bufferSize, uint32_t startBlock, uint32_t numOfBlocks) {
 
-    if (bufferSize < itemHandler.size - (startBlock * memoryPageSize)) {
+    uint32_t storeDataSize = numOfBlocks * memoryPageSize;
+    if ((startBlock + numOfBlocks) * memoryPageSize > itemHandler.size) {
+        storeDataSize -= memoryPageSize - (itemHandler.size % memoryPageSize);
+    }
+    if (bufferSize < storeDataSize) {
         return etl::unexpected<Error>(Error::EMMC_BUFFER_TOO_SMALL);
     }
     if ((startBlock * memoryPageSize) + (numOfBlocks * memoryPageSize) > itemHandler.size) {
@@ -263,24 +280,31 @@ etl::expected<void, Error> eMMC::storeItem(memoryItemHandler itemHandler, uint8_
         }
     } else {
         if (numOfBlocks > 0) {
-            auto status = eMMC::writeBlockEMMC(dataBuffer, itemHandler.startAddress + (startBlock * memoryPageSize), numOfBlocks);
-            // handle errors
-            if (!status.has_value()) {
-                return status;
-            }
-            // for(int i=0; i<numOfBlocks; i++) {
-            //     auto status = eMMC::writeBlockEMMC(dataBuffer+(i*memoryPageSize),itemHandler.startAddress+((i+startBlock)*memoryPageSize),1);
-            //     // handle errors
-            //     if(!status.has_value()) {
-            //         return status;
-            //     }
+            // auto status = eMMC::writeBlockEMMC(dataBuffer, itemHandler.startAddress + (startBlock * memoryPageSize), numOfBlocks);
+            // // handle errors
+            // if (!status.has_value()) {
+            //     return status;
             // }
+            for (int i = 0; i < numOfBlocks; i++) {
+                auto status = eMMC::writeBlockEMMC(dataBuffer + (i * memoryPageSize), itemHandler.startAddress + ((i + startBlock) * memoryPageSize), 1);
+                // handle errors
+                if (!status.has_value()) {
+                    return status;
+                }
+            }
         }
     }
 
     return {}; // success
 }
 
+/**
+ * 
+ * @param itemHandler 
+ * @param dataBuffer 
+ * @param bufferSize 
+ * @return 
+ */
 etl::expected<void, Error> eMMC::storeItem(memoryItemHandler itemHandler, uint8_t* dataBuffer, uint32_t bufferSize) {
 
     if (bufferSize < itemHandler.size) {

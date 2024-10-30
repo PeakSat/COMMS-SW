@@ -80,19 +80,43 @@ namespace eMMC {
     etl::expected<void, Error> readBlockEMMC(uint8_t* read_data, uint32_t block_address, uint32_t numberOfBlocks);
 
     /**
-     *
-     * @param itemHandler
-     * @param startBlock
-     * @param numOfBlocks
-     * @param dataBuffer
-     * @return
-     */
+  *
+  * @param itemHandler
+  * @param dataBuffer
+  * @param bufferSize
+  * @param startBlock
+  * @param numOfBlocks
+  * @return
+  */
     etl::expected<void, Error> getItem(memoryItemHandler itemHandler, uint8_t* dataBuffer, uint32_t bufferSize, uint32_t startBlock, uint32_t numOfBlocks);
 
+    /**
+ *
+ * @param itemHandler
+ * @param dataBuffer
+ * @param bufferSize
+ * @return
+ */
     etl::expected<void, Error> getItem(memoryItemHandler itemHandler, uint8_t* dataBuffer, uint32_t bufferSize);
 
+    /**
+     *
+     * @param itemHandler
+     * @param dataBuffer
+     * @param bufferSize
+     * @param startBlock
+     * @param numOfBlocks
+     * @return
+     */
     etl::expected<void, Error> storeItem(memoryItemHandler itemHandler, uint8_t* dataBuffer, uint32_t bufferSize, uint32_t startBlock, uint32_t numOfBlocks);
 
+    /**
+     *
+     * @param itemHandler
+     * @param dataBuffer
+     * @param bufferSize
+     * @return
+     */
     etl::expected<void, Error> storeItem(memoryItemHandler itemHandler, uint8_t* dataBuffer, uint32_t bufferSize);
 
     /**
