@@ -1,8 +1,6 @@
 #include "ina3221.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "stm32h7xx_hal.h"
-#include "app_main.h"
 
 namespace INA3221 {
 

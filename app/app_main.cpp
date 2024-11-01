@@ -18,12 +18,12 @@ void app_main(void) {
     transceiverTask.emplace();
     uartGatekeeperTask.emplace();
     eMMCTask.emplace();
-    INA3221Task.emplace();
+    ina3221Task.emplace();
 
     transceiverTask->createTask();
     uartGatekeeperTask->createTask();
     eMMCTask->createTask();
-    INA3221Task->createTask();
+    ina3221Task->createTask();
 
     /* Start the scheduler. */
     vTaskStartScheduler();

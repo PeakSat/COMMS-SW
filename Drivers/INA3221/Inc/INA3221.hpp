@@ -1,12 +1,6 @@
 #pragma once
-
-#include <cstdint>
-#include <type_traits>
-#include <tuple>
-#include "etl/utility.h"
 #include "etl/expected.h"
 #include "etl/optional.h"
-#include "etl/array.h"
 #include "stm32h7xx_hal.h"
 
 extern I2C_HandleTypeDef hi2c4;
