@@ -51,7 +51,6 @@ void TemperatureSensorsTask::execute() {
             temperature = s.sensorObject.getTemperature(true);
             if (temperature.first == TMP117::Error::NoErrors) {
                 LOG_DEBUG << "Temperature at " << s.sensorName.data() << ": " << temperature.second;
-                s.platformParameterReference.setValue(temperature.second);
             } else {
                 LOG_ERROR << "Could not get temperature at " << s.sensorName.data() << ". Error: "
                           << errorString(temperature.first).data();
