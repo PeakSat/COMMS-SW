@@ -25,6 +25,7 @@ void app_main(void) {
     uartGatekeeperTask->createTask();
     eMMCTask->createTask();
     ina3221Task->createTask();
+    tmp117Task->createTask();
 
     /* Start the scheduler. */
     vTaskStartScheduler();

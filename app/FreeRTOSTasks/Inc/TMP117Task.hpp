@@ -20,7 +20,7 @@ public:
     }
 
 private:
-    const static inline uint16_t DelayMs = 100;
+    const static inline uint16_t DelayMs = 5000;
     const static inline uint16_t TaskStackDepth = 2000;
     const static inline uint8_t LoggerPrecision = 2;
     const static uint8_t MaxErrorStringSize = 25;
@@ -54,22 +54,18 @@ private:
 
     struct sensor {
         TMP117::TMP117 sensorObject;
-        Parameter<uint16_t>& platformParameterReference;
         etl::string<MaxSensorNameSize> sensorName;
     };
 
 
     etl::array<sensor, 3> sensors = {
         sensor{TMP117::TMP117(hi2c1, TMP117::I2CAddress::Address3, config),
-               PlatformParameters::commsPCBTemperatureMCU,
                sensorName(TMP117::Address3)},
         sensor{TMP117::TMP117(hi2c1, TMP117::I2CAddress::Address1, config),
-               PlatformParameters::commsPCBTemperatureUHF,
                sensorName(TMP117::I2CAddress::Address1)},
         sensor{TMP117::TMP117(hi2c1, TMP117::I2CAddress::Address4, config),
-               PlatformParameters::commsPCBTemperatureSBAND,
                sensorName(TMP117::I2CAddress::Address4)},
     };
 };
 
-inline etl::optional<TemperatureSensorsTask> temperatureSensorsTask;
+inline etl::optional<TemperatureSensorsTask> tmp117Task;
