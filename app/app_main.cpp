@@ -8,6 +8,7 @@
 #include "UARTGatekeeperTask.hpp"
 #include "eMMCTask.hpp"
 #include "INA3221Task.hpp"
+#include "TMP117Task.hpp"
 
 struct eMMCTransactionHandler eMMCTransactionHandler;
 
@@ -18,6 +19,7 @@ void app_main(void) {
     uartGatekeeperTask.emplace();
     eMMCTask.emplace();
     ina3221Task.emplace();
+    tmp117Task.emplace();
 
     transceiverTask->createTask();
     uartGatekeeperTask->createTask();
