@@ -2,7 +2,7 @@
 #include "Task.hpp"
 #include "queue.h"
 #include "CANDriver.hpp"
-//#include "Logger.hpp"
+#include "Logger.hpp"
 
 
 /**
@@ -104,7 +104,7 @@ public:
         }
 
         if (status == errQUEUE_FULL) {
-            //            LOG_ERROR << "Tried sending CAN Message while outgoing queue is full!";
+            LOG_ERROR << "Tried sending CAN Message while outgoing queue is full!";
         }
     }
 

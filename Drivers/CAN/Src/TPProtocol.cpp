@@ -1,7 +1,6 @@
-#pragma once
+
 #include "TPProtocol.hpp"
 #include "CANGatekeeperTask.hpp"
-#include "Definitions.hpp"
 #include "Peripheral_Definitions.hpp"
 
 using namespace CAN;
@@ -18,8 +17,7 @@ void TPProtocol::processSingleFrame(const CAN::Frame& message) {
     for (size_t idx = 1; idx <= messageSize; idx++) {
         tpMessage.appendUint8(message.data[idx]);
     }
-
-    parseMessage(tpMessage);
+    //    parseMessage(tpMessage);
 }
 
 void TPProtocol::processMultipleFrames() {
