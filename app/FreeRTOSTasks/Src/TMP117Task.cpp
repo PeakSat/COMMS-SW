@@ -29,11 +29,11 @@ etl::string<TemperatureSensorsTask::MaxErrorStringSize> TemperatureSensorsTask::
 etl::string<TemperatureSensorsTask::MaxSensorNameSize> TemperatureSensorsTask::sensorName(TMP117::I2CAddress slaveAddress) {
     switch (slaveAddress) {
         case TMP117::I2CAddress::Address3:
-            return "PCB MCU";
+            return "PCB";
         case TMP117::I2CAddress::Address1:
-            return "PCB UHF PA";
+            return "PA";
         case TMP117::I2CAddress::Address4:
-            return "PCB SBAND PA";
+            return "GNSS";
         default:
             break;
     }
