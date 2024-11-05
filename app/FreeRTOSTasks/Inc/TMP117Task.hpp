@@ -45,7 +45,7 @@ private:
      */
     TMP117::Config config = {
         TMP117::Continuous,
-        static_cast<uint8_t>(7),
+        static_cast<uint8_t>(3),
         TMP117::Samples8,
         0,
         true,
