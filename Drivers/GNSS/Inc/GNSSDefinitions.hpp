@@ -14,8 +14,6 @@ inline const uint16_t GNSSPayloadSize = 1024;
 inline const uint16_t GNSSMessageSize = GNSSPayloadSize + 16;
 
 
-
-
 namespace GNSSDefinitions {
 
     typedef etl::vector<uint8_t, GNSSPayloadSize> Payload;
@@ -51,7 +49,9 @@ namespace GNSSDefinitions {
         GetGLONASSEphemeris = 0x5B,
         SetGLONASSEphemeris = 0x5C,
         GetGLONASSTimeCorrectionParameters = 0x5F,
-        SetGLONASSTimeCorrectionParameters = 0x60
+        SetGLONASSTimeCorrectionParameters = 0x60,
+        IDusedForMessagesWithSubID_1 = 0x64,
+        IDusedForMessagesWithSubID_2 = 0x63
     };
 
     enum GNSSMessagesSubID : uint16_t {
@@ -71,13 +71,13 @@ namespace GNSSDefinitions {
         ConfigureExtendedNMEAMessageInterval = (0x64 << 8) | 0x2,
         QueryExtendedNMEAMessageInterval = (0x64 << 8) | 0x3,
         ConfigureInterferenceDetection = (0x64 << 8) | 0x6,
-        QueryInterferenceDetectionStatus = (0x64 << 8) | 0x7,
+        QueryInterferenceDetectionStatus = 0x7,
         QueryGNSSParameterSearchEngineNumber = (0x64 << 8) | 0xB,
         ConfigurePositionFixNavigationMask = (0x64 << 8) | 0x11,
         QueryPositionFixNavigationMask = (0x64 << 8) | 0x12,
         ConfigureUTCReferenceTimeSyncToGPSTime = (0x64 << 8) | 0x15,
         QueryUTCReferenceTimeSyncToGPSTime = (0x64 << 8) | 0x16,
-        ConfigureGNSSNavigationMode = (0x64 << 8) | 0x17,
+        ConfigureGNSSNavigationMode = 0x17,
         QueryGNSSNavigationMode = (0x64 << 8) | 0x18,
         ConfigureGNSSConstellationTypeForNavigationSolution = (0x64 << 8) | 0x19,
         QueryGNSSConstellationTypeForNavigationSolution = (0x64 << 8) | 0x1A,
@@ -154,6 +154,15 @@ namespace GNSSDefinitions {
         HotStart,
         WarmStart,
         ColdStart
+    };
+
+    enum class PositionRate : uint8_t {
+        Option1Hz = 1,
+        Option2Hz,
+        Option4Hz = 4,
+        Option5Hz,
+        Option10Hz = 10,
+        Option20Hz = 20
     };
 
     enum class SoftwareType : uint8_t {
@@ -323,4 +332,4 @@ namespace GNSSDefinitions {
         Index32k
     };
 
-}
+} // namespace GNSSDefinitions

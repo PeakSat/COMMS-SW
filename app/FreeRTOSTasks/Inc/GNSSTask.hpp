@@ -1,5 +1,4 @@
 #pragma once
-
 #include <etl/optional.h>
 #include "Task.hpp"
 #include "queue.h"
@@ -23,13 +22,19 @@ public:
 
     void printing();
 
+    void controlGNSS(GNSSMessage gnssMessageToSend);
+
+    void sendDataToGNSS();
+
+    static GNSSReceiver gnssReceiver;
+
     const static inline uint16_t TaskStackDepth = 2000;
 
     StackType_t taskStack[TaskStackDepth];
     /**
      * string for printing the GNSS data
      */
-    etl::string<512> GNSSMessage = {};
+    etl::string<512> GNSSMessageString = {};
     /**
      * buffer with that holds the GNSS data
      */

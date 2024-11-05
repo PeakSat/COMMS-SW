@@ -1,5 +1,6 @@
 #pragma once
 
+#include <etl/string.h>
 #include "etl/vector.h"
 #include "GNSSMessage.hpp"
 
@@ -18,7 +19,7 @@ public:
 
     static GNSSMessage configureSystemPowerMode(PowerMode mode, Attributes attributes);
 
-    static GNSSMessage configureSystemPositionRate(uint8_t rate, Attributes attributes);
+    static GNSSMessage configureSystemPositionRate(PositionRate rate, Attributes attributes);
 
     static GNSSMessage configureDOPMask(DOPModeSelect mode, uint16_t PDOPvalue, uint16_t HDOPvalue, uint16_t GDOPvalue,
                                         Attributes attributes);
@@ -90,7 +91,7 @@ public:
     //TODO: static GNSSMessage configureGNSSGEOFencingDatabyPolygon();
     static GNSSMessage configureGNSSGEOFencingDatabyPolygon();
 
-    static GNSSMessage configureNMEAStringInterval(uint16_t nmeaString, uint8_t interval, Attributes attributes);
+    static GNSSMessage configureNMEAStringInterval(etl::string<3>, uint8_t interval, Attributes attributes);
 
     static GNSSMessage SoftwareImageDownloadUsingInternalLoader(BaudRate baud, FlashType flashType, uint16_t flashID,
                                                                 BufferUsedIndex bufferUsedIndex,
@@ -171,5 +172,5 @@ public:
 
     static GNSSMessage getGLONASSTimeCorrectionParameters();
 
-    static GNSSMessage setFactoryDefaults();
+    static GNSSMessage setFactoryDefaults(DefaultType type);
 };

@@ -3,12 +3,14 @@
 #include "etl/vector.h"
 #include "GNSSDefinitions.hpp"
 
+
 class GNSSMessage {
+private:
+    typedef etl::vector<uint8_t, GNSSPayloadSize> Payload;
     etl::vector<uint8_t, 2> startOfSequence = {0xA0, 0xA1};
     etl::vector<uint8_t, 2> endOfSequence = {0x0D, 0x0A};
-    uint16_t payloadLength = 0;
 
-    static uint8_t calculateChecksum(uint8_t payloadLength, const GNSSDefinitions::Payload& payload) {
+    static uint8_t calculateChecksum(const Payload& payload) {
         uint8_t checksum = 0;
         for (auto byte: payload) {
             checksum ^= byte;
@@ -17,17 +19,18 @@ class GNSSMessage {
     }
 
 public:
-    GNSSMessage(uint8_t id, uint16_t payloadLength, const GNSSDefinitions::Payload& payload) {
-
+    etl::vector<uint8_t, GNSSMessageSize> messageBody;
+    uint8_t t = 0;
+    GNSSMessage(uint16_t payloadLength, const GNSSDefinitions::Payload& payload) {
         messageBody.push_back(startOfSequence[0]);
         messageBody.push_back(startOfSequence[1]);
-        messageBody.push_back(((payloadLength + 1) >> 8) & 0xFF);
-        messageBody.push_back((payloadLength + 1) & 0xFF);
-        messageBody.push_back(id);
+        messageBody.push_back(payloadLength >> 8);
+        t = payloadLength;
+        messageBody.push_back(t);
         for (uint8_t byte: payload) {
             messageBody.push_back(byte);
         }
-        messageBody.push_back(calculateChecksum(payloadLength, payload));
+        messageBody.push_back(calculateChecksum(payload));
         messageBody.push_back(endOfSequence[0]);
         messageBody.push_back(endOfSequence[1]);
     }
@@ -36,17 +39,21 @@ public:
 
         messageBody.push_back(startOfSequence[0]);
         messageBody.push_back(startOfSequence[1]);
-        messageBody.push_back(((payloadLength + 2) >> 8) & 0xFF);
-        messageBody.push_back((payloadLength + 2) & 0xFF);
+        //        messageBody.push_back(((payloadLength + 2) >> 8) & 0xFF);
+        //        messageBody.push_back((payloadLength + 2) & 0xFF);
+        messageBody.push_back(payloadLength >> 8);
+        t = payloadLength;
+        messageBody.push_back(t);
         messageBody.push_back((id >> 8) & 0xFF);
         messageBody.push_back(id & 0xFF);
         for (uint8_t byte: payload) {
             messageBody.push_back(byte);
         }
-        messageBody.push_back(calculateChecksum(payloadLength, payload));
+        messageBody.push_back(0x63);
         messageBody.push_back(endOfSequence[0]);
         messageBody.push_back(endOfSequence[1]);
     }
 
-    etl::vector<uint8_t, GNSSMessageSize> messageBody;
+
+    GNSSMessage() = default;
 };
