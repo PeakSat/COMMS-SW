@@ -1,5 +1,7 @@
 #include "CANDriver.hpp"
 #include "Logger.hpp"
+#include "main.h"
+#include "ECSS_Definitions.hpp"
 
 using namespace CAN;
 

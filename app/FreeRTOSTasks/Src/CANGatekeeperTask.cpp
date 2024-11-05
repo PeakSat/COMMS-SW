@@ -1,7 +1,9 @@
+#pragma once
 #include "CANDriver.hpp"
 #include "CANGatekeeperTask.hpp"
 #include "TPProtocol.hpp"
 #include "Logger.hpp"
+#include "queue.h"
 
 
 CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {

@@ -1,7 +1,8 @@
+#pragma once
 #include <cstdint>
+#include "ECSS_Definitions.hpp"
 #include "etl/String.hpp"
 #include <etl/wstring.h>
-#include "../../../ECSS/Inc/ECSS_Definitions.hpp"
 
 
 /**

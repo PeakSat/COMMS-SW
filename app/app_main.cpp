@@ -1,3 +1,4 @@
+#pragma once
 #include "FreeRTOS.h"
 #include "task.h"
 #include "main.h"
@@ -9,7 +10,6 @@
 #include "eMMCTask.hpp"
 #include "INA3221Task.hpp"
 #include "CANGatekeeperTask.hpp"
-#include "CANDriver.hpp"
 #include "TPProtocol.hpp"
 
 

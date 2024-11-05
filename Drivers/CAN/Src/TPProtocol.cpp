@@ -1,5 +1,8 @@
+#pragma once
 #include "TPProtocol.hpp"
 #include "CANGatekeeperTask.hpp"
+#include "Definitions.hpp"
+#include "Peripheral_Definitions.hpp"
 
 using namespace CAN;
 
@@ -37,28 +40,27 @@ void TPProtocol::processMultipleFrames() {
             }
         } else {
             uint8_t consecutiveFrameCount = frame.data[0] & 0b111111;
-            if (not ErrorHandler::assertInternal(messageCounter == consecutiveFrameCount,
-                                                 ErrorHandler::InternalErrorType::UnacceptablePacket)) { //TODO: Add a more appropriate enum value
-                canGatekeeperTask->emptyIncomingMFQueue();
-                return;
-            }
+            //            if (not ErrorHandler::assertInternal(messageCounter == consecutiveFrameCount,
+            //                                                 ErrorHandler::InternalErrorType::UnacceptablePacket)) { //TODO: Add a more appropriate enum value
+            canGatekeeperTask->emptyIncomingMFQueue();
+            return;
+        }
 
-            for (size_t idx = 1; idx < CAN::Frame::MaxDataLength; idx++) {
-                message.appendUint8(frame.data[idx]);
-                if (message.dataSize >= dataLength) {
-                    break;
-                }
+        for (size_t idx = 1; idx < CAN::Frame::MaxDataLength; idx++) {
+            message.appendUint8(frame.data[idx]);
+            if (message.dataSize >= dataLength) {
+                break;
             }
         }
     }
 
-    if (not(message.idInfo.isMulticast or message.idInfo.destinationAddress == NodeID)) {
-        return;
-    }
+    //    if (not(message.idInfo.isMulticast or message.idInfo.destinationAddress == NodeID)) {
+    //        return;
+    //    }
 
-    parseMessage(message);
+    //    parseMessage(message);
 }
-
+/*
 void TPProtocol::parseMessage(TPMessage& message) {
     uint8_t messageType = static_cast<Application::MessageIDs>(message.data[0]);
     switch (messageType) {
@@ -105,6 +107,7 @@ void TPProtocol::parseMessage(TPMessage& message) {
             break;
     }
 }
+*/
 
 void TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
     size_t messageSize = message.dataSize;

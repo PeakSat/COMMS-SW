@@ -3,6 +3,7 @@
 #include "TPMessage.hpp"
 #include "TPProtocol.hpp"
 #include "CANGatekeeperTask.hpp"
+#include "Logger.hpp"
 
 namespace CAN::Application {
     //    ActiveBus switchBus(ActiveBus newBus) {

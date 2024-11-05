@@ -1,7 +1,9 @@
 #pragma once
 #include "Task.hpp"
-#include "Logger.hpp"
 #include "queue.h"
+#include "CANDriver.hpp"
+//#include "Logger.hpp"
+
 
 /**
  * Contains functionality of a Gatekeeper Task for the CAN Bus. It has the sole access to CAN, to avoid any
@@ -102,7 +104,7 @@ public:
         }
 
         if (status == errQUEUE_FULL) {
-            LOG_ERROR << "Tried sending CAN Message while outgoing queue is full!";
+            //            LOG_ERROR << "Tried sending CAN Message while outgoing queue is full!";
         }
     }
 

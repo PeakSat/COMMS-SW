@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Message.hpp"
+#include "Definitions.hpp"
 
 namespace CAN {
     class TPMessage : public Message {
