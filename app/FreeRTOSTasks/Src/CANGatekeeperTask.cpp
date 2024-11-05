@@ -1,7 +1,6 @@
 #include "CANDriver.hpp"
 #include "CANGatekeeperTask.hpp"
 #include "TPProtocol.hpp"
-#include "queue.h"
 #include "Logger.hpp"
 
 

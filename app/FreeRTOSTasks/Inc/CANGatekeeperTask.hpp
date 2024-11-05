@@ -1,6 +1,7 @@
 #pragma once
 #include "Task.hpp"
 #include "Logger.hpp"
+#include "queue.h"
 
 /**
  * Contains functionality of a Gatekeeper Task for the CAN Bus. It has the sole access to CAN, to avoid any

@@ -1,7 +1,7 @@
 #include <cstdint>
-#include <etl/String.hpp>
+#include "etl/String.hpp"
 #include <etl/wstring.h>
-#include "ECSS_Definitions.hpp"
+#include "../../../ECSS/Inc/ECSS_Definitions.hpp"
 
 
 /**

@@ -1,5 +1,5 @@
 #pragma once
-
+#include "etl/array.h"
 
 namespace CAN {
     /**

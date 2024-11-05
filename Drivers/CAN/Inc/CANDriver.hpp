@@ -1,11 +1,12 @@
 #pragma once
 #include <cstdint>
-#include "stm32h7xx_hal_fdcan.h"
+#include "stm32h7xx.h"
 
 #include "Frame.hpp"
 #include "etl/vector.h"
 
 const uint8_t CANMessageSize = 64;
+
 
 namespace CAN {
     /**
