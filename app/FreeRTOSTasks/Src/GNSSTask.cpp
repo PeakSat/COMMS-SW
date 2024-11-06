@@ -16,6 +16,23 @@ void GNSSTask::printing() {
     }
 }
 
+void GNSSTask::initializeNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings) {
+    // Clear any existing data if necessary
+    nmeaStrings.clear();
+    // Push back the strings into the vector
+    nmeaStrings.push_back("GGA");
+    nmeaStrings.push_back("ZDA");
+    nmeaStrings.push_back("GSA");
+    nmeaStrings.push_back("GLL");
+    nmeaStrings.push_back("VTG");
+    nmeaStrings.push_back("RMC");
+}
+
+void GNSSTask::changeIntervalofNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings, uint8_t interval, Attributes attributes) {
+    for (auto& str: nmeaStrings)
+        GNSSTask::controlGNSS(gnssReceiver.configureNMEAStringInterval(str, 10, GNSSDefinitions::Attributes::UpdateToSRAM));
+}
+
 void GNSSTask::controlGNSS(GNSSMessage gnssMessageToSend) {
     for (uint8_t byte: gnssMessageToSend.messageBody)
         LOG_DEBUG << byte;
@@ -23,16 +40,6 @@ void GNSSTask::controlGNSS(GNSSMessage gnssMessageToSend) {
     HAL_UART_Transmit(&huart5, gnssMessageToSend.messageBody.data(), gnssMessageToSend.messageBody.size(), 1000);
 }
 
-void GNSSTask::sendDataToGNSS() {
-    GNSSMessage gnssMessage;
-    gnssMessage = gnssReceiver.configureNMEATalkerID(GNSSDefinitions::TalkerIDType::GPMode, GNSSDefinitions::Attributes::UpdateSRAMandFLASH);
-    //    gnssMessage = gnssReceiver.configureNMEATalkerID(GNSSDefinitions::TalkerIDType::GNMode,GNSSDefinitions::Attributes::UpdateSRAMandFLASH);
-    //    gnssMessage = gnssReceiver.setFactoryDefaults();
-    LOG_DEBUG << "the message that will be send";
-    for (uint8_t byte: gnssMessage.messageBody)
-        LOG_DEBUG << byte;
-    HAL_UART_Transmit(&huart5, gnssMessage.messageBody.data(), gnssMessage.messageBody.size(), 1000);
-}
 
 void GNSSTask::execute() {
 
@@ -48,16 +55,21 @@ void GNSSTask::execute() {
     //  disabling the half buffer interrupt //
     __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_TC);
 
-    //    controlGNSS(gnssReceiver.configureNMEATalkerID(GNSSDefinitions::TalkerIDType::GPMode,GNSSDefinitions::Attributes::UpdateSRAMandFLASH));
+    //    controlGNSS(gnssReceiver.configureNMEATalkerID(GNSSDefinitions::TalkerIDType::GPMode, GNSSDefinitions::Attributes::UpdateSRAMandFLASH));
     //    controlGNSS(gnssReceiver.setFactoryDefaults(GNSSDefinitions::DefaultType::Reserved));
     //    controlGNSS(gnssReceiver.querySoftwareVersion(GNSSDefinitions::SoftwareType::SystemCode));
-    //    controlGNSS(gnssReceiver.configureSystemPositionRate(static_cast<uint8_t>(GNSSDefinitions::InterferenceDetectControl::Enable), GNSSDefinitions::Attributes::UpdateToSRAM));
     //    controlGNSS(gnssReceiver.queryInterferenceDetectionStatus());
     //    controlGNSS(gnssReceiver.configureMessageType(GNSSDefinitions::ConfigurationType::NMEA, GNSSDefinitions::Attributes::UpdateToSRAM));
     //    controlGNSS(gnssReceiver.configureGNSSNavigationMode(GNSSDefinitions::NavigationMode::Airborne, GNSSDefinitions::Attributes::UpdateToSRAM));
     //    controlGNSS(gnssReceiver.configureSystemPositionRate(GNSSDefinitions::PositionRate::Option2Hz, GNSSDefinitions::Attributes::UpdateToSRAM));
     //    controlGNSS(gnssReceiver.query1PPSTiming());
-    controlGNSS(gnssReceiver.configureNMEAStringInterval(GNSSDefinitions::)
+    etl::vector<etl::string<3>, 10> nmeaStrings;
+    initializeNMEAStrings(nmeaStrings);
+    changeIntervalofNMEAStrings(nmeaStrings, 10, GNSSDefinitions::Attributes::UpdateToSRAM);
+    //    controlGNSS(gnssReceiver.configureSerialPort(0,GNSSDefinitions::BaudRate::Option230400, GNSSDefinitions::Attributes::UpdateToSRAM));
+    //    controlGNSS(gnssReceiver.setFactoryDefaults(GNSSDefinitions::DefaultType::Reserved));
+    //    controlGNSS(gnssReceiver.configureSystemPowerMode(GNSSDefinitions::PowerMode::PowerSave, GNSSDefinitions::Attributes::UpdateToSRAM));
+
     while (true) {
         xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
         printing();

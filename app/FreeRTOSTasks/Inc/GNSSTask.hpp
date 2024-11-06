@@ -22,9 +22,11 @@ public:
 
     void printing();
 
-    void controlGNSS(GNSSMessage gnssMessageToSend);
+    static void controlGNSS(GNSSMessage gnssMessageToSend);
 
-    void sendDataToGNSS();
+    void changeIntervalofNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings, uint8_t interval, Attributes attributes);
+
+    void initializeNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings);
 
     static GNSSReceiver gnssReceiver;
 

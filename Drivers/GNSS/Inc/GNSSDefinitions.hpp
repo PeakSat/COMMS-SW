@@ -95,7 +95,7 @@ namespace GNSSDefinitions {
         ConfigureGNSSGeoFencingDataByPolygon = (0x64 << 8) | 0x34,
         QueryGNSSGeoFencingDataByPolygon = (0x64 << 8) | 0x35,
         QueryGNSSMultiPolygonGeoFencingResult = (0x64 << 8) | 0x36,
-        ConfigureNMEAStringInterval = (0x64 << 8) | 0x3B,
+        ConfigureNMEAStringInterval = 0x3B,
         QueryNMEAStringInterval = (0x64 << 8) | 0x3C,
         QueryRequestedNMEAStringInterval = (0x64 << 8) | 0x40,
         SoftwareImageDownloadUsingInternalLoader = (0x64 << 8) | 0x4E,
