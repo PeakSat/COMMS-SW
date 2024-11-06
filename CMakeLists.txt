@@ -9,6 +9,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
@@ -39,12 +40,15 @@ add_executable(${CMAKE_PROJECT_NAME})
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
+
 # Add the eMMC Drivers
 add_subdirectory(Drivers/eMMC)
 # Add the AT Drivers
 add_subdirectory(Drivers/AT86RF215)
 # Add the INA3221 Drivers
 add_subdirectory(Drivers/INA3221)
+# Add the TMP117 Drivers
+add_subdirectory(Drivers/TMP117)
 # Add the FreeRTOS
 add_subdirectory(Lib/FreeRTOS)
 #
