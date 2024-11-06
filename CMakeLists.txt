@@ -49,6 +49,8 @@ add_subdirectory(Drivers/eMMC)
 add_subdirectory(Drivers/AT86RF215)
 # Add the INA3221 Drivers
 add_subdirectory(Drivers/INA3221)
+# Add the TMP117 Drivers
+add_subdirectory(Drivers/TMP117)
 # Add the FreeRTOS
 
 add_subdirectory(Drivers/CAN)

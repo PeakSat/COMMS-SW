@@ -12,6 +12,7 @@
 #include "CANGatekeeperTask.hpp"
 #include "TPProtocol.hpp"
 
+#include "TMP117Task.hpp"
 
 struct eMMCTransactionHandler eMMCTransactionHandler;
 
@@ -23,12 +24,14 @@ void app_main(void) {
     eMMCTask.emplace();
     ina3221Task.emplace();
     canGatekeeperTask.emplace();
+    tmp117Task.emplace();
 
     transceiverTask->createTask();
     uartGatekeeperTask->createTask();
     eMMCTask->createTask();
     ina3221Task->createTask();
     canGatekeeperTask->createTask();
+    tmp117Task->createTask();
 
     /* Start the scheduler. */
     vTaskStartScheduler();
