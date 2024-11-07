@@ -52,6 +52,7 @@ void GNSSTask::controlGNSS(GNSSMessage gnssMessageToSend) {
     uint32_t startTime = HAL_GetTick(); // Get the current tick time
 
     while (HAL_GetTick() - startTime < timeout) {
+        vTaskDelay(50);
         // Check if data is available in UART
         if (ack_flag) {
             // ACK received
@@ -73,7 +74,6 @@ void GNSSTask::execute() {
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GNSS_RSTN_GPIO_Port, GNSS_RSTN_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_RESET);
-
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
 
     HAL_UARTEx_ReceiveToIdle_DMA(&huart5, this->incomingMessage, 512);
@@ -81,10 +81,12 @@ void GNSSTask::execute() {
     __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_HT);
     //  disabling the half buffer interrupt //
     __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_TC);
-    controlGNSS(gnssReceiver.configureNMEATalkerID(GNSSDefinitions::TalkerIDType::GNMode, GNSSDefinitions::Attributes::UpdateSRAMandFLASH));
+
+    vTaskDelay(50);
 
     etl::vector<etl::string<3>, 10> nmeaStrings;
     initializeNMEAStrings(nmeaStrings);
+
     changeIntervalofNMEAStrings(nmeaStrings, 10, GNSSDefinitions::Attributes::UpdateToSRAM);
 
     while (true) {
