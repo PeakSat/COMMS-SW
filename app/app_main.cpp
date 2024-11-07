@@ -11,6 +11,7 @@
 #include "INA3221Task.hpp"
 #include "CANGatekeeperTask.hpp"
 #include "TPProtocol.hpp"
+#include "CANTestTask.hpp"
 
 #include "TMP117Task.hpp"
 
@@ -25,6 +26,7 @@ void app_main(void) {
     ina3221Task.emplace();
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
+    canTestTask.emplace();
 
     transceiverTask->createTask();
     uartGatekeeperTask->createTask();
@@ -32,6 +34,7 @@ void app_main(void) {
     ina3221Task->createTask();
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
+    canTestTask->createTask();
 
     /* Start the scheduler. */
     vTaskStartScheduler();
@@ -71,6 +74,7 @@ extern "C" [[maybe_unused]] void HAL_MMC_AbortCallback(MMC_HandleTypeDef* hmmc) 
 extern "C" void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo1ITs) {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
+    __NOP();
     if ((RxFifo1ITs & FDCAN_IT_RX_FIFO1_NEW_MESSAGE) != RESET) {
         /* Retreive Rx messages from RX FIFO1 */
         if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO1, &CAN::rxHeader1, CAN::rxFifo1.data()) != HAL_OK) {
@@ -93,6 +97,37 @@ extern "C" void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t 
         }
 
         if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
+            /* Notification Error */
+            Error_Handler();
+        }
+    }
+}
+extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    __NOP();
+    if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
+        /* Retreive Rx messages from RX FIFO0 */
+
+        if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &CAN::rxHeader0, CAN::rxFifo0.data()) != HAL_OK) {
+            /* Reception Error */
+            Error_Handler();
+        }
+        //        canGatekeeperTask->switchActiveBus(CAN::Main);
+        CAN::rxFifo0.repair();
+        CAN::Frame newFrame = CAN::getFrame(&CAN::rxFifo0, CAN::rxHeader0.Identifier);
+        if(CAN::rxFifo0[0] >> 6 == CAN::TPProtocol::Frame::Single){
+            canGatekeeperTask->addSFToIncoming(newFrame);
+            xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+
+        }else{
+            canGatekeeperTask->addMFToIncoming(newFrame);
+            if(CAN::rxFifo0[0] >> 6 == CAN::TPProtocol::Frame::Final){
+                xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+                portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            }
+        }
+
+        if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
             /* Notification Error */
             Error_Handler();
         }

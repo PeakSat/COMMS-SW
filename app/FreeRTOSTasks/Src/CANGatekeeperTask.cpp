@@ -4,6 +4,7 @@
 #include "TPProtocol.hpp"
 #include "Logger.hpp"
 #include "queue.h"
+// #include "CANDriver.cpp"
 
 
 CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
@@ -47,5 +48,6 @@ void CANGatekeeperTask::execute() {
             CAN::send(out_message, ActiveBus);
         }
         LOG_DEBUG << "{END OF" << this->TaskName << "}";
+
     }
 }

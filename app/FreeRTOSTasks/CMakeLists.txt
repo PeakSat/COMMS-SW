@@ -1,8 +1,9 @@
 add_subdirectory(Inc)
 
-add_library(freertos_tasks)
+add_library(freertos_tasks
+        Src/CANTestTask.cpp)
 
-target_sources(freertos_tasks PRIVATE Src/TransceiverTask.cpp Src/UARTGatekeeper.cpp Src/eMMCTask.cpp Src/INA3221Task.cpp Src/CANGatekeeperTask.cpp Src/TMP117Task.cpp)
+target_sources(freertos_tasks PRIVATE Src/TransceiverTask.cpp Src/UARTGatekeeper.cpp Src/eMMCTask.cpp Src/INA3221Task.cpp Src/CANGatekeeperTask.cpp Src/TMP117Task.cpp Src/CANTestTask.cpp)
 
 target_include_directories(freertos_tasks PRIVATE Inc)
 
