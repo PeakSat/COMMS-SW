@@ -3,11 +3,11 @@
 #include "Logger.hpp"
 
 
-extern uint8_t receivedByte;
-extern bool controlGNSSenabled;
 extern bool ack_flag;
 extern bool nack_flag;
-extern bool uart_flag_it;
+
+
+static uint16_t size;
 
 void GNSSTask::printing() {
     printing_counter++;
@@ -21,6 +21,7 @@ void GNSSTask::printing() {
         GNSSMessageString.clear();
     }
 }
+
 
 void GNSSTask::initializeNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings) {
     // Clear any existing data if necessary
@@ -41,32 +42,31 @@ void GNSSTask::changeIntervalofNMEAStrings(etl::vector<etl::string<3>, 10>& nmea
 }
 
 void GNSSTask::controlGNSS(GNSSMessage gnssMessageToSend) {
-    controlGNSSenabled = true;
     for (uint8_t byte: gnssMessageToSend.messageBody)
         LOG_DEBUG << byte;
 
     vTaskDelay(50);
     HAL_UART_Transmit(&huart5, gnssMessageToSend.messageBody.data(), gnssMessageToSend.messageBody.size(), 1000);
+    // Now wait for ACK or NACK response, with a timeout for safety
+    uint32_t timeout = 1000;            // Timeout duration in ms (adjust as necessary)
+    uint32_t startTime = HAL_GetTick(); // Get the current tick time
 
-    // Wait for notification with a timeout (e.g., 1000 ms)
-    uint32_t receivedValue = 0;
-    xTaskNotifyWait(0, 0, &receivedValue, 1000);
-
-    if (receivedValue == 1) {
-        // ACK received
-        LOG_INFO << "ACK received!";
-        // Handle ACK case, proceed with the next operation
-    } else if (receivedValue == 2) {
-        // NACK received
-        LOG_ERROR << "NACK received!";
-        // Handle NACK case (retry or report failure)
-    } else {
-        // Timeout or unexpected response
-        LOG_ERROR << "Timeout or unexpected response received!";
-        // Handle timeout: retry, report failure, or handle error
+    while (HAL_GetTick() - startTime < timeout) {
+        // Check if data is available in UART
+        if (ack_flag) {
+            // ACK received
+            ack_flag = false;
+            LOG_INFO << "ACK received!";
+            return;
+        } else if (nack_flag) {
+            // NACK received
+            nack_flag = false;
+            LOG_ERROR << "NACK received!";
+            return;
+        }
     }
+    LOG_DEBUG << "error timeout";
 }
-
 
 void GNSSTask::execute() {
 
@@ -81,36 +81,15 @@ void GNSSTask::execute() {
     __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_HT);
     //  disabling the half buffer interrupt //
     __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_TC);
+    controlGNSS(gnssReceiver.configureNMEATalkerID(GNSSDefinitions::TalkerIDType::GNMode, GNSSDefinitions::Attributes::UpdateSRAMandFLASH));
 
-    controlGNSS(gnssReceiver.configureNMEATalkerID(GNSSDefinitions::TalkerIDType::GPMode, GNSSDefinitions::Attributes::UpdateSRAMandFLASH));
-    //        controlGNSS(gnssReceiver.setFactoryDefaults(GNSSDefinitions::DefaultType::Reserved));
-    //        controlGNSS(gnssReceiver.querySoftwareVersion(GNSSDefinitions::SoftwareType::SystemCode));
-    //        controlGNSS(gnssReceiver.queryInterferenceDetectionStatus());
-    //            controlGNSS(gnssReceiver.configureMessageType(GNSSDefinitions::ConfigurationType::NMEA, GNSSDefinitions::Attributes::UpdateToSRAM));
-    //    controlGNSS(gnssReceiver.configureGNSSNavigationMode(GNSSDefinitions::NavigationMode::Airborne, GNSSDefinitions::Attributes::UpdateToSRAM));
-    //        controlGNSS(gnssReceiver.configureSystemPositionRate(GNSSDefinitions::PositionRate::Option2Hz, GNSSDefinitions::Attributes::UpdateToSRAM));
-    //        controlGNSS(gnssReceiver.query1PPSTiming());
     etl::vector<etl::string<3>, 10> nmeaStrings;
     initializeNMEAStrings(nmeaStrings);
-    //    changeIntervalofNMEAStrings(nmeaStrings, 10, GNSSDefinitions::Attributes::UpdateToSRAM);
-    //        controlGNSS(gnssReceiver.setFactoryDefaults(GNSSDefinitions::DefaultType::Reserved));
-    //        controlGNSS(gnssReceiver.configureSystemPowerMode(GNSSDefinitions::PowerMode::PowerSave, GNSSDefinitions::Attributes::UpdateToSRAM));
+    changeIntervalofNMEAStrings(nmeaStrings, 10, GNSSDefinitions::Attributes::UpdateToSRAM);
 
     while (true) {
         xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
-        printing();
-
-        //        if (ack_flag) {
-        //            LOG_DEBUG << "ACKKKK";
-        //            ack_flag = false;
-        //        }
-        //        if (nack_flag) {
-        //            LOG_DEBUG << "NNNNNNNNNACKKKK";
-        //            nack_flag = false;
-        //        }
-        //        if (uart_flag_it) {
-        //            LOG_DEBUG << "got into IT";
-        //            uart_flag_it = false;
-        //        }
+        if (size == 460)
+            printing();
     }
 }

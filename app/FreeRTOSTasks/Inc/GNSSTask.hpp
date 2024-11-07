@@ -8,8 +8,9 @@
 #include "stm32h7xx_hal.h"
 #include <etl/string.h>
 
-#define printing_frequency 5
+#define printing_frequency 1
 #define nmea_string_interval 10
+#define expected_gnss_size 460
 
 extern DMA_HandleTypeDef hdma_uart5_rx;
 extern UART_HandleTypeDef huart5;
@@ -37,7 +38,7 @@ public:
      * @param interval specified in seconds
      * @param attributes
      */
-    static void changeIntervalofNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings, uint8_t interval, Attributes attributes);
+    void changeIntervalofNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings, uint8_t interval, Attributes attributes);
     /**
      *
      * @param nmeaStrings vector that holds the strings you want to configure
