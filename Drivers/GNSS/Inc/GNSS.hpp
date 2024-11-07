@@ -12,13 +12,29 @@ class GNSSReceiver {
 public:
     GNSSReceiver();
 
-    // Configure
+    // Tested Functions
 
     static GNSSMessage configureMessageType(ConfigurationType type, Attributes attributes);
 
     static GNSSMessage configureSystemPowerMode(PowerMode mode, Attributes attributes);
 
     static GNSSMessage configureSystemPositionRate(PositionRate rate, Attributes attributes);
+
+    static GNSSMessage configureNMEATalkerID(TalkerIDType type, Attributes attributes);
+
+    static GNSSMessage configureGNSSNavigationMode(NavigationMode mode, Attributes attributes);
+
+    static GNSSMessage configureNMEAStringInterval(etl::string<3>, uint8_t interval, Attributes attributes);
+
+    static GNSSMessage querySoftwareVersion(SoftwareType softwareType);
+
+    static GNSSMessage query1PPSTiming();
+
+    static GNSSMessage queryInterferenceDetectionStatus();
+
+    static GNSSMessage setFactoryDefaults(DefaultType type);
+
+    // untested
 
     static GNSSMessage configureDOPMask(DOPModeSelect mode, uint16_t PDOPvalue, uint16_t HDOPvalue, uint16_t GDOPvalue,
                                         Attributes attributes);
@@ -33,8 +49,6 @@ public:
                                                           Attributes attributes);
 
     static GNSSMessage configure1PPSCableDelay(uint32_t cableDelay, Attributes attributes);
-
-    static GNSSMessage configureNMEATalkerID(TalkerIDType type, Attributes attributes);
 
     static GNSSMessage
     configure1PPSTiming(TimingMode mode, uint16_t surveyLength, uint16_t standardDeviation, uint16_t latitude,
@@ -67,14 +81,11 @@ public:
     static GNSSMessage configureUTCReferenceTimeSyncToGPSTime(EnableSyncToGPSTime enable, uint16_t utcYear, uint8_t utcMonth,
                                                               uint8_t utcDay, Attributes attributes);
 
-    static GNSSMessage configureGNSSNavigationMode(NavigationMode mode, Attributes attributes);
-
     static GNSSMessage configureGNSSConstellationTypeForNavigationSolution(uint8_t constellationType, Attributes attributes);
 
     static GNSSMessage SoftwareImageDownloadUsingROMExternalLoader(BaudRate baud, FlashType flashType, uint16_t flashID,
                                                                    BufferUsedIndex bufferUsedIndex,
                                                                    Attributes attributes);
-
     static GNSSMessage configureGNSSDozeMode();
 
     static GNSSMessage configurePSTIMessageInterval(uint8_t PSTI_ID, uint8_t interval, Attributes attributes);
@@ -87,10 +98,7 @@ public:
 
     static GNSSMessage configureNavigationDataMessageInterval(uint8_t navigationDataMessageInterval, Attributes attributes);
 
-    //TODO: static GNSSMessage configureGNSSGEOFencingDatabyPolygon();
     static GNSSMessage configureGNSSGEOFencingDatabyPolygon();
-
-    static GNSSMessage configureNMEAStringInterval(etl::string<3>, uint8_t interval, Attributes attributes);
 
     static GNSSMessage SoftwareImageDownloadUsingInternalLoader(BaudRate baud, FlashType flashType, uint16_t flashID,
                                                                 BufferUsedIndex bufferUsedIndex,
@@ -99,9 +107,7 @@ public:
     static GNSSMessage SoftwareImageDownloadUsingExternalLoader(BaudRate baud, FlashType flashType, uint16_t flashID,
                                                                 BufferUsedIndex bufferUsedIndex,
                                                                 Attributes attributes);
-
     // Query
-    static GNSSMessage querySoftwareVersion(SoftwareType softwareType);
 
     static GNSSMessage querySoftwareCRC(SoftwareType softwareType);
 
@@ -115,8 +121,6 @@ public:
 
     static GNSSMessage queryPositionPinning();
 
-    static GNSSMessage query1PPSTiming();
-
     static GNSSMessage query1PPSCableDelay();
 
     static GNSSMessage queryNMEATalkerID();
@@ -126,6 +130,7 @@ public:
     static GNSSMessage queryQZSSStatus();
 
     // Query with Sub ID
+
     static GNSSMessage querySBASAdvanced();
 
     static GNSSMessage querySAEEStatus();
@@ -133,8 +138,6 @@ public:
     static GNSSMessage queryGNSSBootStatus();
 
     static GNSSMessage queryExtendedNMEAMesaageInterval();
-
-    static GNSSMessage queryInterferenceDetectionStatus();
 
     static GNSSMessage queryGNSSParameterSearchEngineNumber();
 
@@ -165,11 +168,10 @@ public:
     static GNSSMessage queryRequestedNMEAStringInterval();
 
     // Sub ID
+
     static GNSSMessage getGPSEphemeris(uint8_t SV);
 
     static GNSSMessage getGLONASSEphemeris(uint8_t SV);
 
     static GNSSMessage getGLONASSTimeCorrectionParameters();
-
-    static GNSSMessage setFactoryDefaults(DefaultType type);
 };
