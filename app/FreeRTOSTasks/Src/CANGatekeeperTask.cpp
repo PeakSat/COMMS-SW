@@ -8,7 +8,7 @@
 
 
 CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
-    CAN::initialize(0);
+    CAN::initialize(1);
 
     outgoingQueue = xQueueCreateStatic(FrameQueueSize, sizeof(CAN::Frame), outgoingQueueStorageArea,
                                        &outgoingQueueBuffer);
@@ -34,7 +34,7 @@ void CANGatekeeperTask::execute() {
     uint32_t ulNotifiedValue;
 
     while (true) {
-        LOG_DEBUG << "{START OF" << this->TaskName << "}";
+        // LOG_DEBUG << "{START OF" << this->TaskName << "}";
         xTaskNotifyWait(0, 0, &ulNotifiedValue, portMAX_DELAY);
 
         if (getIncomingSFMessagesCount()) {

@@ -12,7 +12,7 @@
 #include "CANGatekeeperTask.hpp"
 #include "TPProtocol.hpp"
 #include "CANTestTask.hpp"
-
+#include <optional>
 #include "TMP117Task.hpp"
 
 struct eMMCTransactionHandler eMMCTransactionHandler;
@@ -20,7 +20,7 @@ struct eMMCTransactionHandler eMMCTransactionHandler;
 void app_main(void) {
     eMMCTransactionHandler.eMMC_semaphore = xSemaphoreCreateMutex();
 
-    transceiverTask.emplace();
+    // transceiverTask.emplace();
     uartGatekeeperTask.emplace();
     eMMCTask.emplace();
     ina3221Task.emplace();
@@ -28,7 +28,7 @@ void app_main(void) {
     tmp117Task.emplace();
     canTestTask.emplace();
 
-    transceiverTask->createTask();
+    // transceiverTask->createTask();
     uartGatekeeperTask->createTask();
     eMMCTask->createTask();
     ina3221Task->createTask();
