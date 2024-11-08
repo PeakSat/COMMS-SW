@@ -38,31 +38,20 @@ extern "C" [[maybe_unused]] void EXTI1_IRQHandler(void) {
     transceiverTask->transceiver.handle_irq();
 }
 extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t Size) {
+    // Declare a variable to track if a higher priority task is woken up
+    BaseType_t xHigherPriorityTaskWoken;
+    // Initialize xHigherPriorityTaskWoken to pdFALSE (no higher-priority task woken yet)
+    xHigherPriorityTaskWoken = pdFALSE;
+
     if (huart->Instance == UART5) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
             gnssTask->size = Size;
-            if (Size > 0 && Size < 460) {
-                // 460 bytes is the nominal size for the message, so everything
-                // smaller than that is response to a configuration message
-                // usually it under 20 bytes
-                for (uint16_t i = 0; i < Size; i++) {
-                    if (gnssTask->incomingMessage[i] == 131) {
-                        // ACK
-                        ack_flag = true;
-                    }
-                    if (gnssTask->incomingMessage[i] == 132) {
-                        // NACK
-                        nack_flag = true;
-                    }
-                }
+            if (Size <= MAX_EXPECTED_GNSS_RESPONSE) {
+                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_RESPONSE, eSetBits, &xHigherPriorityTaskWoken);
+            } else if (Size == EXPECTED_GNSS_MESSAGE) {
+                // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
+                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
             }
-            // Declare a variable to track if a higher priority task is woken up
-            BaseType_t xHigherPriorityTaskWoken;
-            // Initialize xHigherPriorityTaskWoken to pdFALSE (no higher-priority task woken yet)
-            xHigherPriorityTaskWoken = pdFALSE;
-            // notify the gnssTask
-            // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
-            xTaskNotifyFromISR(gnssTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
             // Perform a context switch if a higher-priority task was woken up by the notification
             // portYIELD_FROM_ISR will yield the processor to the higher-priority task immediately if xHigherPriorityTaskWoken is pdTRUE
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);

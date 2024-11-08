@@ -7,6 +7,7 @@
 #include "GNSSMessage.hpp"
 #include "stm32h7xx_hal.h"
 #include <etl/string.h>
+#include <etl/expected.h>
 
 #define printing_frequency 1
 #define nmea_string_interval 10
@@ -32,13 +33,15 @@ public:
      *
     * */
     static void controlGNSS(GNSSMessage gnssMessageToSend);
+
+    etl::expected<void, ErrorFromGNSS> controlGNSSwithNotify(GNSSMessage gnssMessageToSend);
     /**
      *
      * @param nmeaStrings vector that holds the strings you want to configure
      * @param interval specified in seconds
      * @param attributes
      */
-    void changeIntervalofNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings, uint8_t interval, Attributes attributes);
+    etl::expected<void, ErrorFromGNSS> changeIntervalofNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings, uint8_t interval, Attributes attributes);
     /**
      *
      * @param nmeaStrings vector that holds the strings you want to configure
@@ -61,12 +64,15 @@ public:
     /**
      * incoming size in bytes from the GNSS
      */
-    uint16_t size = 0;
+    volatile uint16_t size = 0;
     /**
      * printing counter to control the number of prints
      */
     uint8_t printing_counter = 0;
-
+    /**
+     *
+     */
+    volatile bool control = false;
 
     /**
      * Queue for incoming messages
