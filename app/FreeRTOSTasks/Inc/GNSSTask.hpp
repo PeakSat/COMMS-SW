@@ -47,6 +47,8 @@ public:
      * @param nmeaStrings vector that holds the strings you want to configure
      */
     void initializeNMEAStrings(etl::vector<etl::string<3>, 10>& nmeaStrings);
+
+    void switchGNSSMode();
     /**
      * Stack of the task
      */
@@ -60,7 +62,12 @@ public:
     /**
      * buffer with that holds the GNSS data
      */
-    uint8_t incomingMessage[512];
+    volatile uint8_t first_buffer[512], second_buffer[512];
+
+    uint8_t* active_buffer_pointer;
+    uint8_t buffer_var = 0;
+    uint8_t interval_mode_flag = 0;
+
     /**
      * incoming size in bytes from the GNSS
      */
