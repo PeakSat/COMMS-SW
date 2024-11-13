@@ -40,34 +40,20 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     BaseType_t xHigherPriorityTaskWoken;
     // Initialize xHigherPriorityTaskWoken to pdFALSE (no higher-priority task woken yet)
     xHigherPriorityTaskWoken = pdFALSE;
-    if (gnssTask->buffer_var) {
-        gnssTask->active_buffer_pointer = const_cast<uint8_t*>(gnssTask->first_buffer);
-        gnssTask->buffer_var = 0;
-    } else {
-        gnssTask->active_buffer_pointer = const_cast<uint8_t*>(gnssTask->second_buffer);
-        gnssTask->buffer_var = 1;
-    }
+
     if (huart->Instance == UART5) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
-
             gnssTask->size = Size;
-            if (Size <= MAX_EXPECTED_GNSS_RESPONSE) {
-                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_RESPONSE, eSetBits, &xHigherPriorityTaskWoken);
-            } else if (Size == EXPECTED_GNSS_MESSAGE) {
-                // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
-                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
-            }
+            // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
+            xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
+            gnssTask->sendToQueue = huart5.pRxBuffPtr;
+            xQueueSendFromISR(gnssTask->gnssQueueHandle, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
             // Perform a context switch if a higher-priority task was woken up by the notification
             // portYIELD_FROM_ISR will yield the processor to the higher-priority task immediately if xHigherPriorityTaskWoken is pdTRUE
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             // restart the DMA //
-
-            HAL_UARTEx_ReceiveToIdle_DMA(&huart5, const_cast<uint8_t*>(gnssTask->active_buffer_pointer), 512);
-
-            // disabling the half buffer interrupt //
-            __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_HT);
-            // disabling the full buffer interrupt //
-            __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_TC);
+            gnssTask->startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
+            //
         }
     }
 }

@@ -6,7 +6,7 @@
 
 class GNSSMessage {
 private:
-    typedef etl::vector<uint8_t, GNSSPayloadSize> Payload;
+    typedef etl::vector<uint8_t, GNSSDefinitions::GNSSPayloadSize> Payload;
     etl::vector<uint8_t, 2> startOfSequence = {0xA0, 0xA1};
     etl::vector<uint8_t, 2> endOfSequence = {0x0D, 0x0A};
 
@@ -19,7 +19,7 @@ private:
     }
 
 public:
-    etl::vector<uint8_t, GNSSMessageSize> messageBody;
+    etl::vector<uint8_t, GNSSDefinitions::GNSSMessageSize> messageBody;
     uint8_t t = 0;
     GNSSMessage(uint16_t payloadLength, const GNSSDefinitions::Payload& payload) {
         messageBody.push_back(startOfSequence[0]);

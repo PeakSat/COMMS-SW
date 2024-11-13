@@ -3,21 +3,18 @@
 #include "Logger.hpp"
 
 
-static uint16_t size;
-
-void GNSSTask::printing() {
+void GNSSTask::printing(uint8_t* buf) {
     printing_counter++;
     if (printing_counter == printing_frequency) {
         printing_counter = 0;
-        uint8_t* processingBuffer;
-        processingBuffer = active_buffer_pointer;
-        LOG_DEBUG << "Active buffer address: " << static_cast<uint8_t*>(processingBuffer);
-        GNSSMessageString.assign(processingBuffer, processingBuffer + EXPECTED_GNSS_MESSAGE);
+        GNSSMessageString.assign(buf, buf + GNSSPayloadSize);
         LOG_DEBUG << GNSSMessageString.c_str();
         // Clear the previous data
         GNSSMessageString.clear();
+        memset(buf, 0, 1024);
     }
 }
+
 
 void GNSSTask::switchGNSSMode() {
     uint8_t interval;
@@ -29,7 +26,7 @@ void GNSSTask::switchGNSSMode() {
         LOG_DEBUG << "SLOW MODE";
     }
     // All NMEA strings are updated with the same interval even if you pass as an argument one string
-    auto status = controlGNSSwithNotify(gnssReceiver.configureNMEAStringInterval("RMC", interval, GNSSDefinitions::Attributes::UpdateToSRAM));
+    auto status = controlGNSSwithNotify(GNSSReceiver::configureNMEAStringInterval("RMC", interval, GNSSDefinitions::Attributes::UpdateToSRAM));
     if (status.has_value())
         LOG_DEBUG << "GNSS INTERVAL CHANGED WITH SUCCESS";
     else
@@ -38,10 +35,16 @@ void GNSSTask::switchGNSSMode() {
     interval_mode_flag = !interval_mode_flag;
 }
 
+void GNSSTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
+    // start the DMA
+    HAL_UARTEx_ReceiveToIdle_DMA(&huart5, buf, size);
+    // disabling the half buffer interrupt //
+    __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_HT);
+    //  disabling the half buffer interrupt //
+    __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_TC);
+}
 
 etl::expected<void, ErrorFromGNSS> GNSSTask::controlGNSSwithNotify(GNSSMessage gnssMessageToSend) {
-    uint8_t* processingBuffer;
-    processingBuffer = active_buffer_pointer;
 
     const uint8_t maxRetries = 3;
 
@@ -59,12 +62,12 @@ etl::expected<void, ErrorFromGNSS> GNSSTask::controlGNSSwithNotify(GNSSMessage g
             // Check if we received a response
             if (receivedEvents & GNSS_RESPONSE) {
                 for (uint16_t i = 0; i < size; i++) {
-                    if (processingBuffer[i] == 131) {
+                    if (rx_buf[i] == 131) {
                         // ACK received
                         LOG_DEBUG << "ACK received!";
                         return {}; // Success case (void), indicating ACK received
                     }
-                    if (processingBuffer[i] == 132) {
+                    if (rx_buf[i] == 132) {
                         // NACK received
                         LOG_ERROR << "NACK received!";
                         return etl::unexpected<ErrorFromGNSS>(ErrorFromGNSS::NACKReceived); // Return NACKReceived error
@@ -78,6 +81,15 @@ etl::expected<void, ErrorFromGNSS> GNSSTask::controlGNSSwithNotify(GNSSMessage g
     return etl::unexpected<ErrorFromGNSS>(ErrorFromGNSS::Timeout);
 }
 
+void GNSSTask::initQueueToAcceptPointers() {
+
+    gnssQueueHandle = xQueueCreate(uxQueueLength, sizeof(uint8_t*));
+    if (gnssQueueHandle == nullptr)
+        LOG_ERROR << "Queue did not initialized properly";
+    else {
+        LOG_INFO << "Queue initialized with success";
+    }
+}
 
 void GNSSTask::execute() {
 
@@ -86,27 +98,36 @@ void GNSSTask::execute() {
     HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
 
-    active_buffer_pointer = const_cast<uint8_t*>(first_buffer);
-    HAL_UARTEx_ReceiveToIdle_DMA(&huart5, const_cast<uint8_t*>(first_buffer), 512);
+    rx_buf_pointer = rx_buf;
 
-    // disabling the half buffer interrupt //
-    __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_HT);
-    //  disabling the half buffer interrupt //
-    __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_TC);
-
-    vTaskDelay(500);
+    startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
 
     uint32_t receivedEvents = 0;
     uint8_t counter = 0;
 
+    controlGNSSwithNotify(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
+
+    uint8_t* rx_buf_from_queue = nullptr;
+
     while (true) {
+        LOG_DEBUG << size;
         xTaskNotifyWait(GNSS_MESSAGE_READY, GNSS_MESSAGE_READY, &receivedEvents, portMAX_DELAY);
-        if (receivedEvents & GNSS_MESSAGE_READY) {
-            printing();
+        xQueueReceive(gnssQueueHandle, &rx_buf_from_queue, pdMS_TO_TICKS(200));
+        if (rx_buf_from_queue != nullptr) {
+            printing(rx_buf_from_queue);
             counter++;
         }
+        //        if (receivedEvents & GNSS_MESSAGE_READY) {
+        //            LOG_DEBUG << "incoming";
+        //            xQueueReceive(gnssQueueHandle,&rx_buf_from_queue, pdMS_TO_TICKS(1000));
+        //            if(rx_buf_from_queue != nullptr)
+        //            {
+        //                printing(rx_buf_from_queue);
+        //                counter++;
+        //            }
+        //        }
+
         if (counter == 4) {
-            // Switch mode every 4 messages
             if (counter == 4) {
                 counter = 0;
                 switchGNSSMode();

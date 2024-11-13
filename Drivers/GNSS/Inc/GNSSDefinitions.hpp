@@ -2,37 +2,32 @@
 #include "etl/vector.h"
 
 // Define event bit masks
-#define GNSS_RESPONSE (1 << 0)      // Event Bit for responses of GNSS to control messages
-#define GNSS_MESSAGE_READY (1 << 1) // Event Bit for knowing when a whole GNSS message is ready to be parsed
-// filters to GNSS
-#define EXPECTED_GNSS_MESSAGE 460
-#define MAX_EXPECTED_GNSS_RESPONSE 120
-
-// Define an enum for error types
-enum class ErrorFromGNSS {
-    TransmissionFailed,
-    Timeout,
-    NACKReceived,
-    MultipleCommandsFail
-};
-
-inline const uint8_t GNSSQueueSize = 64;
-
-/**
- * The maximum size for the data field of a GNSS Payload.
- */
-inline const uint16_t GNSSPayloadSize = 1024;
-
-/**
- * The maximum size for the data field of a GNSS Message.
- */
-inline const uint16_t GNSSMessageSize = GNSSPayloadSize + 16;
-
-
-// Define all event bits you want to clear after processing
+// Event Bit for responses of GNSS to control messages
+#define GNSS_RESPONSE (1 << 0)
+// Event Bit for knowing when a whole GNSS message is ready to be parsed
+#define GNSS_MESSAGE_READY (1 << 1)
 
 
 namespace GNSSDefinitions {
+
+    enum class ErrorFromGNSS {
+        TransmissionFailed,
+        Timeout,
+        NACKReceived,
+        MultipleCommandsFail
+    };
+
+    inline const uint8_t GNSSQueueSize = 1;
+
+    /**
+ * The maximum size for the data field of a GNSS Payload.
+ */
+    inline const uint16_t GNSSPayloadSize = 1024;
+
+    /**
+ * The maximum size for the data field of a GNSS Message.
+ */
+    inline const uint16_t GNSSMessageSize = GNSSPayloadSize + 16;
 
     typedef etl::vector<uint8_t, GNSSPayloadSize> Payload;
 
