@@ -1,4 +1,4 @@
-#include "ina3221.hpp"
+#include "INA3221.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
 

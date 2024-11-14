@@ -8,7 +8,7 @@
 
 
 CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
-    CAN::initialize(1);
+    CAN::initialize(0);
 
     outgoingQueue = xQueueCreateStatic(FrameQueueSize, sizeof(CAN::Frame), outgoingQueueStorageArea,
                                        &outgoingQueueBuffer);
@@ -48,6 +48,5 @@ void CANGatekeeperTask::execute() {
             CAN::send(out_message, ActiveBus);
         }
         LOG_DEBUG << "{END OF" << this->TaskName << "}";
-
     }
 }

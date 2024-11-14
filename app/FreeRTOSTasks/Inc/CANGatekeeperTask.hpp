@@ -4,6 +4,8 @@
 #include "CANDriver.hpp"
 #include "Logger.hpp"
 
+#include <optional>
+
 
 /**
  * Contains functionality of a Gatekeeper Task for the CAN Bus. It has the sole access to CAN, to avoid any
