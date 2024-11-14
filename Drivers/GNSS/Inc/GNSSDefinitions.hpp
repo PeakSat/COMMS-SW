@@ -6,7 +6,8 @@
 #define GNSS_RESPONSE (1 << 0)
 // Event Bit for knowing when a whole GNSS message is ready to be parsed
 #define GNSS_MESSAGE_READY (1 << 1)
-
+// 255 SECONDS
+#define MAXIMUM_INTERVAL 255000
 
 namespace GNSSDefinitions {
 
