@@ -9,7 +9,7 @@ void CANTestTask::execute() {
      * Simple 64 byte message sending
      */
 
-    for (uint8_t idx = 0; idx < CAN::Frame::MaxDataLength; idx++) {
+    for (uint8_t idx = 0; idx < CAN::Packet::MaxDataLength; idx++) {
         message.push_back(idx);
     }
     String<ECSSMaxMessageSize> testPayload1("CAN1 SAYS: SPONGEBOB SQUAREPANTS! ");
@@ -17,7 +17,7 @@ void CANTestTask::execute() {
     String<ECSSMaxMessageSize> testPayload2("CAN2 SAYS: WHO LET THE DOGS OUT!?");
     CAN::ActiveBus activeBus = CAN::ActiveBus::Redundant;
     while (true) {
-        if(activeBus == CAN::ActiveBus::Redundant) {
+        if (activeBus == CAN::ActiveBus::Redundant) {
             activeBus = CAN::ActiveBus::Main;
             canGatekeeperTask->switchActiveBus(activeBus);
             CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
@@ -31,5 +31,4 @@ void CANTestTask::execute() {
         xTaskNotify(canGatekeeperTask->taskHandle, 0, eNoAction);
         vTaskDelay(pdMS_TO_TICKS(3000));
     }
-
 }

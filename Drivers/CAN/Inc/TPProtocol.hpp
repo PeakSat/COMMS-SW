@@ -29,13 +29,13 @@ namespace CAN::TPProtocol {
     /**
      * The usable data length for a consecutive message.
      */
-    static constexpr uint8_t UsableDataLength = CAN::Frame::MaxDataLength - 1;
+    static constexpr uint8_t UsableDataLength = CAN::Packet::MaxDataLength - 1;
 
     /**
      * Creates a TPMessage object from a single frame, and passes it over to the parse function.
      * @param message A received CAN::Frame.
      */
-    void processSingleFrame(const CAN::Frame& message);
+    void processSingleFrame(const CAN::Packet& message);
 
     /**
      * Receives a collection of messages from the Gatekeeper Task's incomingQueue, and processes them.

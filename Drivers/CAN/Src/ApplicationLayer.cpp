@@ -38,7 +38,7 @@ namespace CAN::Application {
         //            newBus = Main;
         //        }
 
-        etl::array<uint8_t, CAN::Frame::MaxDataLength> data = {switchBus(newBus)};
+        etl::array<uint8_t, CAN::Packet::MaxDataLength> data = {switchBus(newBus)};
 
         canGatekeeperTask->send({MessageIDs::BusSwitchover + CAN::NodeID, data}, false);
     }
@@ -184,7 +184,7 @@ namespace CAN::Application {
         CAN::TPProtocol::createCANTPMessage(message, isISR);
     }
 
-    void parseMessage(const CAN::Frame& message) {
+    void parseMessage(const CAN::Packet& message) {
         uint32_t id = filterMessageID(message.id);
         if (id == Heartbeat) {
             //            registerHeartbeat();

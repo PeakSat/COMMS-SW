@@ -5,6 +5,14 @@
 #include "Logger.hpp"
 
 #include <optional>
+struct incomingFIFO {
+    uint8_t* buffer;
+    uint32_t NOfItems; // Number of items
+    uint32_t lastItemPointer;
+    incomingFIFO() : buffer(nullptr), NOfItems(0), lastItemPointer(0) {}
+    incomingFIFO(uint8_t* externalBuffer, uint32_t NOfItems) : buffer(externalBuffer), NOfItems(NOfItems), lastItemPointer(0) {}
+};
+extern incomingFIFO incomingFIFO;
 
 
 /**
@@ -15,7 +23,7 @@
  * @example @code
  * uint32_t id = 0x4; // Specify the sending Node ID.
  * etl::vector<uint8_t, 8> data = {0,1,2,3,4,5,6,7}; // Specify an array of data, up to 64 bytes.
- * CAN::Frame message = {id, data}; // Create a CAN::Frame object.
+ * CAN::Packet message = {id, data}; // Create a CAN::Packet object.
  * canGatekeeperTask->addToQueue(message); // Add the message to the outgoing queue.
  * @endcode
  */
@@ -30,15 +38,15 @@ private:
      */
     static inline StaticQueue_t outgoingQueueBuffer;
     /**
-     * The maximum of the length of the queue for incoming/outgoing CAN frames.
+     * The maximum of the length of the queue for incoming/outgoing CAN Packets.
      */
-    static const uint8_t FrameQueueSize = 20;
+    static const uint8_t PacketQueueSize = 20;
     /**
      * Storage area given to freeRTOS to manage the queue items.
      */
-    static inline uint8_t outgoingQueueStorageArea[FrameQueueSize * sizeof(CAN::Frame)];
+    static inline uint8_t outgoingQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
     /**
-     * A freeRTOS queue to handle incoming frames part of a CAN-TP message, since they need to be parsed as a whole.
+     * A freeRTOS queue to handle incoming packetss part of a CAN-TP message, since they need to be parsed as a whole.
      */
     QueueHandle_t incomingSFQueue;
     /**
@@ -48,9 +56,9 @@ private:
     /**
      * Storage area given to freeRTOS to manage the queue items.
      */
-    static inline uint8_t incomingSFQueueStorageArea[FrameQueueSize * sizeof(CAN::Frame)];
+    static inline uint8_t incomingSFQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
     /**
-     * A freeRTOS queue to handle incoming frames part of a CAN-TP message, since they need to be parsed as a whole.
+     * A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
      */
     QueueHandle_t incomingMFQueue;
     /**
@@ -61,7 +69,7 @@ private:
     /**
      * Storage area given to freeRTOS to manage the queue items.
      */
-    static inline uint8_t incomingMFQueueStorageArea[FrameQueueSize * sizeof(CAN::Frame)];
+    static inline uint8_t incomingMFQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
 
     const static inline uint16_t TaskStackDepth = 1800;
 
@@ -79,7 +87,7 @@ public:
     CANGatekeeperTask();
 
     /**
-     * Adds an CAN::Frame to the CAN Gatekeeper's queue.
+     * Adds an CAN::Packet to the CAN Gatekeeper's queue.
      *
      * This function was added as an extra abstraction layer to house the `xQueueSendToBack` function.
      * It can be used from anywhere in the code to get access to the CAN queue/CAN Gatekeeper task, without having to
@@ -87,10 +95,10 @@ public:
      *
      * If the queue is full, the message is not added to the queue and an error is logged.
      *
-     * @param message the CAN::Frame to be added in the queue of the CAN Gatekeeper task.
+     * @param message the CAN::Packet to be added in the queue of the CAN Gatekeeper task.
      * @param isISR indicating if the message is a response to another CAN Message, thus composed through an ISR
      */
-    inline void send(const CAN::Frame& message, bool isISR = false) {
+    inline void send(const CAN::Packet& message, bool isISR = false) {
         BaseType_t status;
 
         if (isISR) {
@@ -111,15 +119,15 @@ public:
     }
 
     /**
-     * Adds a CAN::Frame to the incomingQueue.
+     * Adds a CAN::Packet to the incomingQueue.
      * If the queue is full the message is lost.
      *
      * @note This function is designed to be used from within the ISR of a CAN Message Receipt. Thus, it uses
      * freeRTOS's ISR-Specific functions.
      *
-     * @param message The incoming CAN::Frame.
+     * @param message The incoming CAN::Packet.
      */
-    inline void addSFToIncoming(const CAN::Frame& message) {
+    inline void addSFToIncoming(const CAN::Packet& message) {
         BaseType_t taskShouldYield = pdFALSE;
 
         xQueueSendToBackFromISR(incomingSFQueue, &message, &taskShouldYield);
@@ -130,15 +138,15 @@ public:
     }
 
     /**
-     * Adds a CAN::Frame to the incomingQueue.
+     * Adds a CAN::Packet to the incomingQueue.
      * If the queue is full the message is lost.
      *
      * @note This function is designed to be used from within the ISR of a CAN Message Receipt. Thus, it uses
      * freeRTOS's ISR-Specific functions.
      *
-     * @param message The incoming CAN::Frame.
+     * @param message The incoming CAN::Packet.
      */
-    inline void addMFToIncoming(const CAN::Frame& message) {
+    inline void addMFToIncoming(const CAN::Packet& message) {
         BaseType_t taskShouldYield = pdFALSE;
 
         xQueueSendToBackFromISR(incomingMFQueue, &message, &taskShouldYield);
@@ -165,7 +173,7 @@ public:
     }
 
     /**
-     * Receives a CAN::Frame from the CAN Gatekeeper's incoming queue.
+     * Receives a CAN::Packet from the CAN Gatekeeper's incoming queue.
      *
      * This function was added as an extra abstraction layer to house the `xQueueReceive` function.
      * It can be used from anywhere in the code to get access to the CAN queue/CAN Gatekeeper task, without having to
@@ -173,8 +181,8 @@ public:
      *
      * If the queue is empty, the returned message is empty.
      */
-    inline CAN::Frame getFromSFQueue() {
-        CAN::Frame message;
+    inline CAN::Packet getFromSFQueue() {
+        CAN::Packet message;
         xQueueReceive(incomingSFQueue, &message, 0);
         return message;
     }
@@ -191,8 +199,8 @@ public:
         xQueueReset(incomingSFQueue);
     }
 
-    inline CAN::Frame getFromMFQueue() {
-        CAN::Frame message;
+    inline CAN::Packet getFromMFQueue() {
+        CAN::Packet message;
         xQueueReceive(incomingMFQueue, &message, 0);
         return message;
     }

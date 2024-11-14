@@ -1,5 +1,7 @@
 #pragma once
 #include "etl/array.h"
+#include "main.h"
+
 
 namespace CAN {
     /**
@@ -9,12 +11,32 @@ namespace CAN {
      * It consists of an ID which specifies the message's function, as in DDJF_OBDH + an etl::array that contains the
      * message payload. A CAN::Frame is merely a carrier of information and has no functionality.
      */
+
     class Frame {
+    public:
+        uint8_t pointerToData;
+        /**
+   * The bus where the frame came from.
+   */
+        FDCAN_HandleTypeDef* bus;
+        enum Error {
+            INPUT_FRRAME_NO_ERROR = 0,
+            INPUT_FRRAME_BUFFER_FULL
+        } error;
+
+        Frame();
+    };
+
+
+    class Packet {
     public:
         /**
          * The maximum data length that is currently configured in the peripheral.
          */
         static constexpr uint8_t MaxDataLength = 64;
+
+
+        FDCAN_HandleTypeDef* bus;
 
         /**
          * The right aligned ID of the message to be sent. Since the protocol doesn't make use of extended IDs,
@@ -32,11 +54,13 @@ namespace CAN {
          */
         etl::array<uint8_t, MaxDataLength> data = {};
 
-        Frame() = default;
+        uint8_t* dataPointer;
 
-        Frame(uint32_t id) : id(id){};
+        Packet() = default;
 
-        Frame(uint32_t id, const etl::array<uint8_t, MaxDataLength>& data) : id(id), data(data){};
+        Packet(uint32_t id) : id(id){};
+
+        Packet(uint32_t id, const etl::array<uint8_t, MaxDataLength>& data) : id(id), data(data){};
 
         /**
          * Zeroes out the current frame. Use this if you're using a single static object in a recurring function.

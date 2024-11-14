@@ -5,20 +5,27 @@
 #include "Logger.hpp"
 #include "queue.h"
 // #include "CANDriver.cpp"
-
+struct incomingFIFO incomingFIFO;
+const uint32_t numberOfIncomingItemsInBuffer = 16;
+uint8_t incomingBuffer[64 * numberOfIncomingItemsInBuffer];
 
 CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
     CAN::initialize(0);
 
-    outgoingQueue = xQueueCreateStatic(FrameQueueSize, sizeof(CAN::Frame), outgoingQueueStorageArea,
+
+    incomingFIFO.buffer = incomingBuffer;
+    incomingFIFO.NOfItems = numberOfIncomingItemsInBuffer;
+
+
+    outgoingQueue = xQueueCreateStatic(PacketQueueSize, sizeof(CAN::Packet), outgoingQueueStorageArea,
                                        &outgoingQueueBuffer);
     vQueueAddToRegistry(outgoingQueue, "CAN Outgoing");
 
-    incomingSFQueue = xQueueCreateStatic(FrameQueueSize, sizeof(CAN::Frame), incomingSFQueueStorageArea,
+    incomingSFQueue = xQueueCreateStatic(PacketQueueSize, sizeof(CAN::Packet), incomingSFQueueStorageArea,
                                          &incomingSFQueueBuffer);
     vQueueAddToRegistry(incomingSFQueue, "CAN Incoming SF");
 
-    incomingMFQueue = xQueueCreateStatic(FrameQueueSize, sizeof(CAN::Frame), incomingMFQueueStorageArea,
+    incomingMFQueue = xQueueCreateStatic(PacketQueueSize, sizeof(CAN::Packet), incomingMFQueueStorageArea,
                                          &incomingMFQueueBuffer);
     vQueueAddToRegistry(incomingSFQueue, "CAN Incoming MF");
 }
@@ -26,8 +33,8 @@ CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
 static uint32_t thread_notification;
 
 void CANGatekeeperTask::execute() {
-    CAN::Frame out_message = {};
-    CAN::Frame in_message = {};
+    CAN::Packet out_message = {};
+    CAN::Packet in_message = {};
 
     taskHandle = xTaskGetCurrentTaskHandle();
 
@@ -39,9 +46,19 @@ void CANGatekeeperTask::execute() {
 
         if (getIncomingSFMessagesCount()) {
             xQueueReceive(incomingSFQueue, &in_message, portMAX_DELAY);
-            CAN::TPProtocol::processSingleFrame(in_message);
+            uint8_t buff[64];
+            for (int i = 0; i < 64; i++) {
+                buff[i] = in_message.dataPointer[i];
+            }
+            // if(in_message.bus->Instance==FDCAN1) {
+            //     __NOP();
+            // }else if(in_message.bus->Instance==FDCAN2) {
+            //     __NOP();
+            // }
+            __NOP();
+            // CAN::TPProtocol::processSingleFrame(in_message);
         }
-        CAN::TPProtocol::processMultipleFrames();
+        // CAN::TPProtocol::processMultipleFrames();
 
         if (uxQueueMessagesWaiting(outgoingQueue)) {
             xQueueReceive(outgoingQueue, &out_message, portMAX_DELAY);

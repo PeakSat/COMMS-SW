@@ -100,7 +100,7 @@ void CAN::logMessage(const CAN::CANBuffer_t& rxBuf, FDCAN_RxHeaderTypeDef RxHead
     LOG_INFO << message.c_str();
 }
 
-void CAN::logMessage(const CAN::Frame frame) {
+void CAN::logMessage(const CAN::Packet frame) {
     auto message = String<ECSSMaxStringSize>("CAN Message: ");
     message.append("ID : ");
     etl::to_string(frame.id, message, etl::format_spec().hex(), true);
@@ -141,7 +141,7 @@ void CAN::convertLengthToDLC(uint8_t length) {
     }
 }
 
-void CAN::send(const CAN::Frame& message, CAN::ActiveBus outgoingBus) {
+void CAN::send(const CAN::Packet& message, CAN::ActiveBus outgoingBus) {
     CAN::txHeader.Identifier = message.id;
 
     memcpy(txFifo.data(), message.data.data(), message.MaxDataLength);
@@ -168,10 +168,10 @@ void CAN::configureTxHeader() {
 }
 
 
-Frame CAN::getFrame(const CAN::CANBuffer_t* data, uint32_t id) {
+Packet CAN::getFrame(const CAN::CANBuffer_t* data, uint32_t id) {
 
 
-    CAN::Frame frame = Frame();
+    CAN::Packet frame = Packet();
 
     frame.id = id;
 

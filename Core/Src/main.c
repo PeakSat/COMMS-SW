@@ -53,6 +53,7 @@ SPI_HandleTypeDef hspi4;
 
 UART_HandleTypeDef huart4;
 
+DMA_HandleTypeDef hdma_memtomem_dma1_stream0;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -61,12 +62,13 @@ UART_HandleTypeDef huart4;
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_SDMMC1_MMC_Init(void);
+static void MX_DMA_Init(void);
 static void MX_SPI4_Init(void);
 static void MX_UART4_Init(void);
 static void MX_I2C4_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_FDCAN1_Init(void);
+static void MX_SDMMC1_MMC_Init(void);
 static void MX_FDCAN2_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -109,12 +111,13 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_SDMMC1_MMC_Init();
+  MX_DMA_Init();
   MX_SPI4_Init();
   MX_UART4_Init();
   MX_I2C4_Init();
   MX_I2C1_Init();
   MX_FDCAN1_Init();
+  MX_SDMMC1_MMC_Init();
   MX_FDCAN2_Init();
   /* USER CODE BEGIN 2 */
     app_main();
@@ -254,7 +257,7 @@ static void MX_FDCAN1_Init(void)
   hfdcan1.Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_64;
   hfdcan1.Init.RxFifo1ElmtsNbr = 1;
   hfdcan1.Init.RxFifo1ElmtSize = FDCAN_DATA_BYTES_64;
-  hfdcan1.Init.RxBuffersNbr = 0;
+  hfdcan1.Init.RxBuffersNbr = 1;
   hfdcan1.Init.RxBufferSize = FDCAN_DATA_BYTES_64;
   hfdcan1.Init.TxEventsNbr = 0;
   hfdcan1.Init.TxBuffersNbr = 0;
@@ -307,7 +310,7 @@ static void MX_FDCAN2_Init(void)
   hfdcan2.Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_64;
   hfdcan2.Init.RxFifo1ElmtsNbr = 1;
   hfdcan2.Init.RxFifo1ElmtSize = FDCAN_DATA_BYTES_64;
-  hfdcan2.Init.RxBuffersNbr = 0;
+  hfdcan2.Init.RxBuffersNbr = 1;
   hfdcan2.Init.RxBufferSize = FDCAN_DATA_BYTES_64;
   hfdcan2.Init.TxEventsNbr = 0;
   hfdcan2.Init.TxBuffersNbr = 0;
@@ -549,6 +552,38 @@ static void MX_UART4_Init(void)
   /* USER CODE BEGIN UART4_Init 2 */
 
   /* USER CODE END UART4_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  * Configure DMA for memory to memory transfers
+  *   hdma_memtomem_dma1_stream0
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* Configure DMA request hdma_memtomem_dma1_stream0 on DMA1_Stream0 */
+  hdma_memtomem_dma1_stream0.Instance = DMA1_Stream0;
+  hdma_memtomem_dma1_stream0.Init.Request = DMA_REQUEST_MEM2MEM;
+  hdma_memtomem_dma1_stream0.Init.Direction = DMA_MEMORY_TO_MEMORY;
+  hdma_memtomem_dma1_stream0.Init.PeriphInc = DMA_PINC_ENABLE;
+  hdma_memtomem_dma1_stream0.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_memtomem_dma1_stream0.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+  hdma_memtomem_dma1_stream0.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+  hdma_memtomem_dma1_stream0.Init.Mode = DMA_NORMAL;
+  hdma_memtomem_dma1_stream0.Init.Priority = DMA_PRIORITY_HIGH;
+  hdma_memtomem_dma1_stream0.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+  hdma_memtomem_dma1_stream0.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+  hdma_memtomem_dma1_stream0.Init.MemBurst = DMA_MBURST_SINGLE;
+  hdma_memtomem_dma1_stream0.Init.PeriphBurst = DMA_PBURST_SINGLE;
+  if (HAL_DMA_Init(&hdma_memtomem_dma1_stream0) != HAL_OK)
+  {
+    Error_Handler( );
+  }
 
 }
 

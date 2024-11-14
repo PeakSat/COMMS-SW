@@ -180,7 +180,7 @@ namespace CAN::Application {
      * Parses an incoming non-TP frame for the appropriate response.
      * @param message The incoming CAN::Frame.
      */
-    void parseMessage(const CAN::Frame& message);
+    void parseMessage(const CAN::Packet& message);
 
     /**
      * Parses an incoming Send Parameters Message and updates the according parameters

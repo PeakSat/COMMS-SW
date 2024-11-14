@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include "stm32h7xx.h"
-
+#include "main.h"
 #include "Frame.hpp"
 #include "etl/vector.h"
 
@@ -89,7 +89,7 @@ namespace CAN {
      */
     void logMessage(const CAN::CANBuffer_t& rxBuf, FDCAN_RxHeaderTypeDef RxHeader, ActiveBus incomingBus);
 
-    void logMessage(const CAN::Frame frame);
+    void logMessage(const CAN::Packet frame);
 
     /**
      * Decodes the data length code to get the largest expected size of the message.
@@ -136,7 +136,7 @@ namespace CAN {
      * Immediately ends a CAN Message
      * @param message The message to be sent.
      */
-    void send(const CAN::Frame& message, const CAN::ActiveBus activeBus);
+    void send(const CAN::Packet& message, const CAN::ActiveBus activeBus);
 
     void configureTxHeader();
 
@@ -144,8 +144,8 @@ namespace CAN {
      * Converts an CANBuffer_t & FDCAN_Header objects into a CAN::Frame.
      * @param rxBuffer The incoming buffer.
      * @param RxHeader The incoming header.
-     * @return A CAN::Frame.
+     * @return A CAN::Packet.
      */
-    CAN::Frame getFrame(const CAN::CANBuffer_t* data, uint32_t id);
+    CAN::Packet getFrame(const CAN::CANBuffer_t* data, uint32_t id);
 
 } // namespace CAN
