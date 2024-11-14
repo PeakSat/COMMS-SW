@@ -40,14 +40,19 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     BaseType_t xHigherPriorityTaskWoken;
     // Initialize xHigherPriorityTaskWoken to pdFALSE (no higher-priority task woken yet)
     xHigherPriorityTaskWoken = pdFALSE;
-
     if (huart->Instance == UART5) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
             gnssTask->size = Size;
             // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
-            xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
-            gnssTask->sendToQueue = huart5.pRxBuffPtr;
-            xQueueSendFromISR(gnssTask->gnssQueueHandle, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
+            if (gnssTask->control) {
+                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_RESPONSE, eSetBits, &xHigherPriorityTaskWoken);
+                gnssTask->sendToQueueResponse = huart5.pRxBuffPtr;
+                xQueueSendFromISR(gnssTask->gnssQueueHandleGNSSResponse, &gnssTask->sendToQueueResponse, &xHigherPriorityTaskWoken);
+            } else {
+                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
+                gnssTask->sendToQueue = huart5.pRxBuffPtr;
+                xQueueSendFromISR(gnssTask->gnssQueueHandleDefault, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
+            }
             // Perform a context switch if a higher-priority task was woken up by the notification
             // portYIELD_FROM_ISR will yield the processor to the higher-priority task immediately if xHigherPriorityTaskWoken is pdTRUE
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);

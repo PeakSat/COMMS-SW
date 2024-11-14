@@ -67,9 +67,12 @@ public:
     /**
      *  handle for the queue to have a way of separating them
      */
-    QueueHandle_t gnssQueueHandle;
+    QueueHandle_t gnssQueueHandleDefault, gnssQueueHandleGNSSResponse;
 
     uint8_t* sendToQueue;
+    uint8_t* sendToQueueResponse;
+    uint8_t control = 0;
+
     /**
      * execute function of the task
      */
@@ -97,7 +100,7 @@ public:
     /**
      *
      */
-    void initQueueToAcceptPointers();
+    void initQueuesToAcceptPointers();
 
     GNSSTask() : Task("GNSS Logging Task") {}
 
@@ -105,7 +108,7 @@ public:
         taskHandle = xTaskCreateStatic(vClassTask<GNSSTask>, this->TaskName,
                                        GNSSTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
                                        this->taskStack, &(this->taskBuffer));
-        initQueueToAcceptPointers();
+        initQueuesToAcceptPointers();
     }
 
 private:

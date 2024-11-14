@@ -72,6 +72,17 @@ GNSSMessage GNSSReceiver::configureNMEAStringInterval(etl::string<3> str, uint8_
     return GNSSMessage{static_cast<uint16_t>(payload.size()), payload};
 }
 
+GNSSMessage GNSSReceiver::configureExtendedNMEAMessageInterval(const etl::vector<uint8_t, 12>& intervals, Attributes attributes) {
+    Payload payload;
+    payload.push_back(GNSSDefinitions::GNSSMessages::IDusedForMessagesWithSubID_1);
+    payload.push_back(GNSSDefinitions::GNSSMessagesSubID::ConfigureExtendedNMEAMessageInterval);
+    for (uint8_t interval: intervals) {
+        payload.push_back(interval);
+    }
+    payload.push_back(static_cast<uint8_t>(attributes));
+    return GNSSMessage{static_cast<uint16_t>(payload.size()), payload};
+}
+
 
 GNSSMessage GNSSReceiver::query1PPSTiming() {
     Payload payload;
@@ -232,16 +243,6 @@ GNSSMessage GNSSReceiver::configureSAEE(EnableSAEE enable, Attributes attributes
     return GNSSMessage{GNSSMessagesSubID::ConfigureSAEE, static_cast<uint16_t>(payload.size()), payload};
 }
 
-GNSSMessage
-GNSSReceiver::configureExtendedNMEAMessageInterval(const etl::vector<uint8_t, 12>& intervals, Attributes attributes) {
-    Payload payload;
-    for (uint8_t interval: intervals) {
-        payload.push_back(interval);
-    }
-    payload.push_back(static_cast<uint8_t>(attributes));
-    return GNSSMessage{GNSSMessagesSubID::ConfigureExtendedNMEAMessageInterval, static_cast<uint16_t>(payload.size()),
-                       payload};
-}
 
 GNSSMessage GNSSReceiver::configureInterferenceDetection(InterferenceDetectControl control, Attributes attributes) {
     Payload payload;

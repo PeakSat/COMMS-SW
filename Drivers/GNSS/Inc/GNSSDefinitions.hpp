@@ -81,7 +81,7 @@ namespace GNSSDefinitions {
         QuerySAEE = (0x63 << 8) | 0x2,
         SAEEStatus = (0x63 << 8) | 0x80,
         QueryBootStatus = (0x64 << 8) | 0x1,
-        ConfigureExtendedNMEAMessageInterval = (0x64 << 8) | 0x2,
+        ConfigureExtendedNMEAMessageInterval = 0x2,
         QueryExtendedNMEAMessageInterval = (0x64 << 8) | 0x3,
         ConfigureInterferenceDetection = (0x64 << 8) | 0x6,
         QueryInterferenceDetectionStatus = 0x7,
