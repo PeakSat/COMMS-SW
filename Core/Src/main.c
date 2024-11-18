@@ -548,24 +548,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE END Callback 1 */
 }
 
-// /* Callback in non blocking modes (DMA) */
-// void HAL_MMC_TxCpltCallback(MMC_HandleTypeDef *hmmc)
-// {
-//   __NOP();
-// }
-// void HAL_MMC_RxCpltCallback(MMC_HandleTypeDef *hmmc)
-// {
-//   __NOP();
-// }
-// void HAL_MMC_ErrorCallback(MMC_HandleTypeDef *hmmc)
-// {
-//   __NOP();
-// }
-// void HAL_MMC_AbortCallback(MMC_HandleTypeDef *hmmc)
-// {
-//   __NOP();
-// }
-
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
