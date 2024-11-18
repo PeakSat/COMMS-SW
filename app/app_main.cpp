@@ -7,6 +7,8 @@
 #include "TransceiverTask.hpp"
 #include "UARTGatekeeperTask.hpp"
 #include "eMMCTask.hpp"
+#include "INA3221Task.hpp"
+#include "TMP117Task.hpp"
 #include "eMMC.hpp"
 
 
@@ -20,19 +22,23 @@ void app_main(void) {
     transceiverTask.emplace();
     uartGatekeeperTask.emplace();
     eMMCTask.emplace();
+    ina3221Task.emplace();
+    tmp117Task.emplace();
 
     transceiverTask->createTask();
     uartGatekeeperTask->createTask();
     eMMCTask->createTask();
+    ina3221Task->createTask();
+    tmp117Task->createTask();
 
     /* Start the scheduler. */
     vTaskStartScheduler();
+
     /* Should not get here. */
     for (;;)
         ;
 }
 /*-----------------------------------------------------------*/
-
 
 extern "C" [[maybe_unused]] void EXTI1_IRQHandler(void) {
     HAL_GPIO_EXTI_IRQHandler(RF_IRQ_Pin);
