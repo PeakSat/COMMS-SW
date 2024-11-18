@@ -12,23 +12,12 @@ void eMMCTask::execute() {
     uint32_t block_address_a = 5;
     uint8_t read_data_buff[eMMC::memoryMap[eMMC::test2].size];
 
-    // uint8_t data_buff[1024];
-    // for(uint32_t i = 0; i < 1024; i++)
-    //     data_buff[i] = i % 250;
-
-    // uint32_t block_address_a = 5;
-    // uint8_t read_data_buff[1024];
-
-
     while (true) {
 
 
         LOG_DEBUG << "Writing to block address: " << block_address_a;
-        // auto status = eMMC::writeBlockEMMC(data_buff, eMMC::memoryMap[eMMC::test2].startAddress,2);
-        // auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::test2],data_buff,eMMC::memoryMap[eMMC::test2].size);
         auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::test2], data_buff, eMMC::memoryMap[eMMC::test2].size, 0, 3);
 
-        // vTaskDelay(20);
         if (status.has_value()) {
             // read was successful
         } else if (status.error() != eMMC::Error::NO_ERRORS)
@@ -36,9 +25,7 @@ void eMMCTask::execute() {
             LOG_ERROR << "Write HAL error, a";
 
         LOG_DEBUG << "Reading from block address: " << block_address_a;
-        // status = eMMC::readBlockEMMC(read_data_buff, eMMC::memoryMap[eMMC::test2].startAddress,2);
         status = eMMC::getItem(eMMC::memoryMap[eMMC::test2], read_data_buff, eMMC::memoryMap[eMMC::test2].size, 0, 3);
-        // vTaskDelay(20);
         if (status.has_value()) {
             // read was successful
         } else if (status.error() != eMMC::Error::NO_ERRORS)
