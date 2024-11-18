@@ -50,11 +50,11 @@ void CANGatekeeperTask::execute() {
             for (int i = 0; i < 64; i++) {
                 buff[i] = in_message.dataPointer[i];
             }
-            // if(in_message.bus->Instance==FDCAN1) {
-            //     __NOP();
-            // }else if(in_message.bus->Instance==FDCAN2) {
-            //     __NOP();
-            // }
+            if (in_message.bus->Instance == FDCAN1) {
+                __NOP();
+            } else if (in_message.bus->Instance == FDCAN2) {
+                __NOP();
+            }
             __NOP();
             // CAN::TPProtocol::processSingleFrame(in_message);
         }
