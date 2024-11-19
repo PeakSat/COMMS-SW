@@ -43,7 +43,7 @@ public:
     /**
      * incoming size in bytes from the GNSS
      */
-    uint16_t size = 0;
+    uint16_t size_response, size_message = 0;
     /**
      * printing counter to control the number of prints
      */

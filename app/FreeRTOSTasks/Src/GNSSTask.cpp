@@ -129,11 +129,14 @@ void GNSSTask::execute() {
         if (xTaskNotifyWait(GNSS_MESSAGE_READY, GNSS_MESSAGE_READY, &receivedEvents, pdMS_TO_TICKS(MAXIMUM_INTERVAL)) == pdTRUE) {
             if (receivedEvents & GNSS_MESSAGE_READY) {
                 // Receive a message on the created queue.  Block for 100ms if the message is not immediately available
-                xQueueReceive(gnssQueueHandleDefault, &rx_buf_p_from_queue, pdMS_TO_TICKS(100));
-                if (rx_buf_p_from_queue != nullptr) {
-                    printing(rx_buf_p_from_queue);
-                    timeoutCounter = 0;
-                    counter++;
+                if (xQueueReceive(gnssQueueHandleDefault, &rx_buf_p_from_queue, pdMS_TO_TICKS(100)) == pdTRUE) {
+                    if (rx_buf_p_from_queue != nullptr) {
+                        printing(rx_buf_p_from_queue);
+                        timeoutCounter = 0;
+                        counter++;
+                    }
+                } else {
+                    LOG_ERROR << "Queue Timeout";
                 }
             }
             if (counter == 5) {
