@@ -14,6 +14,42 @@ void GNSSTask::printing(uint8_t* buf) {
     }
 }
 
+void GNSSTask::parser(uint8_t* buf) {
+    GNSSMessageString.assign(buf, buf + GNSSPayloadSize);
+    LOG_INFO << GNSSMessageString.c_str();
+    char* line = strtok(&GNSSMessageString[0], "\n"); // Tokenize the string by newline characters
+    while (line != nullptr) {
+        switch (minmea_sentence_id(line, true)) {
+            case MINMEA_SENTENCE_RMC: {
+                struct minmea_sentence_rmc frame {};
+                if (minmea_parse_rmc(&frame, line)) {
+                    LOG_DEBUG << "RMC";
+                    LOG_DEBUG << "latitude" << frame.latitude.value;
+                    LOG_DEBUG << "day:" << frame.date.day;
+                    LOG_DEBUG << "month:" << frame.date.month;
+                    LOG_DEBUG << "year:" << frame.date.year;
+                    LOG_DEBUG << "valid:" << frame.valid;
+                    LOG_DEBUG << "hours" << frame.time.hours;
+                    LOG_DEBUG << "minutes" << frame.time.minutes;
+                    LOG_DEBUG << "seconds" << frame.time.seconds;
+                    LOG_DEBUG << "microseconds" << frame.time.microseconds;
+                    LOG_DEBUG << "variation" << frame.variation.value;
+                }
+                break;
+            }
+            case MINMEA_SENTENCE_GGA: {
+                struct minmea_sentence_gga frame {};
+                if (minmea_parse_gga(&frame, line)) {
+                    LOG_DEBUG << "GGA";
+                    LOG_DEBUG << "altitude" << frame.altitude.value;
+                }
+                break;
+            }
+        }
+        line = strtok(nullptr, "\n"); // Get the next line
+    }
+}
+
 void GNSSTask::switchGNSSMode() {
     etl::vector<uint8_t, 12> interval_vec;
     uint8_t seconds;
@@ -22,6 +58,8 @@ void GNSSTask::switchGNSSMode() {
         interval_vec.resize(12, 0);
         // seconds = 1, Position Rate = 2Hz gives 2Hz
         seconds = 1;
+        // 4 is for RMC, 6 for ZDA, 0 is for GGA
+        interval_vec[0] = seconds;
         interval_vec[4] = seconds;
         controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
     } else {
@@ -29,7 +67,10 @@ void GNSSTask::switchGNSSMode() {
         interval_vec.resize(12, 0);
         // seconds = 6, Position Rate = 1Hz gives 1/6 Hz
         seconds = 6;
+        // 4 is for RMC, 6 for ZDA, 0 is for GGA
+        interval_vec[0] = seconds;
         interval_vec[4] = seconds;
+
         controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option1Hz, Attributes::UpdateToSRAM));
     }
     auto status = controlGNSSwithNotify(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
@@ -131,7 +172,8 @@ void GNSSTask::execute() {
                 // Receive a message on the created queue.  Block for 100ms if the message is not immediately available
                 if (xQueueReceive(gnssQueueHandleDefault, &rx_buf_p_from_queue, pdMS_TO_TICKS(100)) == pdTRUE) {
                     if (rx_buf_p_from_queue != nullptr) {
-                        printing(rx_buf_p_from_queue);
+                        //                        printing(rx_buf_p_from_queue);
+                        parser(rx_buf_p_from_queue);
                         timeoutCounter = 0;
                         counter++;
                     }

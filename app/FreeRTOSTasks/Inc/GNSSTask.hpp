@@ -8,6 +8,7 @@
 #include "stm32h7xx_hal.h"
 #include <etl/string.h>
 #include <etl/expected.h>
+#include "minmea.h"
 
 #define printing_frequency 1
 
@@ -81,6 +82,8 @@ public:
      * prints with a configurable frequency the output of the GNSS
      */
     void printing(uint8_t* buf);
+
+    void parser(uint8_t* buf);
     /**
      *
      * @param gnssMessageToSend

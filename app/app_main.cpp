@@ -11,15 +11,15 @@
 
 
 void app_main(void) {
-    //    transceiverTask.emplace();
+    transceiverTask.emplace();
     uartGatekeeperTask.emplace();
-    //    eMMCTask.emplace();
+    eMMCTask.emplace();
     gnssTask.emplace();
 
 
-    //    transceiverTask->createTask();
+    transceiverTask->createTask();
     uartGatekeeperTask->createTask();
-    //    eMMCTask->createTask();
+    eMMCTask->createTask();
     gnssTask->createTask();
 
     /* Start the scheduler. */
