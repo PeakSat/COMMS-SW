@@ -7,15 +7,14 @@
 #include "eMMC.hpp"
 // #include "CANDriver.cpp"
 struct incomingFIFO incomingFIFO;
-const uint32_t numberOfIncomingItemsInBuffer = 16;
-uint8_t incomingBuffer[64 * numberOfIncomingItemsInBuffer];
+uint8_t incomingBuffer[CANMessageSize * sizeOfIncommingFrameBuffer];
 
 CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
     CAN::initialize(0);
 
 
     incomingFIFO.buffer = incomingBuffer;
-    incomingFIFO.NOfItems = numberOfIncomingItemsInBuffer;
+    incomingFIFO.NOfItems = sizeOfIncommingFrameBuffer;
 
 
     outgoingQueue = xQueueCreateStatic(PacketQueueSize, sizeof(CAN::Packet), outgoingQueueStorageArea,
@@ -29,63 +28,79 @@ CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
     incomingMFQueue = xQueueCreateStatic(PacketQueueSize, sizeof(CAN::Packet), incomingMFQueueStorageArea,
                                          &incomingMFQueueBuffer);
     vQueueAddToRegistry(incomingSFQueue, "CAN Incoming MF");
+    incomingFrameQueue = xQueueCreateStatic(sizeOfIncommingFrameBuffer, sizeof(CAN::Frame), incomingFrameQueueStorageArea,
+                                            &incomingFrameQueueBuffer);
+    vQueueAddToRegistry(incomingFrameQueue, "CAN Incoming Frame");
 }
 
 static uint32_t thread_notification;
 
 void CANGatekeeperTask::execute() {
     CAN::Packet out_message = {};
-    CAN::Packet in_message = {};
+    // CAN::Packet in_message = {};
+    CAN::Frame in_frame = {};
 
     taskHandle = xTaskGetCurrentTaskHandle();
 
     uint32_t ulNotifiedValue;
-    uint8_t localMessageBuffer[1024];
-    uint32_t localMessageBufferTailPointer = 0;
-    uint32_t currentMFMessageSize = 0;
+
+    // Variables for Rx message processing/storing
+    uint8_t localPacketBuffer[1024];
+    uint32_t localPacketBufferTailPointer = 0;
+    uint32_t currentMFPacketSize = 0;
+
+    // Variables for eMMC storage handling
+    uint32_t eMMCPacketTailPointer = 0;
 
     while (true) {
         // LOG_DEBUG << "{START OF" << this->TaskName << "}";
-        xTaskNotifyWait(0, 0, &ulNotifiedValue, portMAX_DELAY);
+        xTaskNotifyWait(0, 0, &ulNotifiedValue, pdMS_TO_TICKS(1000));
 
-
-        while (getIncomingSFMessagesCount()) {
+        while (uxQueueMessagesWaiting(incomingFrameQueue)) {
             // Get the message pointer from the queue
-            xQueueReceive(incomingSFQueue, &in_message, portMAX_DELAY);
+            xQueueReceive(incomingFrameQueue, &in_frame, portMAX_DELAY);
+
+            // Make sure the memory item size will not be exceeded
+            if (eMMCPacketTailPointer + 2 > eMMC::memoryMap[eMMC::CANMessages].size / 512) {
+                eMMCPacketTailPointer = 0;
+            }
 
             // Extract metadata
-            uint8_t metadata = in_message.dataPointer[0];
+            uint8_t metadata = in_frame.pointerToData[0];
             uint8_t frameType = metadata >> 6;
             uint8_t payloadLength = metadata & 0x3F;
 
-            // Check where which bus the message came from
-            if (in_message.bus->Instance == FDCAN1) {
+            // Check which bus the message came from
+            if (in_frame.bus->Instance == FDCAN1) {
                 __NOP();
-            } else if (in_message.bus->Instance == FDCAN2) {
+            } else if (in_frame.bus->Instance == FDCAN2) {
                 __NOP();
             }
 
             if (frameType == CAN::TPProtocol::Frame::Single) {
                 // Add frame to application layer queue
                 for (int i = 1; i < payloadLength; i++) {
-                    localMessageBuffer[i] = in_message.dataPointer[i];
+                    localPacketBuffer[i] = in_frame.pointerToData[i];
                 }
                 // Write message to eMMC
                 // todo
                 // Add message to queue
                 // todo
+                LOG_DEBUG << "CAN MF message received: " << payloadLength;
                 __NOP();
             } else if (frameType == CAN::TPProtocol::Frame::Final) {
-                uint32_t previousTailPointer = localMessageBufferTailPointer;
+                uint32_t previousTailPointer = localPacketBufferTailPointer;
 
-                for (; localMessageBufferTailPointer < currentMFMessageSize; localMessageBufferTailPointer++) {
+                for (; localPacketBufferTailPointer < currentMFPacketSize; localPacketBufferTailPointer++) {
                     __NOP();
-                    localMessageBuffer[localMessageBufferTailPointer] = in_message.dataPointer[localMessageBufferTailPointer - previousTailPointer + 1];
+                    localPacketBuffer[localPacketBufferTailPointer] = in_frame.pointerToData[localPacketBufferTailPointer - previousTailPointer + 1];
                 }
-                localMessageBufferTailPointer = 0;
+                localPacketBufferTailPointer = 0;
                 __NOP();
                 // Write message to eMMC
-                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::CANMessages], localMessageBuffer, eMMC::memoryMap[eMMC::CANMessages].size, 0, 2);
+                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::CANMessages], localPacketBuffer, 1024, eMMCPacketTailPointer += 2, 2);
+                uint8_t testBuffer[1024];
+                status = status = eMMC::getItem(eMMC::memoryMap[eMMC::CANMessages], testBuffer, 1024, eMMCPacketTailPointer - 2, 2);
                 // todo
                 // Add message to queue
                 // todo
@@ -96,14 +111,14 @@ void CANGatekeeperTask::execute() {
                 // Add frame to local buffer
                 __NOP();
 
-                for (uint32_t previousTailPointer = localMessageBufferTailPointer; localMessageBufferTailPointer < 63 + previousTailPointer; localMessageBufferTailPointer++) {
+                for (uint32_t previousTailPointer = localPacketBufferTailPointer; localPacketBufferTailPointer < 63 + previousTailPointer; localPacketBufferTailPointer++) {
                     __NOP();
-                    localMessageBuffer[localMessageBufferTailPointer] = in_message.dataPointer[localMessageBufferTailPointer - previousTailPointer + 1];
+                    localPacketBuffer[localPacketBufferTailPointer] = in_frame.pointerToData[localPacketBufferTailPointer - previousTailPointer + 1];
                 }
                 __NOP();
             } else if (frameType == CAN::TPProtocol::Frame::First) {
-                currentMFMessageSize = (in_message.dataPointer[0] & 0x3F) << 8;
-                currentMFMessageSize = currentMFMessageSize | in_message.dataPointer[1];
+                currentMFPacketSize = payloadLength << 8;
+                currentMFPacketSize = currentMFPacketSize | in_frame.pointerToData[1];
                 __NOP();
             }
             // CAN::TPProtocol::processSingleFrame(in_message);

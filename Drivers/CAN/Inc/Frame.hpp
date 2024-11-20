@@ -12,21 +12,39 @@ namespace CAN {
      * message payload. A CAN::Frame is merely a carrier of information and has no functionality.
      */
 
-    class Frame {
-    public:
-        uint8_t pointerToData;
-        /**
-   * The bus where the frame came from.
-   */
-        FDCAN_HandleTypeDef* bus;
-        enum Error {
-            INPUT_FRRAME_NO_ERROR = 0,
-            INPUT_FRRAME_BUFFER_FULL
-        } error;
-
-        Frame();
+    enum frameError {
+        INPUT_FRAME_NO_ERROR = 0,
+        INPUT_FRAME_BUFFER_FULL
     };
 
+    class Frame {
+    public:
+        /**
+     * Pointer to the bus from which the frame came from
+     */
+        FDCAN_HandleTypeDef* bus;
+
+        /**
+     * The header contains information about the frame,
+     * such as sender ID
+      */
+        FDCAN_RxHeaderTypeDef header;
+
+        /**
+      *Pointer to the 64 byte buffer of data
+      */
+        uint8_t* pointerToData;
+
+        /**
+     * The bus where the frame came from.
+     */
+        enum frameError error;
+
+        Frame()
+            : pointerToData(0),             // Default pointer value
+              error(INPUT_FRAME_NO_ERROR) { // Initialize error to no error
+        }
+    };
 
     class Packet {
     public:

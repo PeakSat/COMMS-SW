@@ -115,49 +115,31 @@ extern "C" void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t 
 extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
 
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    __NOP();
     if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
-        /* Retrieve Rx messages from RX FIFO0 */
 
-        if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &CAN::rxHeader0, &incomingFIFO.buffer[64 * (incomingFIFO.lastItemPointer)]) != HAL_OK) {
+        /* Retrieve Rx messages from RX FIFO0 */
+        CAN::Frame newFrame;
+        newFrame.pointerToData = &incomingFIFO.buffer[64 * (incomingFIFO.lastItemPointer)];
+        if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &newFrame.header, newFrame.pointerToData) != HAL_OK) {
             /* Reception Error */
             Error_Handler();
         }
-        CAN::rxFifo0.repair();
-        CAN::Packet newPacket = CAN::getFrame(&CAN::rxFifo0, CAN::rxHeader0.Identifier);
-        newPacket.dataPointer = &incomingFIFO.buffer[64 * (incomingFIFO.lastItemPointer)];
-        incomingFIFO.lastItemPointer++;
+        newFrame.bus = hfdcan;
 
-        if (incomingFIFO.lastItemPointer >= incomingFIFO.NOfItems) {
-            incomingFIFO.lastItemPointer = 0;
+        if (xQueueIsQueueFullFromISR(canGatekeeperTask->incomingFrameQueue)) {
+            // Queue is full. Handle the error
+            // todo
+            __NOP();
+        } else {
+            // Send the data to the gatekeeper
+            incomingFIFO.lastItemPointer++;
+
+            xQueueSendToBackFromISR(canGatekeeperTask->incomingFrameQueue, &newFrame, NULL);
+            xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+            __NOP();
         }
-        newPacket.bus = hfdcan;
 
-        // if(hfdcan->Instance == FDCAN1) {
-        //     __NOP();
-        //
-        // }else if(hfdcan->Instance == FDCAN2){
-        //     __NOP();
-        //
-        // }
-
-        canGatekeeperTask->addSFToIncoming(newPacket);
-        xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
-        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-
-        // if(CAN::rxFifo0[0] >> 6 == CAN::TPProtocol::Frame::Single){
-        //     canGatekeeperTask->addSFToIncoming(newFrame);
-        //     xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
-        //
-        // }else{
-        //     canGatekeeperTask->addMFToIncoming(newFrame);
-        //     if(CAN::rxFifo0[0] >> 6 == CAN::TPProtocol::Frame::Final){
-        //         xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
-        //         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-        //     }
-        // }
-
+        // Re-activate the callback
         if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
             /* Notification Error */
             Error_Handler();

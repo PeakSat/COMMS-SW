@@ -5,9 +5,13 @@
 #include "Logger.hpp"
 
 #include <optional>
+/**
+* Every variable needed to control the incoming frames' fifo buffer
+* will be stored in this struct.
+ */
 struct incomingFIFO {
     uint8_t* buffer;
-    uint32_t NOfItems; // Number of items
+    uint32_t NOfItems;
     uint32_t lastItemPointer;
     incomingFIFO() : buffer(nullptr), NOfItems(0), lastItemPointer(0) {}
     incomingFIFO(uint8_t* externalBuffer, uint32_t NOfItems) : buffer(externalBuffer), NOfItems(NOfItems), lastItemPointer(0) {}
@@ -28,7 +32,7 @@ extern incomingFIFO incomingFIFO;
  * @endcode
  */
 class CANGatekeeperTask : public Task {
-private:
+public:
     /**
      * A freeRTOS queue to handle outgoing messages, to keep order in case tasks interrupt each other.
      */
@@ -71,7 +75,21 @@ private:
      */
     static inline uint8_t incomingMFQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
 
-    const static inline uint16_t TaskStackDepth = 1800;
+    /**
+ * A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
+ */
+    QueueHandle_t incomingFrameQueue;
+    /**
+   * The variable used to hold the queue's data structure.
+   */
+    static inline StaticQueue_t incomingFrameQueueBuffer;
+
+    /**
+   * Storage area given to freeRTOS to manage the queue items.
+   */
+    static inline uint8_t incomingFrameQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)];
+
+    const static inline uint16_t TaskStackDepth = 6000;
 
     StackType_t taskStack[TaskStackDepth];
 
