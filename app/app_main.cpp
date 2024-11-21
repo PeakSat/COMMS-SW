@@ -114,11 +114,13 @@ extern "C" void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t 
 
 extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
 
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
 
         /* Retrieve Rx messages from RX FIFO0 */
         CAN::Frame newFrame;
+        if (incomingFIFO.lastItemPointer >= sizeOfIncommingFrameBuffer) {
+            incomingFIFO.lastItemPointer = 0;
+        }
         newFrame.pointerToData = &incomingFIFO.buffer[64 * (incomingFIFO.lastItemPointer)];
         if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &newFrame.header, newFrame.pointerToData) != HAL_OK) {
             /* Reception Error */
@@ -133,7 +135,7 @@ extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t 
         } else {
             // Send the data to the gatekeeper
             incomingFIFO.lastItemPointer++;
-
+            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
             xQueueSendToBackFromISR(canGatekeeperTask->incomingFrameQueue, &newFrame, NULL);
             xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
             __NOP();
