@@ -4,6 +4,7 @@
 
 void GNSSTask::printing(uint8_t* buf) {
     printing_counter++;
+    etl::string<1024> GNSSMessageString = "";
     if (printing_counter == printing_frequency) {
         printing_counter = 0;
         GNSSMessageString.assign(buf, buf + GNSSPayloadSize);
@@ -14,34 +15,75 @@ void GNSSTask::printing(uint8_t* buf) {
     }
 }
 
-void GNSSTask::parser(uint8_t* buf) {
+void GNSSTask::compactGNSSprinting(struct CompactGNSSData* c) {
+    LOG_INFO << "---------RMC---------";
+    LOG_INFO << "latitude" << c->latitude;
+    LOG_INFO << "longitude" << c->longitude;
+    LOG_INFO << "year:" << c->year;
+    LOG_INFO << "month:" << c->month;
+    LOG_INFO << "day:" << c->day;
+    LOG_INFO << "valid:" << c->valid;
+    LOG_INFO << "hours" << c->hours;
+    LOG_INFO << "minutes" << c->minutes;
+    LOG_INFO << "seconds" << c->seconds;
+    LOG_INFO << "microseconds" << c->microseconds;
+    LOG_INFO << "speed over ground" << c->speed;
+    LOG_INFO << "course over ground" << c->course;
+    LOG_INFO << "---------GGA---------";
+    LOG_INFO << "altitude" << c->altitude;
+}
+
+void GNSSTask::setCompactGnssDataRMC(struct CompactGNSSData* compact, struct minmea_sentence_rmc* frame_rmc) {
+    compact->longitude = minmea_tocoord(&frame_rmc->longitude);
+    compact->latitude = minmea_tocoord(&frame_rmc->latitude);
+    compact->year = static_cast<int8_t>(frame_rmc->date.year);
+    compact->month = static_cast<int8_t>(frame_rmc->date.month);
+    compact->day = static_cast<int8_t>(frame_rmc->date.day);
+    compact->hours = static_cast<int8_t>(frame_rmc->time.hours);
+    compact->minutes = static_cast<int8_t>(frame_rmc->time.minutes);
+    compact->seconds = static_cast<int8_t>(frame_rmc->time.seconds);
+    char buffer[10];
+    sprintf(buffer, "%d", frame_rmc->time.microseconds);
+    // Extract the first two characters and convert back to an integer
+    if (buffer[0] >= '0' && buffer[0] <= '9' && buffer[1] >= '0' && buffer[1] <= '9') {
+        compact->microseconds = (buffer[0] - '0') * 10 + (buffer[1] - '0');
+    } else
+        compact->microseconds = 0;
+    compact->speed = minmea_tocoord(&frame_rmc->speed);
+    compact->speed = minmea_tocoord(&frame_rmc->course);
+}
+
+void GNSSTask::setCompactGnssDataGGA(struct CompactGNSSData* compact, struct minmea_sentence_gga* frame_gga) {
+    compact->altitude = minmea_tocoord(&frame_gga->altitude);
+}
+
+void GNSSTask::initGNSS() {
+    HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+    resetGNSSHardware();
+    controlGNSSwithNotify(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
+    controlGNSSwithNotify(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GNMode, Attributes::UpdateSRAMandFLASH));
+}
+
+void GNSSTask::parser(uint8_t* buf, struct CompactGNSSData* compact) {
+    etl::string<1024> GNSSMessageString = "";
     GNSSMessageString.assign(buf, buf + GNSSPayloadSize);
+    struct minmea_sentence_rmc frame_rmc {};
+    struct minmea_sentence_gga frame_gga {};
     LOG_INFO << GNSSMessageString.c_str();
     char* line = strtok(&GNSSMessageString[0], "\n"); // Tokenize the string by newline characters
     while (line != nullptr) {
         switch (minmea_sentence_id(line, true)) {
             case MINMEA_SENTENCE_RMC: {
-                struct minmea_sentence_rmc frame {};
-                if (minmea_parse_rmc(&frame, line)) {
-                    LOG_DEBUG << "RMC";
-                    LOG_DEBUG << "latitude" << frame.latitude.value;
-                    LOG_DEBUG << "day:" << frame.date.day;
-                    LOG_DEBUG << "month:" << frame.date.month;
-                    LOG_DEBUG << "year:" << frame.date.year;
-                    LOG_DEBUG << "valid:" << frame.valid;
-                    LOG_DEBUG << "hours" << frame.time.hours;
-                    LOG_DEBUG << "minutes" << frame.time.minutes;
-                    LOG_DEBUG << "seconds" << frame.time.seconds;
-                    LOG_DEBUG << "microseconds" << frame.time.microseconds;
-                    LOG_DEBUG << "variation" << frame.variation.value;
+                if (minmea_parse_rmc(&frame_rmc, line)) {
+                    setCompactGnssDataRMC(compact, &frame_rmc);
                 }
                 break;
             }
             case MINMEA_SENTENCE_GGA: {
-                struct minmea_sentence_gga frame {};
-                if (minmea_parse_gga(&frame, line)) {
-                    LOG_DEBUG << "GGA";
-                    LOG_DEBUG << "altitude" << frame.altitude.value;
+                if (minmea_parse_gga(&frame_gga, line)) {
+                    setCompactGnssDataGGA(compact, &frame_gga);
                 }
                 break;
             }
@@ -61,7 +103,7 @@ void GNSSTask::switchGNSSMode() {
         // 4 is for RMC, 6 for ZDA, 0 is for GGA
         interval_vec[0] = seconds;
         interval_vec[4] = seconds;
-        controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
+        controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option5Hz, Attributes::UpdateToSRAM));
     } else {
         LOG_INFO << "SLOW MODE";
         interval_vec.resize(12, 0);
@@ -70,7 +112,6 @@ void GNSSTask::switchGNSSMode() {
         // 4 is for RMC, 6 for ZDA, 0 is for GGA
         interval_vec[0] = seconds;
         interval_vec[4] = seconds;
-
         controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option1Hz, Attributes::UpdateToSRAM));
     }
     auto status = controlGNSSwithNotify(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
@@ -86,10 +127,16 @@ void GNSSTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     HAL_UARTEx_ReceiveToIdle_DMA(&huart5, buf, size);
     // disabling the half buffer interrupt //
     __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_HT);
-    //  disabling the half buffer interrupt //
+    //  disabling the full buffer interrupt //
     __HAL_DMA_DISABLE_IT(&hdma_uart5_rx, DMA_IT_TC);
 }
 
+// Helper function to handle GNSS reset
+void GNSSTask::resetGNSSHardware() {
+    HAL_GPIO_WritePin(GNSS_RSTN_GPIO_Port, GNSS_RSTN_Pin, GPIO_PIN_RESET);
+    vTaskDelay(50);
+    HAL_GPIO_WritePin(GNSS_RSTN_GPIO_Port, GNSS_RSTN_Pin, GPIO_PIN_SET);
+}
 
 etl::expected<void, ErrorFromGNSS> GNSSTask::controlGNSSwithNotify(GNSSMessage gnssMessageToSend) {
     control = 1;
@@ -131,7 +178,9 @@ etl::expected<void, ErrorFromGNSS> GNSSTask::controlGNSSwithNotify(GNSSMessage g
     }
     // If we exit the loop without success, return a Timeout error
     LOG_ERROR << "Failed to receive ACK/NACK after maximum retries.";
-    memset(rx_pointer_from_queue, 0, 1024);
+    if (rx_pointer_from_queue != nullptr) {
+        memset(rx_pointer_from_queue, 0, 1024);
+    }
     control = 0;
     return etl::unexpected<ErrorFromGNSS>(ErrorFromGNSS::Timeout);
 }
@@ -153,27 +202,23 @@ void GNSSTask::initQueuesToAcceptPointers() {
 }
 
 void GNSSTask::execute() {
-    HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GNSS_RSTN_GPIO_Port, GNSS_RSTN_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-
     rx_buf_pointer = rx_buf;
     startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
-    controlGNSSwithNotify(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
+    initGNSS();
     uint32_t receivedEvents = 0;
     uint8_t counter = 0;
     uint8_t* rx_buf_p_from_queue = nullptr;
+    struct CompactGNSSData compact {};
     int timeoutCounter = 0;
     while (true) {
         // you may have a counter that counts how many
         if (xTaskNotifyWait(GNSS_MESSAGE_READY, GNSS_MESSAGE_READY, &receivedEvents, pdMS_TO_TICKS(MAXIMUM_INTERVAL)) == pdTRUE) {
             if (receivedEvents & GNSS_MESSAGE_READY) {
-                // Receive a message on the created queue.  Block for 100ms if the message is not immediately available
+                // Receive a message on the created queue.Block for 100ms if the message is not immediately available
                 if (xQueueReceive(gnssQueueHandleDefault, &rx_buf_p_from_queue, pdMS_TO_TICKS(100)) == pdTRUE) {
                     if (rx_buf_p_from_queue != nullptr) {
-                        //                        printing(rx_buf_p_from_queue);
-                        parser(rx_buf_p_from_queue);
+                        parser(rx_buf_p_from_queue, &compact);
+                        compactGNSSprinting(&compact);
                         timeoutCounter = 0;
                         counter++;
                     }
@@ -191,6 +236,7 @@ void GNSSTask::execute() {
             if (timeoutCounter >= 5) {
                 LOG_ERROR << "Multiple GNSS timeouts, attempting to reset GNSS communication.";
                 // RESET GNSS (FDIR)
+                resetGNSSHardware();
                 timeoutCounter = 0; // Reset the counter after corrective action
             }
         }

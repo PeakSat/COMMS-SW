@@ -18,6 +18,22 @@ namespace GNSSDefinitions {
         MultipleCommandsFail
     };
 
+    struct CompactGNSSData {
+        int8_t day;
+        int8_t month;
+        int8_t year;
+        int8_t hours;
+        int8_t minutes;
+        int8_t seconds;
+        uint8_t microseconds;
+        uint8_t valid;
+        float speed;
+        float course;
+        float latitude;  // Scaled integer representation
+        float longitude; // Scaled integer representation
+        float altitude;  // For GGA altitude (scaled or in meters)
+    };
+
     inline const uint8_t GNSSQueueSize = 1;
 
     /**
