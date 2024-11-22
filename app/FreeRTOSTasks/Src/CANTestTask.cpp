@@ -2,6 +2,8 @@
 #include "ApplicationLayer.hpp"
 #include "CANGatekeeperTask.hpp"
 
+#include <eMMC.hpp>
+
 void CANTestTask::execute() {
 
     CAN::CANBuffer_t message = {};
@@ -28,7 +30,13 @@ void CANTestTask::execute() {
             CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
             LOG_DEBUG << "MAIN CAN is sending";
         }
-        xTaskNotify(canGatekeeperTask->taskHandle, 0, eNoAction);
-        vTaskDelay(pdMS_TO_TICKS(3000));
+        while (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue)) {
+            CAN::StoredPacket StoredPacket;
+            xQueueReceive(canGatekeeperTask->storedPacketQueue, &StoredPacket, portMAX_DELAY);
+            uint8_t messageBuff[StoredPacket.size];
+            CAN::Application::getStoredMessage(&StoredPacket, messageBuff, StoredPacket.size, sizeof(messageBuff) / sizeof(messageBuff[0]));
+            LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << StoredPacket.size;
+        }
+        vTaskDelay(3000);
     }
 }

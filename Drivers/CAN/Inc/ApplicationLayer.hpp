@@ -79,6 +79,11 @@ namespace CAN::Application {
     }
 
     /**
+     * Get a message stored in eMMC.
+     */
+    void getStoredMessage(CAN::StoredPacket* packet, uint8_t* dataBuffer, uint32_t dataSize, uint32_t bufferSize);
+
+    /**
      * Adds a Ping message to the outgoing queue, according to DDJF_OBDH.
      */
     void sendPingMessage(NodeIDs destinationAddress, bool isMulticast);

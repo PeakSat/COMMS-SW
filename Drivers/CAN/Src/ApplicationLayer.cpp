@@ -5,12 +5,32 @@
 #include "CANGatekeeperTask.hpp"
 #include "Logger.hpp"
 
+#include <eMMC.hpp>
+
 namespace CAN::Application {
+
     //    ActiveBus switchBus(ActiveBus newBus) {
     //        PeakSatParameters::comms
     //        return PeakSatParameters::obcCANBUSActive.getValue();
     //    }
     //    /*
+
+    void getStoredMessage(CAN::StoredPacket* packet, uint8_t* dataBuffer, uint32_t dataSize, uint32_t bufferSize) {
+        if (dataSize > bufferSize) {
+            LOG_ERROR << "Buffer size smaller than eMMC message";
+            return;
+        }
+        uint8_t localPacketBuffer[1024];
+        uint32_t numberOfBlocks = 1;
+        if (dataSize > 512) {
+            numberOfBlocks = 2;
+        }
+        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::CANMessages], localPacketBuffer, std::size(localPacketBuffer), packet->pointerToeMMCItemData, numberOfBlocks);
+        for (int i = 0; i < dataSize; i++) {
+            dataBuffer[i] = localPacketBuffer[i];
+        }
+    }
+
     void sendPingMessage(NodeIDs destinationAddress, bool isMulticast) {
         TPMessage message = {{NodeID, destinationAddress, isMulticast}};
 

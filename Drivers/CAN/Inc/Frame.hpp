@@ -12,9 +12,9 @@ namespace CAN {
      * message payload. A CAN::Frame is merely a carrier of information and has no functionality.
      */
 
-    enum frameError {
-        INPUT_FRAME_NO_ERROR = 0,
-        INPUT_FRAME_BUFFER_FULL
+    enum CANInstance {
+        CAN1,
+        CAN2
     };
 
     class Frame {
@@ -35,14 +35,40 @@ namespace CAN {
       */
         uint8_t* pointerToData;
 
-        /**
-     * The bus where the frame came from.
-     */
-        enum frameError error;
-
         Frame()
-            : pointerToData(0),             // Default pointer value
-              error(INPUT_FRAME_NO_ERROR) { // Initialize error to no error
+            : pointerToData(0) { // Initialize error to no error
+        }
+    };
+
+    /**
+    * A struct with every information necessary to retrieve a packet
+    * stored in the eMMC memory
+    */
+    class StoredPacket {
+
+    public:
+        /**
+     * Pointer to the bus from which the frame came from
+     */
+        enum CANInstance CANInstance;
+
+        /**
+     * The header contains information about the frame,
+     * such as sender ID
+      */
+        uint32_t Identifier;
+        /**
+        * Size of the message in eMMC
+         */
+        uint32_t size;
+
+        /**
+      * Start address of the data in the eMMC item area ()
+      */
+        uint32_t pointerToeMMCItemData;
+
+        StoredPacket()
+            : pointerToeMMCItemData(0), size(0) { // Initialize error to no error
         }
     };
 
