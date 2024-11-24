@@ -5,3 +5,5 @@ cmake-build-debug/
 .mxproject
 
 STM32H743VITx_FLASH.ld
+
+build/

@@ -26,6 +26,7 @@
 
 #ifndef __APP_MAIN_H__
 #define __APP_MAIN_H__
+#pragma once
 
 /**
  * @brief Main app entry point.
@@ -33,6 +34,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "FreeRTOS.h"
+#include "semphr.h"
+
+struct eMMCTransactionHandler {
+    SemaphoreHandle_t eMMC_semaphore;
+    bool WriteComplete = false;
+    bool ReadComplete = false;
+    bool ErrorOccured = false;
+    bool transactionAborted = false;
+    MMC_HandleTypeDef hmmcSnapshot;
+    uint32_t transactionTimeoutPerBlock = 100; // ms
+    uint32_t getSemaphoreTimeout = 1000;       //ms
+};
+extern eMMCTransactionHandler eMMCTransactionHandler;
 
 void app_main(void);
 
