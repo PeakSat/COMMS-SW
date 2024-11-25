@@ -44,7 +44,7 @@ etl::string<TemperatureSensorsTask::MaxSensorNameSize> TemperatureSensorsTask::s
 void TemperatureSensorsTask::execute() {
     // for temporarily holding a temperature and an error
     etl::pair<TMP117::Error, float> temperature;
-
+    vTaskDelay(1000);
     while (true) {
         Logger::format.precision(LoggerPrecision);
         for (auto s: sensors) {

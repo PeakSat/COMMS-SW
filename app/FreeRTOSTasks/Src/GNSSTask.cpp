@@ -64,6 +64,15 @@ void GNSSTask::initGNSS() {
     resetGNSSHardware();
     controlGNSSwithNotify(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
     controlGNSSwithNotify(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GNMode, Attributes::UpdateSRAMandFLASH));
+    etl::vector<uint8_t, 12> interval_vec;
+    uint8_t seconds;
+    interval_vec.resize(12, 0);
+    // seconds = 6, Position Rate = 1Hz gives 1/6 Hz
+    seconds = 1;
+    // 4 is for RMC, 6 for ZDA, 0 is for GGA
+    interval_vec[0] = seconds;
+    interval_vec[4] = seconds;
+    controlGNSSwithNotify(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
 }
 
 void GNSSTask::parser(uint8_t* buf, struct CompactGNSSData* compact) {
@@ -237,6 +246,7 @@ void GNSSTask::execute() {
                 LOG_ERROR << "Multiple GNSS timeouts, attempting to reset GNSS communication.";
                 // RESET GNSS (FDIR)
                 resetGNSSHardware();
+                LOG_ERROR << "GNSS reset due to timeout";
                 timeoutCounter = 0; // Reset the counter after corrective action
             }
         }
