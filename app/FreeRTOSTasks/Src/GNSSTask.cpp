@@ -63,15 +63,15 @@ void GNSSTask::initGNSS() {
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
     resetGNSSHardware();
     controlGNSSwithNotify(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
-    controlGNSSwithNotify(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GNMode, Attributes::UpdateSRAMandFLASH));
+    controlGNSSwithNotify(GNSSReceiver::configureNMEATalkerID(TalkerIDType::AutoMode, Attributes::UpdateSRAMandFLASH));
     etl::vector<uint8_t, 12> interval_vec;
     uint8_t seconds;
     interval_vec.resize(12, 0);
-    // seconds = 6, Position Rate = 1Hz gives 1/6 Hz
-    seconds = 1;
+    seconds = 5;
     // 4 is for RMC, 6 for ZDA, 0 is for GGA
     interval_vec[0] = seconds;
     interval_vec[4] = seconds;
+    controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option1Hz, Attributes::UpdateToSRAM));
     controlGNSSwithNotify(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
 }
 
@@ -112,12 +112,12 @@ void GNSSTask::switchGNSSMode() {
         // 4 is for RMC, 6 for ZDA, 0 is for GGA
         interval_vec[0] = seconds;
         interval_vec[4] = seconds;
-        controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option5Hz, Attributes::UpdateToSRAM));
+        controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
     } else {
         LOG_INFO << "SLOW MODE";
         interval_vec.resize(12, 0);
         // seconds = 6, Position Rate = 1Hz gives 1/6 Hz
-        seconds = 6;
+        seconds = 2;
         // 4 is for RMC, 6 for ZDA, 0 is for GGA
         interval_vec[0] = seconds;
         interval_vec[4] = seconds;
@@ -229,15 +229,10 @@ void GNSSTask::execute() {
                         parser(rx_buf_p_from_queue, &compact);
                         compactGNSSprinting(&compact);
                         timeoutCounter = 0;
-                        counter++;
                     }
                 } else {
                     LOG_ERROR << "Queue Timeout";
                 }
-            }
-            if (counter == 5) {
-                counter = 0;
-                switchGNSSMode();
             }
         } else {
             LOG_ERROR << "Timeout waiting for GNSS message.";
