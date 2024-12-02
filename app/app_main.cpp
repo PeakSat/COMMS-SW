@@ -121,13 +121,21 @@ extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t 
         if (incomingFIFO.lastItemPointer >= sizeOfIncommingFrameBuffer) {
             incomingFIFO.lastItemPointer = 0;
         }
-        newFrame.pointerToData = &incomingFIFO.buffer[64 * (incomingFIFO.lastItemPointer)];
+        newFrame.pointerToData = &incomingFIFO.buffer[CANMessageSize * (incomingFIFO.lastItemPointer)];
         if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &newFrame.header, newFrame.pointerToData) != HAL_OK) {
             /* Reception Error */
             Error_Handler();
         }
         newFrame.bus = hfdcan;
 
+        if (newFrame.pointerToData[0] == 0 && newFrame.pointerToData[1] == 0) {
+            __NOP();
+            if (newFrame.bus->Instance == FDCAN1) {
+                __NOP();
+            } else if (newFrame.bus->Instance == FDCAN2) {
+                __NOP();
+            }
+        }
         if (xQueueIsQueueFullFromISR(canGatekeeperTask->incomingFrameQueue)) {
             // Queue is full. Handle the error
             // todo

@@ -77,7 +77,7 @@ namespace CAN {
         /**
          * The maximum data length that is currently configured in the peripheral.
          */
-        static constexpr uint8_t MaxDataLength = 64;
+        static constexpr uint8_t MaxDataLength = 8;
 
 
         FDCAN_HandleTypeDef* bus;
