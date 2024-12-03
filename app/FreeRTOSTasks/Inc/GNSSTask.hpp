@@ -9,6 +9,7 @@
 #include <etl/string.h>
 #include <etl/expected.h>
 #include "minmea.h"
+#include "Logger.hpp"
 
 #define printing_frequency 1
 
@@ -17,6 +18,10 @@ extern DMA_HandleTypeDef hdma_uart5_rx;
 
 class GNSSTask : public Task {
 public:
+    /**
+     * Logger Precision
+     */
+    static constexpr uint8_t Precision = 6;
     /**
     * Depth of the stack allocated for the task, in 16-bit words.
     */
@@ -110,6 +115,7 @@ public:
     */
     void printing(uint8_t* buf);
 
+
     /**
     * Resets the GNSS hardware by toggling the reset pin. This is used to recover
     * the GNSS module from errors or unresponsive states.
@@ -120,21 +126,21 @@ public:
     * Prints the variables contained in the compact GNSS data structure.
     * @param c A pointer to the CompactGNSSData structure to be printed.
      */
-    static void compactGNSSprinting(struct CompactGNSSData* c);
+    static void rawGNSSprinting(const GNSSData& c);
 
     /**
     * Updates the compact GNSS data structure with variables from a parsed RMC sentence.
     * @param compact A pointer to the CompactGNSSData structure to update.
     * @param frame_rmc A pointer to the parsed RMC sentence structure containing the data.
     */
-    static void setCompactGnssDataRMC(struct CompactGNSSData* compact, struct minmea_sentence_rmc* frame_rmc);
+    static void setCompactGnssDataRMC(GNSSData& compact, const minmea_sentence_rmc& frame_rmc);
 
     /**
     * Updates the compact GNSS data structure with variables from a parsed GGA sentence.
     * @param compact A pointer to the CompactGNSSData structure to update.
     * @param frame_gga A pointer to the parsed GGA sentence structure containing the data.
     */
-    static void setCompactGnssDataGGA(struct CompactGNSSData* compact, struct minmea_sentence_gga* frame_gga);
+    static void setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gga& frame_gga);
 
     /**
     * Parses raw GNSS data and extracts key variables into a compact structure.
@@ -143,7 +149,7 @@ public:
     * @param buf A pointer to the raw GNSS data buffer.
      @param compact A pointer to the CompactGNSSData structure where parsed data will be stored.
     */
-    static void parser(uint8_t* buf, struct CompactGNSSData* compact);
+    static void parser(uint8_t* buf, GNSSData& compact);
 
     /**
     * Sends a command to the GNSS module and waits for an ACK or NACK response.
@@ -178,6 +184,22 @@ public:
      */
     void initGNSS();
 
+    /**
+     *
+     */
+    // Template function to convert DDM to Decimal Degrees
+    template <typename T>
+    static T convertToDecimalDegrees(T ddm) {
+        LOG_DEBUG << "ddm " << ddm;
+        // Extract degrees (integer part)
+        int degrees = static_cast<int>(ddm);
+        LOG_DEBUG << "degrees: " << degrees;
+        // Extract minutes (fractional part)
+        T minutes = (ddm - degrees) * 100;
+        LOG_DEBUG << "minutes: " << minutes;
+        // Return the decimal degrees by adding the minutes divided by 60
+        return degrees + (minutes / static_cast<T>(60.0));
+    }
 
     GNSSTask() : Task("GNSS Logging Task") {}
 

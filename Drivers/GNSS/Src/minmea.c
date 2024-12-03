@@ -7,10 +7,10 @@
  */
 
 #include "minmea.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+
 
 #define boolstr(s) ((s) ? "true" : "false")
 
@@ -123,7 +123,6 @@ bool minmea_scan(const char* sentence, const char* format, ...) {
         switch (type) {
             case 'c': { // Single character field (char).
                 char value = '\0';
-
                 if (field && minmea_isfield(*field))
                     value = *field;
 
@@ -400,10 +399,11 @@ bool minmea_parse_rmc(struct minmea_sentence_rmc* frame, const char* sentence) {
     int latitude_direction;
     int longitude_direction;
     int variation_direction;
+
     if (!minmea_scan(sentence, "tTcfdfdffDfd",
                      type,
                      &frame->time,
-                     &validity,
+                     &validity, // Parse validity here
                      &frame->latitude, &latitude_direction,
                      &frame->longitude, &longitude_direction,
                      &frame->speed,
@@ -411,10 +411,16 @@ bool minmea_parse_rmc(struct minmea_sentence_rmc* frame, const char* sentence) {
                      &frame->date,
                      &frame->variation, &variation_direction))
         return false;
+
     if (strcmp(type + 2, "RMC"))
         return false;
+    // Debugging: Print parsed validity
+    // Check the validity character parsed from the sentence
+    if (validity == 'A') // Check if valid (A = Active, V = Void)
+        frame->valid = 1;
+    else
+        frame->valid = 0;
 
-    frame->valid = (validity == 'A');
     frame->latitude.value *= latitude_direction;
     frame->longitude.value *= longitude_direction;
     frame->variation.value *= variation_direction;

@@ -21,20 +21,20 @@ void app_main(void) {
         __NOP();
     }
 
-    transceiverTask.emplace();
+    //    transceiverTask.emplace();
     uartGatekeeperTask.emplace();
-    eMMCTask.emplace();
+    //    eMMCTask.emplace();
     gnssTask.emplace();
 
-    ina3221Task.emplace();
-    tmp117Task.emplace();
+    //    ina3221Task.emplace();
+    //    tmp117Task.emplace();
 
-    transceiverTask->createTask();
+    //    transceiverTask->createTask();
     uartGatekeeperTask->createTask();
-    eMMCTask->createTask();
+    //    eMMCTask->createTask();
     gnssTask->createTask();
-    ina3221Task->createTask();
-    tmp117Task->createTask();
+    //    ina3221Task->createTask();
+    //    tmp117Task->createTask();
 
     /* Start the scheduler. */
     vTaskStartScheduler();

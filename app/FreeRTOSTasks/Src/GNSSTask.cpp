@@ -1,3 +1,4 @@
+#include <iomanip>
 #include "GNSSTask.hpp"
 #include "main.h"
 #include "Logger.hpp"
@@ -15,46 +16,67 @@ void GNSSTask::printing(uint8_t* buf) {
     }
 }
 
-void GNSSTask::compactGNSSprinting(struct CompactGNSSData* c) {
+void GNSSTask::rawGNSSprinting(const GNSSData& c) {
     LOG_INFO << "---------RMC---------";
-    LOG_INFO << "latitude" << c->latitude;
-    LOG_INFO << "longitude" << c->longitude;
-    LOG_INFO << "year:" << c->year;
-    LOG_INFO << "month:" << c->month;
-    LOG_INFO << "day:" << c->day;
-    LOG_INFO << "valid:" << c->valid;
-    LOG_INFO << "hours" << c->hours;
-    LOG_INFO << "minutes" << c->minutes;
-    LOG_INFO << "seconds" << c->seconds;
-    LOG_INFO << "microseconds" << c->microseconds;
-    LOG_INFO << "speed over ground" << c->speed;
-    LOG_INFO << "course over ground" << c->course;
+    //    LOG_INFO << "latitude " << c.latitude;
+    //    LOG_INFO << "longitude " << c.longitude;
+    LOG_INFO << "year: " << c.year;
+    LOG_INFO << "month: " << c.month;
+    LOG_INFO << "day: " << c.day;
+    LOG_INFO << "valid: " << c.valid;
+    LOG_INFO << "hours " << c.hours;
+    LOG_INFO << "minutes " << c.minutes;
+    LOG_INFO << "seconds " << c.seconds;
+    LOG_INFO << "microseconds " << c.microseconds;
+    LOG_INFO << "speed over ground[km/s] " << c.speed;
+    LOG_INFO << "course over ground[deg] " << c.course;
     LOG_INFO << "---------GGA---------";
-    LOG_INFO << "altitude" << c->altitude;
+    //    LOG_INFO << "altitude " << c.altitude;
 }
 
-void GNSSTask::setCompactGnssDataRMC(struct CompactGNSSData* compact, struct minmea_sentence_rmc* frame_rmc) {
-    compact->longitude = minmea_tocoord(&frame_rmc->longitude);
-    compact->latitude = minmea_tocoord(&frame_rmc->latitude);
-    compact->year = static_cast<int8_t>(frame_rmc->date.year);
-    compact->month = static_cast<int8_t>(frame_rmc->date.month);
-    compact->day = static_cast<int8_t>(frame_rmc->date.day);
-    compact->hours = static_cast<int8_t>(frame_rmc->time.hours);
-    compact->minutes = static_cast<int8_t>(frame_rmc->time.minutes);
-    compact->seconds = static_cast<int8_t>(frame_rmc->time.seconds);
-    char buffer[10];
-    sprintf(buffer, "%d", frame_rmc->time.microseconds);
-    // Extract the first two characters and convert back to an integer
-    if (buffer[0] >= '0' && buffer[0] <= '9' && buffer[1] >= '0' && buffer[1] <= '9') {
-        compact->microseconds = (buffer[0] - '0') * 10 + (buffer[1] - '0');
-    } else
-        compact->microseconds = 0;
-    compact->speed = minmea_tocoord(&frame_rmc->speed);
-    compact->speed = minmea_tocoord(&frame_rmc->course);
+
+void GNSSTask::setCompactGnssDataRMC(GNSSData& compact, const minmea_sentence_rmc& frame_rmc) {
+    compact.latitudeF = static_cast<float>(frame_rmc.latitude.value) / 10000000.0f;
+    compact.latitudeF = convertToDecimalDegrees(compact.latitudeF);
+    LOG_DEBUG << "latitude float: " << compact.latitudeF;
+    compact.latitudeD = static_cast<double>(frame_rmc.latitude.value) / 10000000.0;
+    compact.latitudeD = convertToDecimalDegrees(compact.latitudeD);
+    LOG_DEBUG << "latitude double: " << compact.latitudeD;
+    compact.latitudeI = (int32_t) (10000000 * compact.latitudeD);
+
+    LOG_DEBUG << "lat int: " << compact.latitudeI;
+
+    if (compact.latitudeF > 2)
+        __NOP();
+    compact.longitudeF = static_cast<float>(frame_rmc.longitude.value) / 10000000.0f;
+    compact.longitudeF = convertToDecimalDegrees(compact.longitudeF);
+    LOG_DEBUG << "longitude float: " << compact.longitudeF;
+    compact.longitudeD = static_cast<double>(frame_rmc.longitude.value) / 10000000.0;
+    compact.longitudeD = convertToDecimalDegrees(compact.longitudeD);
+    compact.longitudeI = (int32_t) (10000000 * compact.longitudeD);
+    LOG_DEBUG << "longitude double: " << compact.longitudeD;
+    LOG_DEBUG << "long int: " << compact.longitudeI;
+
+
+    compact.year = static_cast<int8_t>(frame_rmc.date.year);
+    compact.month = static_cast<int8_t>(frame_rmc.date.month);
+    compact.day = static_cast<int8_t>(frame_rmc.date.day);
+    compact.hours = static_cast<int8_t>(frame_rmc.time.hours);
+    compact.minutes = static_cast<int8_t>(frame_rmc.time.minutes);
+    compact.seconds = static_cast<int8_t>(frame_rmc.time.seconds);
+    compact.microseconds = frame_rmc.time.microseconds;
+    compact.speed = static_cast<float>(frame_rmc.speed.value) / 10.f;
+    compact.speed = (float) 0.0005144 * compact.speed;
+    compact.course = static_cast<float>(frame_rmc.course.value) / 10.f;
 }
 
-void GNSSTask::setCompactGnssDataGGA(struct CompactGNSSData* compact, struct minmea_sentence_gga* frame_gga) {
-    compact->altitude = minmea_tocoord(&frame_gga->altitude);
+void GNSSTask::setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gga& frame_gga) {
+    compact.altitude = static_cast<float>(frame_gga.altitude.value) / 10.0f;
+    LOG_DEBUG << "alt f: " << compact.altitude;
+    compact.altitudeI = (int32_t) (compact.altitude * 10);
+    LOG_DEBUG << "alt int: " << compact.altitudeI;
+    compact.altitude = static_cast<float>(compact.altitudeI) / 10.0f;
+    LOG_DEBUG << "alt f after having it as int: " << compact.altitude;
 }
 
 void GNSSTask::initGNSS() {
@@ -63,36 +85,38 @@ void GNSSTask::initGNSS() {
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
     resetGNSSHardware();
     controlGNSSwithNotify(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
-    controlGNSSwithNotify(GNSSReceiver::configureNMEATalkerID(TalkerIDType::AutoMode, Attributes::UpdateSRAMandFLASH));
+    controlGNSSwithNotify(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
     etl::vector<uint8_t, 12> interval_vec;
     uint8_t seconds;
     interval_vec.resize(12, 0);
-    seconds = 5;
+    seconds = 1;
     // 4 is for RMC, 6 for ZDA, 0 is for GGA
     interval_vec[0] = seconds;
     interval_vec[4] = seconds;
-    controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option1Hz, Attributes::UpdateToSRAM));
+    controlGNSSwithNotify(GNSSReceiver::configureGNSSNavigationMode(NavigationMode::Airborne, Attributes::UpdateToSRAM));
+    controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
     controlGNSSwithNotify(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
 }
 
-void GNSSTask::parser(uint8_t* buf, struct CompactGNSSData* compact) {
+void GNSSTask::parser(uint8_t* buf, GNSSData& compact) {
     etl::string<1024> GNSSMessageString = "";
     GNSSMessageString.assign(buf, buf + GNSSPayloadSize);
-    struct minmea_sentence_rmc frame_rmc {};
-    struct minmea_sentence_gga frame_gga {};
+    minmea_sentence_rmc frame_rmc{};
+    minmea_sentence_gga frame_gga{};
     LOG_INFO << GNSSMessageString.c_str();
     char* line = strtok(&GNSSMessageString[0], "\n"); // Tokenize the string by newline characters
+
     while (line != nullptr) {
         switch (minmea_sentence_id(line, true)) {
             case MINMEA_SENTENCE_RMC: {
                 if (minmea_parse_rmc(&frame_rmc, line)) {
-                    setCompactGnssDataRMC(compact, &frame_rmc);
+                    setCompactGnssDataRMC(compact, frame_rmc);
                 }
                 break;
             }
             case MINMEA_SENTENCE_GGA: {
                 if (minmea_parse_gga(&frame_gga, line)) {
-                    setCompactGnssDataGGA(compact, &frame_gga);
+                    setCompactGnssDataGGA(compact, frame_gga);
                 }
                 break;
             }
@@ -217,8 +241,9 @@ void GNSSTask::execute() {
     uint32_t receivedEvents = 0;
     uint8_t counter = 0;
     uint8_t* rx_buf_p_from_queue = nullptr;
-    struct CompactGNSSData compact {};
+    GNSSData compact{};
     int timeoutCounter = 0;
+    Logger::format.precision(Precision);
     while (true) {
         // you may have a counter that counts how many
         if (xTaskNotifyWait(GNSS_MESSAGE_READY, GNSS_MESSAGE_READY, &receivedEvents, pdMS_TO_TICKS(MAXIMUM_INTERVAL)) == pdTRUE) {
@@ -226,8 +251,8 @@ void GNSSTask::execute() {
                 // Receive a message on the created queue.Block for 100ms if the message is not immediately available
                 if (xQueueReceive(gnssQueueHandleDefault, &rx_buf_p_from_queue, pdMS_TO_TICKS(100)) == pdTRUE) {
                     if (rx_buf_p_from_queue != nullptr) {
-                        parser(rx_buf_p_from_queue, &compact);
-                        compactGNSSprinting(&compact);
+                        parser(rx_buf_p_from_queue, compact);
+                        rawGNSSprinting(compact);
                         timeoutCounter = 0;
                     }
                 } else {

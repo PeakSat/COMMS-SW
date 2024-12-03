@@ -1,7 +1,6 @@
 #pragma once
 #include "stm32h7xx_hal.h"
 #include "etl/expected.h"
-
 #include <array>
 #include <cstdint>
 #include "FreeRTOS.h"
