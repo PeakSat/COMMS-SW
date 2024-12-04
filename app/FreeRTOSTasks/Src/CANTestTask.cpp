@@ -11,7 +11,7 @@ void CANTestTask::execute() {
      * Simple 64 byte message sending
      */
 
-    for (uint8_t idx = 0; idx < CAN::Packet::MaxDataLength; idx++) {
+    for (uint8_t idx = 0; idx < CAN::MaxPayloadLength; idx++) {
         message.push_back(idx);
     }
     String<ECSSMaxMessageSize> testPayload1("CAN1 SAYS: SPONGEBOB SQUAREPANTS! ");

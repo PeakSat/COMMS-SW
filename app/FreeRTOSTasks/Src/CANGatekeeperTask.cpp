@@ -42,7 +42,7 @@ static uint32_t thread_notification;
 void CANGatekeeperTask::execute() {
     CAN::Packet out_message = {};
     // CAN::Packet in_message = {};
-    CAN::Frame in_frame = {};
+    CAN::Frame in_frame_handler = {};
 
     taskHandle = xTaskGetCurrentTaskHandle();
 
@@ -74,17 +74,17 @@ void CANGatekeeperTask::execute() {
                 eMMCPacketTailPointer = 0;
             }
             // Get the message pointer from the queue
-            xQueueReceive(incomingFrameQueue, &in_frame, portMAX_DELAY);
+            xQueueReceive(incomingFrameQueue, &in_frame_handler, portMAX_DELAY);
 
             struct localPacketHandler* CANPacketHandler;
-            if (in_frame.bus->Instance == FDCAN1) {
+            if (in_frame_handler.bus->Instance == FDCAN1) {
                 CANPacketHandler = &CAN1PacketHandler;
-            } else if (in_frame.bus->Instance == FDCAN2) {
+            } else if (in_frame_handler.bus->Instance == FDCAN2) {
                 CANPacketHandler = &CAN2PacketHandler;
             }
 
             // Extract metadata
-            uint8_t metadata = in_frame.pointerToData[0];
+            uint8_t metadata = in_frame_handler.pointerToData[0];
             uint8_t frameType = metadata >> 6;
             uint8_t payloadLength = metadata & 0x3F;
             if (frameType == CAN::TPProtocol::Frame::Single) {
@@ -92,33 +92,33 @@ void CANGatekeeperTask::execute() {
             } else if (frameType == CAN::TPProtocol::Frame::First) {
                 // debugCounter=0;
                 CANPacketHandler->PacketSize = payloadLength << 8;
-                CANPacketHandler->PacketSize = CANPacketHandler->PacketSize | in_frame.pointerToData[1];
+                CANPacketHandler->PacketSize = CANPacketHandler->PacketSize | in_frame_handler.pointerToData[1];
                 CANPacketHandler->PacketSize -= 1; //compensate for ID byte
                 // currenConsecutiveFrameCounter=0;
                 CANPacketHandler->TailPointer = 0;
                 __NOP();
             } else if (frameType == CAN::TPProtocol::Frame::Consecutive) {
 
-                uint8_t FrameNumber = in_frame.pointerToData[1] - 1;
+                uint8_t FrameNumber = in_frame_handler.pointerToData[1] - 1;
                 // Add frame to local buffer
                 __NOP();
 
-                for (uint32_t i = 0; i < (CAN::Packet::MaxDataLength - 2); i++) {
+                for (uint32_t i = 0; i < (CAN::MaxPayloadLength - 2); i++) {
                     __NOP();
                     if (i + FrameNumber == 0) {
-                        CANPacketHandler->PacketID = in_frame.pointerToData[2];
+                        CANPacketHandler->PacketID = in_frame_handler.pointerToData[2];
                     } else {
-                        CANPacketHandler->Buffer[(FrameNumber * (CAN::Packet::MaxDataLength - 2)) + i - 1] = in_frame.pointerToData[i + 2];
+                        CANPacketHandler->Buffer[(FrameNumber * (CAN::MaxPayloadLength - 2)) + i - 1] = in_frame_handler.pointerToData[i + 2];
                         CANPacketHandler->TailPointer = CANPacketHandler->TailPointer + 1;
                     }
                 }
                 __NOP();
 
             } else if (frameType == CAN::TPProtocol::Frame::Final) {
-                if ((CANPacketHandler->PacketSize - CANPacketHandler->TailPointer) < (CAN::Packet::MaxDataLength - 2) && CANPacketHandler->PacketSize != 0) {
+                if ((CANPacketHandler->PacketSize - CANPacketHandler->TailPointer) < (CAN::MaxPayloadLength - 2) && CANPacketHandler->PacketSize != 0) {
                     for (uint32_t i = 0; (CANPacketHandler->PacketSize > CANPacketHandler->TailPointer); i++) {
 
-                        CANPacketHandler->Buffer[CANPacketHandler->TailPointer] = in_frame.pointerToData[i + 2];
+                        CANPacketHandler->Buffer[CANPacketHandler->TailPointer] = in_frame_handler.pointerToData[i + 2];
                         CANPacketHandler->TailPointer = CANPacketHandler->TailPointer + 1;
                     }
                     // Write message to eMMC
@@ -129,10 +129,10 @@ void CANGatekeeperTask::execute() {
                     eMMCPacketTailPointer += 2;
                     PacketToBeStored.Identifier = CANPacketHandler->PacketID;
                     PacketToBeStored.size = CANPacketHandler->PacketSize;
-                    if (in_frame.bus->Instance == FDCAN1) {
+                    if (in_frame_handler.bus->Instance == FDCAN1) {
                         PacketToBeStored.CANInstance = CAN::CAN1;
                         __NOP();
-                    } else if (in_frame.bus->Instance == FDCAN2) {
+                    } else if (in_frame_handler.bus->Instance == FDCAN2) {
                         PacketToBeStored.CANInstance = CAN::CAN2;
                         __NOP();
                     }
@@ -243,6 +243,7 @@ void CANGatekeeperTask::execute() {
         // CAN::TPProtocol::processMultipleFrames();
 
         while (uxQueueMessagesWaiting(outgoingQueue)) {
+            vTaskDelay(1);
             xQueueReceive(outgoingQueue, &out_message, portMAX_DELAY);
             CAN::send(out_message, ActiveBus);
         }

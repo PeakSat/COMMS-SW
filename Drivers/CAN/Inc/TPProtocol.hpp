@@ -29,7 +29,7 @@ namespace CAN::TPProtocol {
     /**
      * The usable data length for a consecutive message.
      */
-    static constexpr uint8_t UsableDataLength = CAN::Packet::MaxDataLength - 1;
+    static constexpr uint8_t UsableDataLength = CAN::MaxPayloadLength - 2;
 
     /**
      * Creates a TPMessage object from a single frame, and passes it over to the parse function.

@@ -105,7 +105,7 @@ void CAN::logMessage(const CAN::Packet frame) {
     message.append("ID : ");
     etl::to_string(frame.id, message, etl::format_spec().hex(), true);
     message.append(" Data : ");
-    for (uint8_t idx = 0; idx < frame.MaxDataLength; idx++) {
+    for (uint8_t idx = 0; idx < CAN::MaxPayloadLength; idx++) {
         etl::to_string(*(frame.data.data() + idx), message, true);
         message.append(" ");
     }
@@ -143,8 +143,9 @@ void CAN::convertLengthToDLC(uint8_t length) {
 
 void CAN::send(const CAN::Packet& message, CAN::ActiveBus outgoingBus) {
     CAN::txHeader.Identifier = message.id;
+    CAN::txHeader.DataLength = 8;
 
-    memcpy(txFifo.data(), message.data.data(), message.MaxDataLength);
+    memcpy(txFifo.data(), message.data.data(), CAN::MaxPayloadLength);
     if (outgoingBus == Main) {
         if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &CAN::txHeader, txFifo.data()) != HAL_OK) {
             LOG_ERROR << "CAN 1 Queue Full!";

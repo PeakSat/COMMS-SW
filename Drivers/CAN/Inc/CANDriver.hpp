@@ -4,7 +4,7 @@
 #include "main.h"
 #include "Frame.hpp"
 #include "etl/vector.h"
-const uint8_t CANMessageSize = 8;
+const uint8_t CANMessageSize = CAN::MaxPayloadLength;
 // const uint8_t CANFrameSize = 64;
 const uint32_t sizeOfIncommingFrameBuffer = 128; // in frames of (CANFrameSize)
 

@@ -58,7 +58,7 @@ namespace CAN::Application {
         //            newBus = Main;
         //        }
 
-        etl::array<uint8_t, CAN::Packet::MaxDataLength> data = {switchBus(newBus)};
+        etl::array<uint8_t, CAN::MaxPayloadLength> data = {switchBus(newBus)};
 
         canGatekeeperTask->send({MessageIDs::BusSwitchover + CAN::NodeID, data}, false);
     }
