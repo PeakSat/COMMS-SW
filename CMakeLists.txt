@@ -40,7 +40,6 @@ add_executable(${CMAKE_PROJECT_NAME})
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
-
 # Add the eMMC Drivers
 add_subdirectory(Drivers/eMMC)
 # Add the AT Drivers
@@ -49,6 +48,8 @@ add_subdirectory(Drivers/AT86RF215)
 add_subdirectory(Drivers/INA3221)
 # Add the TMP117 Drivers
 add_subdirectory(Drivers/TMP117)
+# Add the GNSS drivers
+add_subdirectory(Drivers/GNSS)
 # Add the FreeRTOS
 add_subdirectory(Lib/FreeRTOS)
 #
