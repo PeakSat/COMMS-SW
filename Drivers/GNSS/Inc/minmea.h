@@ -59,6 +59,7 @@ struct minmea_time {
 };
 
 struct minmea_sentence_gbs {
+    int32_t utc;
     struct minmea_time time;
     struct minmea_float err_latitude;
     struct minmea_float err_longitude;
@@ -70,6 +71,7 @@ struct minmea_sentence_gbs {
 };
 
 struct minmea_sentence_rmc {
+    int32_t utc;
     struct minmea_time time;
     bool valid;
     struct minmea_float latitude;
@@ -81,6 +83,7 @@ struct minmea_sentence_rmc {
 };
 
 struct minmea_sentence_gga {
+    int32_t utc;
     struct minmea_time time;
     struct minmea_float latitude;
     struct minmea_float longitude;

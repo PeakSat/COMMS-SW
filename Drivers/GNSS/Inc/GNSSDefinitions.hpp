@@ -19,6 +19,7 @@ namespace GNSSDefinitions {
     };
 
     struct GNSSData {
+        int32_t utc;
         int8_t day;
         int8_t month;
         int8_t year;
@@ -27,13 +28,21 @@ namespace GNSSDefinitions {
         int8_t seconds;
         uint8_t valid;
         int32_t microseconds;
-        float speed;
-        float course;
+        double speed;
+        double course;
         double latitudeD;
         double longitudeD;
-        float latitudeF;
-        float longitudeF;
-        float altitude;
+        double altitude;
+        int32_t latitudeI;
+        int32_t longitudeI;
+        int32_t altitudeI;
+        int8_t fix_quality;
+        int8_t satellites_tracked;
+        int snr[4];
+    };
+
+    struct StoredGNSSData {
+        int32_t utc_time;
         int32_t latitudeI;
         int32_t longitudeI;
         int32_t altitudeI;

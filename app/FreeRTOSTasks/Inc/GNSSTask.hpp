@@ -124,23 +124,30 @@ public:
 
     /**
     * Prints the variables contained in the compact GNSS data structure.
-    * @param c A pointer to the CompactGNSSData structure to be printed.
+    * @param c A pointer to the GNSSData structure to be printed.
      */
     static void rawGNSSprinting(const GNSSData& c);
 
     /**
     * Updates the compact GNSS data structure with variables from a parsed RMC sentence.
-    * @param compact A pointer to the CompactGNSSData structure to update.
+    * @param compact A pointer to the GNSSData structure to update.
     * @param frame_rmc A pointer to the parsed RMC sentence structure containing the data.
     */
     static void setCompactGnssDataRMC(GNSSData& compact, const minmea_sentence_rmc& frame_rmc);
 
     /**
     * Updates the compact GNSS data structure with variables from a parsed GGA sentence.
-    * @param compact A pointer to the CompactGNSSData structure to update.
+    * @param compact A pointer to the GNSSData structure to update.
     * @param frame_gga A pointer to the parsed GGA sentence structure containing the data.
     */
     static void setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gga& frame_gga);
+
+    /**
+    * Updates the compact GNSS data structure with variables from a parsed GGA sentence.
+    * @param compact A pointer to the GNSSData structure to update.
+    * @param frame_gsv A pointer to the parsed GSV sentence structure containing the data.
+    */
+    static void setCompactGnssDataGSV(GNSSData& compact, const minmea_sentence_gsv& frame_gsv);
 
     /**
     * Parses raw GNSS data and extracts key variables into a compact structure.
@@ -187,18 +194,17 @@ public:
     /**
      *
      */
-    // Template function to convert DDM to Decimal Degrees
+    // Template function to convert DDM to Degrees Decimal Degrees
     template <typename T>
     static T convertToDecimalDegrees(T ddm) {
-        LOG_DEBUG << "ddm " << ddm;
-        // Extract degrees (integer part)
         int degrees = static_cast<int>(ddm);
-        LOG_DEBUG << "degrees: " << degrees;
         // Extract minutes (fractional part)
         T minutes = (ddm - degrees) * 100;
-        LOG_DEBUG << "minutes: " << minutes;
+        //        LOG_DEBUG << "minutes: " << minutes;
         // Return the decimal degrees by adding the minutes divided by 60
-        return degrees + (minutes / static_cast<T>(60.0));
+        T dd = degrees + (minutes / static_cast<T>(60.0));
+        //        LOG_DEBUG << "dd: " << dd;
+        return dd;
     }
 
     GNSSTask() : Task("GNSS Logging Task") {}

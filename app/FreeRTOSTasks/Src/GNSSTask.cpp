@@ -18,8 +18,8 @@ void GNSSTask::printing(uint8_t* buf) {
 
 void GNSSTask::rawGNSSprinting(const GNSSData& c) {
     LOG_INFO << "---------RMC---------";
-    //    LOG_INFO << "latitude " << c.latitude;
-    //    LOG_INFO << "longitude " << c.longitude;
+    LOG_INFO << "latitude (int) " << c.latitudeI;
+    LOG_INFO << "longitude (int) " << c.longitudeI;
     LOG_INFO << "year: " << c.year;
     LOG_INFO << "month: " << c.month;
     LOG_INFO << "day: " << c.day;
@@ -31,52 +31,48 @@ void GNSSTask::rawGNSSprinting(const GNSSData& c) {
     LOG_INFO << "speed over ground[km/s] " << c.speed;
     LOG_INFO << "course over ground[deg] " << c.course;
     LOG_INFO << "---------GGA---------";
-    //    LOG_INFO << "altitude " << c.altitude;
+    LOG_INFO << "altitude " << c.altitudeI;
+    LOG_INFO << "quality indicator " << c.fix_quality;
+    LOG_INFO << "satellites tracked " << c.satellites_tracked;
 }
 
 
 void GNSSTask::setCompactGnssDataRMC(GNSSData& compact, const minmea_sentence_rmc& frame_rmc) {
-    compact.latitudeF = static_cast<float>(frame_rmc.latitude.value) / 10000000.0f;
-    compact.latitudeF = convertToDecimalDegrees(compact.latitudeF);
-    LOG_DEBUG << "latitude float: " << compact.latitudeF;
+    // latitude
     compact.latitudeD = static_cast<double>(frame_rmc.latitude.value) / 10000000.0;
     compact.latitudeD = convertToDecimalDegrees(compact.latitudeD);
-    LOG_DEBUG << "latitude double: " << compact.latitudeD;
+    // convert to int
     compact.latitudeI = (int32_t) (10000000 * compact.latitudeD);
-
-    LOG_DEBUG << "lat int: " << compact.latitudeI;
-
-    if (compact.latitudeF > 2)
-        __NOP();
-    compact.longitudeF = static_cast<float>(frame_rmc.longitude.value) / 10000000.0f;
-    compact.longitudeF = convertToDecimalDegrees(compact.longitudeF);
-    LOG_DEBUG << "longitude float: " << compact.longitudeF;
+    // longitude
     compact.longitudeD = static_cast<double>(frame_rmc.longitude.value) / 10000000.0;
     compact.longitudeD = convertToDecimalDegrees(compact.longitudeD);
     compact.longitudeI = (int32_t) (10000000 * compact.longitudeD);
-    LOG_DEBUG << "longitude double: " << compact.longitudeD;
-    LOG_DEBUG << "long int: " << compact.longitudeI;
-
-
+    // date
     compact.year = static_cast<int8_t>(frame_rmc.date.year);
     compact.month = static_cast<int8_t>(frame_rmc.date.month);
     compact.day = static_cast<int8_t>(frame_rmc.date.day);
+    // time
     compact.hours = static_cast<int8_t>(frame_rmc.time.hours);
     compact.minutes = static_cast<int8_t>(frame_rmc.time.minutes);
     compact.seconds = static_cast<int8_t>(frame_rmc.time.seconds);
     compact.microseconds = frame_rmc.time.microseconds;
-    compact.speed = static_cast<float>(frame_rmc.speed.value) / 10.f;
-    compact.speed = (float) 0.0005144 * compact.speed;
-    compact.course = static_cast<float>(frame_rmc.course.value) / 10.f;
+    // speed
+    compact.speed = static_cast<double>(frame_rmc.speed.value) / 10.0f;
+    // convert to km/s for speed over ground
+    compact.speed = (double) (0.000514444 * compact.speed);
+    // course over ground
+    compact.course = static_cast<double>(frame_rmc.course.value) / 10.0f;
 }
 
 void GNSSTask::setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gga& frame_gga) {
-    compact.altitude = static_cast<float>(frame_gga.altitude.value) / 10.0f;
-    LOG_DEBUG << "alt f: " << compact.altitude;
+    // altitude
+    compact.altitude = static_cast<double>(frame_gga.altitude.value) / 10.0f;
+    // convert
     compact.altitudeI = (int32_t) (compact.altitude * 10);
-    LOG_DEBUG << "alt int: " << compact.altitudeI;
-    compact.altitude = static_cast<float>(compact.altitudeI) / 10.0f;
-    LOG_DEBUG << "alt f after having it as int: " << compact.altitude;
+    // fix quality
+    compact.fix_quality = (int8_t) frame_gga.fix_quality;
+    // satellites tracked
+    compact.satellites_tracked = (int8_t) frame_gga.satellites_tracked;
 }
 
 void GNSSTask::initGNSS() {
@@ -90,10 +86,11 @@ void GNSSTask::initGNSS() {
     uint8_t seconds;
     interval_vec.resize(12, 0);
     seconds = 1;
-    // 4 is for RMC, 6 for ZDA, 0 is for GGA
+    // 4 is for RMC, 2 for GSV, 0 is for GGA
     interval_vec[0] = seconds;
+    //    interval_vec[2] = seconds;
     interval_vec[4] = seconds;
-    controlGNSSwithNotify(GNSSReceiver::configureGNSSNavigationMode(NavigationMode::Airborne, Attributes::UpdateToSRAM));
+    controlGNSSwithNotify(GNSSReceiver::configureGNSSNavigationMode(NavigationMode::Auto, Attributes::UpdateToSRAM));
     controlGNSSwithNotify(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
     controlGNSSwithNotify(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
 }
@@ -244,6 +241,7 @@ void GNSSTask::execute() {
     GNSSData compact{};
     int timeoutCounter = 0;
     Logger::format.precision(Precision);
+
     while (true) {
         // you may have a counter that counts how many
         if (xTaskNotifyWait(GNSS_MESSAGE_READY, GNSS_MESSAGE_READY, &receivedEvents, pdMS_TO_TICKS(MAXIMUM_INTERVAL)) == pdTRUE) {
@@ -252,7 +250,10 @@ void GNSSTask::execute() {
                 if (xQueueReceive(gnssQueueHandleDefault, &rx_buf_p_from_queue, pdMS_TO_TICKS(100)) == pdTRUE) {
                     if (rx_buf_p_from_queue != nullptr) {
                         parser(rx_buf_p_from_queue, compact);
-                        rawGNSSprinting(compact);
+                        // filter the messages
+                        // fix quality 1 means : valid position fix, SPS mode
+                        if (compact.fix_quality == 1 && compact.satellites_tracked > 3)
+                            rawGNSSprinting(compact);
                         timeoutCounter = 0;
                     }
                 } else {
