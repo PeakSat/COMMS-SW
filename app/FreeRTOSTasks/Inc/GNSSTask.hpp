@@ -115,7 +115,6 @@ public:
     */
     void printing(uint8_t* buf);
 
-
     /**
     * Resets the GNSS hardware by toggling the reset pin. This is used to recover
     * the GNSS module from errors or unresponsive states.
@@ -126,7 +125,7 @@ public:
     * Prints the variables contained in the compact GNSS data structure.
     * @param c A pointer to the GNSSData structure to be printed.
      */
-    static void rawGNSSprinting(const GNSSData& c);
+    static void GNSSprint(const GNSSData& c);
 
     /**
     * Updates the compact GNSS data structure with variables from a parsed RMC sentence.
@@ -141,13 +140,6 @@ public:
     * @param frame_gga A pointer to the parsed GGA sentence structure containing the data.
     */
     static void setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gga& frame_gga);
-
-    /**
-    * Updates the compact GNSS data structure with variables from a parsed GGA sentence.
-    * @param compact A pointer to the GNSSData structure to update.
-    * @param frame_gsv A pointer to the parsed GSV sentence structure containing the data.
-    */
-    static void setCompactGnssDataGSV(GNSSData& compact, const minmea_sentence_gsv& frame_gsv);
 
     /**
     * Parses raw GNSS data and extracts key variables into a compact structure.

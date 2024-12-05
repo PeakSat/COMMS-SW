@@ -16,10 +16,10 @@ void GNSSTask::printing(uint8_t* buf) {
     }
 }
 
-void GNSSTask::rawGNSSprinting(const GNSSData& c) {
+void GNSSTask::GNSSprint(const GNSSData& c) {
     LOG_INFO << "---------RMC---------";
-    LOG_INFO << "latitude (int) " << c.latitudeI;
-    LOG_INFO << "longitude (int) " << c.longitudeI;
+    LOG_INFO << "latitude " << c.latitudeI;
+    LOG_INFO << "longitude " << c.longitudeI;
     LOG_INFO << "year: " << c.year;
     LOG_INFO << "month: " << c.month;
     LOG_INFO << "day: " << c.day;
@@ -252,8 +252,8 @@ void GNSSTask::execute() {
                         parser(rx_buf_p_from_queue, compact);
                         // filter the messages
                         // fix quality 1 means : valid position fix, SPS mode
-                        if (compact.fix_quality == 1 && compact.satellites_tracked > 3)
-                            rawGNSSprinting(compact);
+                        //                        if (compact.fix_quality == 1 && compact.satellites_tracked > 3)
+                        GNSSprint(compact);
                         timeoutCounter = 0;
                     }
                 } else {
