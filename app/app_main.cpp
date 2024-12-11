@@ -18,6 +18,7 @@
 #include "TMP117Task.hpp"
 #include "CANDriver.hpp"
 #include "eMMC.hpp"
+#include "git_version.h"
 
 
 void app_main(void) {
@@ -45,6 +46,8 @@ void app_main(void) {
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
     canTestTask->createTask();
+
+    LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
 
     /* Start the scheduler. */
     vTaskStartScheduler();
