@@ -1,4 +1,4 @@
-add_subdirectory(FreeRTOSTasks/)
+add_subdirectory(FreeRTOSTasks)
 
 add_library(app_main STATIC)
 

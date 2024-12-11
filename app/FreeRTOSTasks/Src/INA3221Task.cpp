@@ -1,7 +1,7 @@
 #include "Logger.hpp"
 #include "INA3221Task.hpp"
 
-#define OLD_EQM
+#define NEW_EQM
 
 void ina3221Task::display(const Channel channel, const bool displayShuntVoltage, const bool displayBusVoltage,
                           const bool displayCurrent, const bool displayPower) {
@@ -35,10 +35,10 @@ void ina3221Task::display(const Channel channel, const bool displayShuntVoltage,
 
 void ina3221Task::execute() {
     INA3221::Error error = INA3221::Error::NO_ERRORS;
-#ifdef OLD_EQM
-    INA3221::INA3221 ina = INA3221::INA3221(hi2c1, INA3221::INA3221Config(), error);
-#else
+#ifdef NEW_EQM
     INA3221::INA3221 ina = INA3221::INA3221(hi2c4, INA3221::INA3221Config(), error);
+#else
+    INA3221::INA3221 ina = INA3221::INA3221(hi2c1, INA3221::INA3221Config(), error);
 #endif
     ina.setup();
     Logger::format.precision(Precision);

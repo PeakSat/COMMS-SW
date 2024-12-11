@@ -52,6 +52,9 @@ add_subdirectory(Drivers/TMP117)
 add_subdirectory(Drivers/GNSS)
 # Add the FreeRTOS
 add_subdirectory(Lib/FreeRTOS)
+# Add the CAN drivers
+add_subdirectory(Drivers/CAN)
+
 #
 add_subdirectory(Lib/etl-20.38.17)
 #
