@@ -19,17 +19,17 @@ void CANTestTask::execute() {
     String<ECSSMaxMessageSize> testPayload2("CAN2 SAYS: WHO LET THE DOGS OUT!?");
     CAN::ActiveBus activeBus = CAN::ActiveBus::Redundant;
     while (true) {
-        if (activeBus == CAN::ActiveBus::Redundant) {
-            activeBus = CAN::ActiveBus::Main;
-            canGatekeeperTask->switchActiveBus(activeBus);
-            CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
-            LOG_DEBUG << "REDUNDANT CAN is sending";
-        } else {
-            activeBus = CAN::ActiveBus::Redundant;
-            canGatekeeperTask->switchActiveBus(activeBus);
-            CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
-            LOG_DEBUG << "MAIN CAN is sending";
-        }
+        // if (activeBus == CAN::ActiveBus::Redundant) {
+        //     activeBus = CAN::ActiveBus::Main;
+        //     canGatekeeperTask->switchActiveBus(activeBus);
+        //     CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
+        //     LOG_DEBUG << "REDUNDANT CAN is sending";
+        // } else {
+        //     activeBus = CAN::ActiveBus::Redundant;
+        //     canGatekeeperTask->switchActiveBus(activeBus);
+        //     CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
+        //     LOG_DEBUG << "MAIN CAN is sending";
+        // }
         while (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue)) {
             CAN::StoredPacket StoredPacket;
             xQueueReceive(canGatekeeperTask->storedPacketQueue, &StoredPacket, portMAX_DELAY);
