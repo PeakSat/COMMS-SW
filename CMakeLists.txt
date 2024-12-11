@@ -52,12 +52,18 @@ add_subdirectory(Drivers/TMP117)
 add_subdirectory(Drivers/GNSS)
 # Add the FreeRTOS
 add_subdirectory(Lib/FreeRTOS)
+# Add the CAN drivers
+add_subdirectory(Drivers/CAN)
+
 #
 add_subdirectory(Lib/etl-20.38.17)
 #
 add_subdirectory(Lib/logger-main-c6abda2e)
 
 add_subdirectory(app/)
+include(CheckGit.cmake)
+CheckGitSetup()
+message(STATUS "COMMS Software version: commit $GIT_HASH")
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         # Add user sources here
@@ -72,6 +78,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         stm32cubemx
         app_main
         # Add user defined libraries
+        git_version
 )
 
 
