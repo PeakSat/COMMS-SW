@@ -39,6 +39,7 @@ namespace AT86RF215 {
         AT86RF215Configuration config;
         RXConfig rxConfig;
         TXConfig txConfig;
+        BasebandCoreConfig basebandCoreConfig;
         /// Flag indicating that a TX procedure is ongoing
         bool tx_ongoing;
         /// Flag indicating that an RX procedure is ongoing
@@ -66,6 +67,9 @@ namespace AT86RF215 {
         }
         void setTXConfig(TXConfig&& newTXConfig) {
             txConfig = std::move(newTXConfig); // Move the new config into rxConfig
+        }
+        void setBaseBandCoreConfig(BasebandCoreConfig&& newBasebandCoreConfig) {
+            basebandCoreConfig = std::move(newBasebandCoreConfig); // Move the new config into rxConfig
         }
 
         /* Writes a byte to a specified address

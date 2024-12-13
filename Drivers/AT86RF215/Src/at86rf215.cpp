@@ -1639,17 +1639,17 @@ namespace AT86RF215 {
         }
 
         // Setup Physical Layer for Baseband Cores
-        setup_phy_baseband(Transceiver::RF09, config.continuousTransmit09,
-                           config.frameCheckSequenceFilter09, config.transmitterAutoFrameCheckSequence09,
-                           config.frameCheckSequenceType09, config.baseBandEnable09,
-                           config.physicalLayerType09, err);
+        setup_phy_baseband(Transceiver::RF09, basebandCoreConfig.continuousTransmit09,
+                           basebandCoreConfig.frameCheckSequenceFilterEn09, basebandCoreConfig.transmitterAutoFrameCheckSequence09,
+                           basebandCoreConfig.frameCheckSequenceType09, basebandCoreConfig.baseBandEnable09,
+                           basebandCoreConfig.physicalLayerType09, err);
         if (err != Error::NO_ERRORS) {
             return;
         }
-        setup_phy_baseband(Transceiver::RF24, config.continuousTransmit24,
-                           config.frameCheckSequenceFilter24, config.transmitterAutoFrameCheckSequence24,
-                           config.frameCheckSequenceType24, config.baseBandEnable24,
-                           config.physicalLayerType24, err);
+        setup_phy_baseband(Transceiver::RF24, basebandCoreConfig.continuousTransmit24,
+                           basebandCoreConfig.frameCheckSequenceFilterEn24, basebandCoreConfig.transmitterAutoFrameCheckSequence24,
+                           basebandCoreConfig.frameCheckSequenceType24, basebandCoreConfig.baseBandEnable24,
+                           basebandCoreConfig.physicalLayerType24, err);
         if (err != Error::NO_ERRORS) {
             return;
         }
@@ -1689,7 +1689,7 @@ namespace AT86RF215 {
         }
         setup_rx_frontend(Transceiver::RF24, rxConfig.ifInversion24, rxConfig.ifShift24,
                           rxConfig.receiverBandwidth24, rxConfig.rxRelativeCutoffFrequency24,
-                          config.receiverSampleRate24, rxConfig.agcInput24,
+                          rxConfig.receiverSampleRate24, rxConfig.agcInput24,
                           rxConfig.averageTimeNumberSamples24, rxConfig.agcEnabled24,
                           rxConfig.automaticGainTarget24, rxConfig.gainControlWord24, err);
         if (err != Error::NO_ERRORS) {

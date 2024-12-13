@@ -147,6 +147,77 @@ namespace AT86RF215 {
         }
     };
 
+    struct BasebandCoreConfig {
+        // BBCn_PC
+        bool continuousTransmit09, continuousTransmit24;
+        bool frameCheckSequenceFilterEn09, frameCheckSequenceFilterEn24;
+        bool transmitterAutoFrameCheckSequence09, transmitterAutoFrameCheckSequence24;
+        FrameCheckSequenceType frameCheckSequenceType09, frameCheckSequenceType24;
+        bool baseBandEnable09, baseBandEnable24;
+        PhysicalLayerType physicalLayerType09, physicalLayerType24;
+        // BBCn_FSKO
+        // BBCn_FSK1
+        // BBCn_FSK2
+        // BBCn_FSK3
+
+        static BasebandCoreConfig DefaultBasebandCoreConfig() {
+            return {
+                // BBCn_PC
+                .continuousTransmit09 = 0,
+                .continuousTransmit24 = 0,
+                .frameCheckSequenceFilterEn09 = false,
+                .frameCheckSequenceFilterEn24 = false,
+                .transmitterAutoFrameCheckSequence09 = true,
+                .transmitterAutoFrameCheckSequence24 = true,
+                .frameCheckSequenceType09 = FrameCheckSequenceType::FCS_32,
+                .frameCheckSequenceType24 = FrameCheckSequenceType::FCS_32,
+                .baseBandEnable09 = true,
+                .baseBandEnable24 = false,
+                .physicalLayerType09 = PhysicalLayerType::BB_MRFSK,
+                .physicalLayerType24 = PhysicalLayerType::BB_OFF};
+        }
+        static BasebandCoreConfig getDefaultBasebandCoreConfig() {
+            return DefaultBasebandCoreConfig();
+        }
+
+        void setBBC_PC(bool ct09, bool fcsfEn09, bool tautoFcs09, FrameCheckSequenceType fcsType09, bool bbEn09, PhysicalLayerType plType09) {
+            continuousTransmit09 = ct09;
+            frameCheckSequenceFilterEn09 = fcsfEn09;
+            transmitterAutoFrameCheckSequence09 = tautoFcs09;
+            frameCheckSequenceType09 = fcsType09;
+            baseBandEnable09 = bbEn09;
+            physicalLayerType09 = plType09;
+        }
+    };
+
+    struct FrequencySynthesizer {
+        // RF_n CS
+        uint8_t channelSpacing09, channelSpacing24;
+        // RFn_CCFOL - Channel Center Frequency F0 Low Byte
+        // RFn_CCFOH - Channel Center Frequency F0 High Byte
+        // RFn_CNL - Channel Number Low Byte
+        // RFn_CNM -
+        PLLChannelMode channelMode09, channelMode24;
+        // RFn_PLL
+        PLLBandwidth loopBandwidth09, loopBandwidth24;
+        // RFn_PLLCF
+        uint16_t pllFrequency09, pllFrequency24;
+        uint16_t pllChannelNumber09, pllChannelNumber24;
+        // RFn_PLLCF
+
+        static FrequencySynthesizer DefaultFrequencySynthesizerConfig() {
+            return {
+                // spacing = channelSpacing * 25kHz
+                .channelSpacing09 = 0x08,
+                .channelSpacing24 = 0xA,
+                .channelMode09 = PLLChannelMode::FineResolution450,
+                .channelMode24 = PLLChannelMode::FineResolution2443,
+            };
+        }
+        static FrequencySynthesizer getDefaultFrequencySynthesizerConfig() {
+            return DefaultFrequencySynthesizerConfig();
+        }
+    };
     struct AT86RF215Configuration {
 
         SFDSearchSpace sfdSearchSpace = SFDSearchSpace::NSFD1;
@@ -174,17 +245,12 @@ namespace AT86RF215 {
         CrystalTrim crystalTrim = CrystalTrim::TRIM_00;
         bool fastStartUp = false;
 
-        // PLL
-        uint16_t pllFrequency09 = 0x8D20;
-        uint16_t pllFrequency24 = 0x0CF8;
-        uint16_t pllChannelNumber09 = 0x0003;
-        uint16_t pllChannelNumber24 = 0x0000;
+
         PLLChannelMode pllChannelMode09 = PLLChannelMode::IEECompliant;
         PLLChannelMode pllChannelMode24 = PLLChannelMode::IEECompliant;
         PLLBandwidth pllBandwidth09 = PLLBandwidth::BWDefault;
         PLLBandwidth pllBandwidth24 = PLLBandwidth::BWDefault;
-        uint8_t channelSpacing09 = 0x30;
-        uint8_t channelSpacing24 = 0x08;
+
 
         ExternalLNABypass externalLNABypass09 = ExternalLNABypass::FALSE;
         ExternalLNABypass externalLNABypass24 = ExternalLNABypass::FALSE;
@@ -203,9 +269,6 @@ namespace AT86RF215 {
         PowerAmplifierVoltageControl powerAmplifierVoltageControl24 =
             PowerAmplifierVoltageControl::PAVC_2V4;
 
-        ReceiverSampleRate receiverSampleRate09 = ReceiverSampleRate::FS_4000;
-        ReceiverSampleRate receiverSampleRate24 = ReceiverSampleRate::FS_4000;
-
         // IQ Interface
         ExternalLoopback externalLoopback = ExternalLoopback::DISABLED;
         IQOutputCurrent iqOutputCurrent = IQOutputCurrent::CURR_2_MA;
@@ -215,20 +278,6 @@ namespace AT86RF215 {
         ChipMode chipMode = ChipMode::RF_MODE_BBRF;
         SkewAlignment skewAlignment = SkewAlignment::SKEW3906NS;
 
-        // Baseband Core
-
-        bool continuousTransmit09 = false;
-        bool continuousTransmit24 = false;
-        bool frameCheckSequenceFilter09 = false;
-        bool frameCheckSequenceFilter24 = false;
-        bool transmitterAutoFrameCheckSequence09 = false;
-        bool transmitterAutoFrameCheckSequence24 = false;
-        FrameCheckSequenceType frameCheckSequenceType09 = FrameCheckSequenceType::FCS_32;
-        FrameCheckSequenceType frameCheckSequenceType24 = FrameCheckSequenceType::FCS_32;
-        bool baseBandEnable09 = true;
-        bool baseBandEnable24 = true;
-        PhysicalLayerType physicalLayerType09 = PhysicalLayerType::BB_MRFSK;
-        PhysicalLayerType physicalLayerType24 = PhysicalLayerType::BB_OFF;
 
         // Enabled Interrupts
 
