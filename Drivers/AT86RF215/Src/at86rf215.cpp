@@ -1625,18 +1625,13 @@ namespace AT86RF215 {
                       config.padDriverStrength, err);
 
         // Set PLL
-        configure_pll(Transceiver::RF09, config.pllFrequency09,
-                      config.pllChannelNumber09, config.pllChannelMode09,
-                      config.pllBandwidth09, config.channelSpacing09, err);
+        configure_pll(Transceiver::RF09, freqSynthesizerConfig.channelCenterFrequency09,
+                      freqSynthesizerConfig.channelNumber09, freqSynthesizerConfig.channelMode09,
+                      freqSynthesizerConfig.loopBandwidth09, freqSynthesizerConfig.channelSpacing09, err);
         if (err != Error::NO_ERRORS) {
             return;
         }
-        configure_pll(Transceiver::RF24, config.pllFrequency24,
-                      config.pllChannelNumber24, config.pllChannelMode24,
-                      config.pllBandwidth24, config.channelSpacing24, err);
-        if (err != Error::NO_ERRORS) {
-            return;
-        }
+        // TO do configure PLL for RF24
 
         // Setup Physical Layer for Baseband Cores
         setup_phy_baseband(Transceiver::RF09, basebandCoreConfig.continuousTransmit09,
@@ -1660,9 +1655,9 @@ namespace AT86RF215 {
                           txConfig.txRelativeCutoffFrequency09, txConfig.directModulation09,
                           txConfig.transceiverSampleRate09,
                           txConfig.powerAmplifierCurrentControl09, txConfig.txOutPower09,
-                          config.externalLNABypass09, config.automaticGainControlMAP09,
-                          config.automaticVoltageExternal09, config.analogVoltageEnable09,
-                          config.powerAmplifierVoltageControl09, err);
+                          auxilarySettings.externalLNABypass09, auxilarySettings.automaticGainControlMAP09,
+                          auxilarySettings.automaticVoltageExternal09, auxilarySettings.analogVoltageEnable09,
+                          auxilarySettings.powerAmplifierVoltageControl09, err);
         if (err != Error::NO_ERRORS) {
             return;
         }
@@ -1671,9 +1666,9 @@ namespace AT86RF215 {
                           txConfig.txRelativeCutoffFrequency24, txConfig.directModulation24,
                           txConfig.transceiverSampleRate24,
                           txConfig.powerAmplifierCurrentControl24, txConfig.txOutPower24,
-                          config.externalLNABypass24, config.automaticGainControlMAP24,
-                          config.automaticVoltageExternal24, config.analogVoltageEnable24,
-                          config.powerAmplifierVoltageControl24, err);
+                          auxilarySettings.externalLNABypass24, auxilarySettings.automaticGainControlMAP24,
+                          auxilarySettings.automaticVoltageExternal24, auxilarySettings.analogVoltageEnable24,
+                          auxilarySettings.powerAmplifierVoltageControl24, err);
         if (err != Error::NO_ERRORS) {
             return;
         }

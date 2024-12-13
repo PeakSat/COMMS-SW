@@ -38,15 +38,12 @@ uint8_t RF_TXTask::checkTheSPI() {
 
 void RF_TXTask::execute() {
     vTaskDelay(10000);
-    transceiver.setTXConfig(TXConfig::DefaultTXConfig());
     uint8_t read_reg = transceiver.spi_read_8(AT86RF215::RF09_TXDFE, error);
     LOG_DEBUG << "RF09_TXDFE = " << read_reg;
     read_reg = transceiver.spi_read_8(AT86RF215::RF09_TXCUTC, error);
     LOG_DEBUG << "RF09_TXCUTC = " << read_reg;
     read_reg = transceiver.spi_read_8(AT86RF215::RF09_PAC, error);
     LOG_DEBUG << "RF09_PAC = " << read_reg;
-
-    transceiver.txConfig.setTXDFE(TxRelativeCutoffFrequency::FCUT_1, 1, TransmitterSampleRate::FS_2000);
     transceiver.setup(error);
     read_reg = transceiver.spi_read_8(AT86RF215::RF09_TXDFE, error);
     LOG_DEBUG << "RF09_TXDFE = " << read_reg;

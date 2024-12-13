@@ -72,10 +72,8 @@ void RF_RXTask::execute() {
     LOG_DEBUG << "RX AMP DISABLED ";
     // DISABLE THE TX AMP
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-
-    transceiver.setRXConfig(RXConfig::DefaultRXConfig());
+    //
     transceiver.setup(error);
-
     LOG_DEBUG << "RECEIVER";
     read_reg = transceiver.spi_read_8(AT86RF215::RF09_RXBWC, error);
     LOG_DEBUG << "RF09_RXBWC = " << read_reg;

@@ -61,10 +61,6 @@ namespace AT86RF215 {
             };
         }
 
-        static RXConfig getDefaultRXConfig() {
-            return DefaultRXConfig();
-        }
-
         // update params
         void setRXBWC(ReceiverBandwidth bw09, bool inversion09, bool shift09) {
             receiverBandwidth09 = bw09;
@@ -129,9 +125,6 @@ namespace AT86RF215 {
                 .txOutPower09 = 0x00,
                 .txOutPower24 = 0x00};
         }
-        static TXConfig getDefaultTXConfig() {
-            return DefaultTXConfig();
-        }
         void setTXDFE(TxRelativeCutoffFrequency cutoffFrequency09, bool modulation09, TransmitterSampleRate sampleRate09) {
             txRelativeCutoffFrequency09 = cutoffFrequency09;
             directModulation09 = modulation09;
@@ -163,8 +156,8 @@ namespace AT86RF215 {
         static BasebandCoreConfig DefaultBasebandCoreConfig() {
             return {
                 // BBCn_PC
-                .continuousTransmit09 = 0,
-                .continuousTransmit24 = 0,
+                .continuousTransmit09 = false,
+                .continuousTransmit24 = false,
                 .frameCheckSequenceFilterEn09 = false,
                 .frameCheckSequenceFilterEn24 = false,
                 .transmitterAutoFrameCheckSequence09 = true,
@@ -175,9 +168,6 @@ namespace AT86RF215 {
                 .baseBandEnable24 = false,
                 .physicalLayerType09 = PhysicalLayerType::BB_MRFSK,
                 .physicalLayerType24 = PhysicalLayerType::BB_OFF};
-        }
-        static BasebandCoreConfig getDefaultBasebandCoreConfig() {
-            return DefaultBasebandCoreConfig();
         }
 
         void setBBC_PC(bool ct09, bool fcsfEn09, bool tautoFcs09, FrameCheckSequenceType fcsType09, bool bbEn09, PhysicalLayerType plType09) {
@@ -191,31 +181,75 @@ namespace AT86RF215 {
     };
 
     struct FrequencySynthesizer {
+        // Cached frequency for easy access
+        uint32_t frequency; // Frequency in kHz
         // RF_n CS
         uint8_t channelSpacing09, channelSpacing24;
         // RFn_CCFOL - Channel Center Frequency F0 Low Byte
         // RFn_CCFOH - Channel Center Frequency F0 High Byte
-        // RFn_CNL - Channel Number Low Byte
-        // RFn_CNM -
+        // combined RFn_CCF0L, RFn_CCFOH : channelCenterFrequency09
+        uint16_t channelCenterFrequency09;
+        // RFn_CNL
+        uint8_t channelNumber09;
+        // RFn_CNM
         PLLChannelMode channelMode09, channelMode24;
         // RFn_PLL
         PLLBandwidth loopBandwidth09, loopBandwidth24;
         // RFn_PLLCF
-        uint16_t pllFrequency09, pllFrequency24;
-        uint16_t pllChannelNumber09, pllChannelNumber24;
-        // RFn_PLLCF
 
         static FrequencySynthesizer DefaultFrequencySynthesizerConfig() {
-            return {
+            FrequencySynthesizer fs{
+                .frequency = 401000,
                 // spacing = channelSpacing * 25kHz
                 .channelSpacing09 = 0x08,
                 .channelSpacing24 = 0xA,
                 .channelMode09 = PLLChannelMode::FineResolution450,
                 .channelMode24 = PLLChannelMode::FineResolution2443,
+                .loopBandwidth09 = PLLBandwidth::BWDefault,
+                .loopBandwidth24 = PLLBandwidth::BWDefault,
             };
+            fs.setFrequency_FineResolution_CMN_1(fs.frequency);
+            return fs;
         }
-        static FrequencySynthesizer getDefaultFrequencySynthesizerConfig() {
-            return DefaultFrequencySynthesizerConfig();
+        // Helper to calculate N_channel
+        uint32_t calculateN_FineResolution_CMN_1(uint32_t freq) {
+            return (freq - 377000) * 65536 / 6500;
+        }
+        // Set frequency and calculate corresponding CCF0 and CNL
+        void setFrequency_FineResolution_CMN_1(uint32_t freq) {
+            frequency = freq;
+            uint32_t N = calculateN_FineResolution_CMN_1(frequency);
+            // Combine CCF0H and CCF0L into a single 16-bit value
+            channelCenterFrequency09 = (N >> 8) & 0xFFFF; // Take bits 8-23
+            channelNumber09 = N & 0xFF;                   // Extract the lowest byte (bits 0-7)
+        }
+        // Get frequency based on CCF0 and CNL
+        uint32_t getFrequency_FineResolution_CMN_1() {
+            uint32_t N_channel = ((uint32_t) channelCenterFrequency09 << 8) | channelNumber09; // Reconstruct full N_channel
+            return 377000 + (6500 * N_channel) / 65536;
+        }
+    };
+
+    struct AuxilarySettings {
+        // RFn_AUXS
+        ExternalLNABypass externalLNABypass09, externalLNABypass24;
+        AutomaticGainControlMAP automaticGainControlMAP09, automaticGainControlMAP24;
+        AnalogVoltageEnable analogVoltageEnable09, analogVoltageEnable24;
+        AutomaticVoltageExternal automaticVoltageExternal09, automaticVoltageExternal24;
+        PowerAmplifierVoltageControl powerAmplifierVoltageControl09, powerAmplifierVoltageControl24;
+        // RFn_PADFE
+
+        static AuxilarySettings DefaultAuxilarySettings() {
+            return {
+                .automaticGainControlMAP24 = AutomaticGainControlMAP::AGC_BACKOFF_12,
+                .analogVoltageEnable09 = AnalogVoltageEnable::DISABLED,
+                .analogVoltageEnable24 = AnalogVoltageEnable::DISABLED,
+                .automaticVoltageExternal09 = AutomaticVoltageExternal::DISABLED,
+                .automaticVoltageExternal24 = AutomaticVoltageExternal::DISABLED,
+                .powerAmplifierVoltageControl09 = PowerAmplifierVoltageControl::PAVC_2V4,
+                .powerAmplifierVoltageControl24 = PowerAmplifierVoltageControl::PAVC_2V4,
+                //
+            };
         }
     };
     struct AT86RF215Configuration {
@@ -244,30 +278,6 @@ namespace AT86RF215 {
         // Crystal oscillator
         CrystalTrim crystalTrim = CrystalTrim::TRIM_00;
         bool fastStartUp = false;
-
-
-        PLLChannelMode pllChannelMode09 = PLLChannelMode::IEECompliant;
-        PLLChannelMode pllChannelMode24 = PLLChannelMode::IEECompliant;
-        PLLBandwidth pllBandwidth09 = PLLBandwidth::BWDefault;
-        PLLBandwidth pllBandwidth24 = PLLBandwidth::BWDefault;
-
-
-        ExternalLNABypass externalLNABypass09 = ExternalLNABypass::FALSE;
-        ExternalLNABypass externalLNABypass24 = ExternalLNABypass::FALSE;
-        AutomaticGainControlMAP automaticGainControlMAP09 =
-            AutomaticGainControlMAP::INTERNAL_AGC;
-        AutomaticGainControlMAP automaticGainControlMAP24 =
-            AutomaticGainControlMAP::INTERNAL_AGC;
-        AnalogVoltageEnable analogVoltageEnable09 = AnalogVoltageEnable::DISABLED;
-        AnalogVoltageEnable analogVoltageEnable24 = AnalogVoltageEnable::DISABLED;
-        AutomaticVoltageExternal automaticVoltageExternal09 =
-            AutomaticVoltageExternal::DISABLED;
-        AutomaticVoltageExternal automaticVoltageExternal24 =
-            AutomaticVoltageExternal::DISABLED;
-        PowerAmplifierVoltageControl powerAmplifierVoltageControl09 =
-            PowerAmplifierVoltageControl::PAVC_2V4;
-        PowerAmplifierVoltageControl powerAmplifierVoltageControl24 =
-            PowerAmplifierVoltageControl::PAVC_2V4;
 
         // IQ Interface
         ExternalLoopback externalLoopback = ExternalLoopback::DISABLED;

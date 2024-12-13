@@ -40,6 +40,8 @@ namespace AT86RF215 {
         RXConfig rxConfig;
         TXConfig txConfig;
         BasebandCoreConfig basebandCoreConfig;
+        FrequencySynthesizer freqSynthesizerConfig;
+        AuxilarySettings auxilarySettings;
         /// Flag indicating that a TX procedure is ongoing
         bool tx_ongoing;
         /// Flag indicating that an RX procedure is ongoing
@@ -62,16 +64,21 @@ namespace AT86RF215 {
               config(std::move(generalConfig)), // Correctly moving the config
               tx_ongoing(false), rx_ongoing(false), agc_held(false) {}
 
-        void setRXConfig(RXConfig&& newRXConfig) {
-            rxConfig = std::move(newRXConfig); // Move the new config into rxConfig
+        void setRXConfig(RXConfig&& RXConfig) {
+            rxConfig = std::move(RXConfig); // Move the new config into rxConfig
         }
-        void setTXConfig(TXConfig&& newTXConfig) {
-            txConfig = std::move(newTXConfig); // Move the new config into rxConfig
+        void setTXConfig(TXConfig&& TXConfig) {
+            txConfig = std::move(TXConfig); // Move the new config into rxConfig
         }
-        void setBaseBandCoreConfig(BasebandCoreConfig&& newBasebandCoreConfig) {
-            basebandCoreConfig = std::move(newBasebandCoreConfig); // Move the new config into rxConfig
+        void setBaseBandCoreConfig(BasebandCoreConfig&& BasebandCoreConfig) {
+            basebandCoreConfig = std::move(BasebandCoreConfig); // Move the new config into rxConfig
         }
-
+        void setFrequencySynthesizerConfig(FrequencySynthesizer&& FrequencySynthesizer) {
+            freqSynthesizerConfig = std::move(FrequencySynthesizer); // Move the new config into rxConfig
+        }
+        void setAuxilarySettings(AuxilarySettings&& AuxilarySettings) {
+            auxilarySettings = std::move(AuxilarySettings);
+        }
         /* Writes a byte to a specified address
          *
          * @param address	Specifies the address to write to

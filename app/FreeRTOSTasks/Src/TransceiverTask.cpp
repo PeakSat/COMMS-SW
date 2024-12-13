@@ -32,17 +32,6 @@ TransceiverTask::PacketType TransceiverTask::createRandomPacket(uint16_t length)
     return packet;
 }
 
-void TransceiverTask::setConfiguration(uint16_t pllFrequency09, uint8_t pllChannelNumber09) {
-    CustomConfig.pllFrequency09 = pllFrequency09;
-    CustomConfig.pllChannelNumber09 = pllChannelNumber09;
-    CustomConfig.pllChannelMode09 = AT86RF215::PLLChannelMode::FineResolution450;
-    CustomConfig.continuousTransmit09 = false;
-    CustomConfig.baseBandEnable09 = true;
-    CustomConfig.physicalLayerType09 = PhysicalLayerType::BB_MRFSK;
-    CustomConfig.frameCheckSequenceType09 = FrameCheckSequenceType::FCS_32;
-
-    transceiver.config = CustomConfig;
-}
 
 void TransceiverTask::receiverConfig(bool agc_enable) {
     transceiver.setup_rx_frontend(AT86RF215::RF09,

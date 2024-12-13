@@ -442,7 +442,6 @@ namespace AT86RF215 {
         RF09_CCF0H = 0x106, ///< High byte of the PLL's central frequency
         RF09_CNL = 0x107,
         RF09_CNM = 0x108,
-        RF09_CNM = 0x108,
         RF09_RXBWC = 0x109,
         RF09_RXDFE = 0x10A,
         RF09_AGCC = 0x10B,
