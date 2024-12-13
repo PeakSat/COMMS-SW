@@ -3,6 +3,8 @@
 #include "CANGatekeeperTask.hpp"
 #include "Peripheral_Definitions.hpp"
 
+#include <ApplicationLayer.hpp>
+
 using namespace CAN;
 
 void TPProtocol::processSingleFrame(const CAN::Packet& message) {
@@ -58,15 +60,15 @@ void TPProtocol::processMultipleFrames() {
 
     //    parseMessage(message);
 }
-/*
+
 void TPProtocol::parseMessage(TPMessage& message) {
     uint8_t messageType = static_cast<Application::MessageIDs>(message.data[0]);
     switch (messageType) {
         case CAN::Application::SendParameters:
-            CAN::Application::parseSendParametersMessage(message);
+            // CAN::Application::parseSendParametersMessage(message);
             break;
         case CAN::Application::RequestParameters:
-            CAN::Application::parseRequestParametersMessage(message);
+            // CAN::Application::parseRequestParametersMessage(message);
             break;
         case CAN::Application::PerformFunction:
             break; //todo: use ST[08] to execute the perform function command
@@ -76,7 +78,7 @@ void TPProtocol::parseMessage(TPMessage& message) {
             CAN::Application::parseTMMessage(message);
             break;
         case CAN::Application::TCPacket:
-            CAN::Application::parseTCMessage(message);
+            // CAN::Application::parseTCMessage(message);
             break;
         case CAN::Application::CCSDSPacket:
             break; //todo send this to comms? idk
@@ -101,11 +103,11 @@ void TPProtocol::parseMessage(TPMessage& message) {
             LOG_DEBUG << logSource.c_str() << logData.c_str();
         } break;
         default:
-            ErrorHandler::reportInternalError(ErrorHandler::UnknownMessageType);
+            // ErrorHandler::reportInternalError(ErrorHandler::UnknownMessageType);
             break;
     }
 }
-*/
+
 
 void TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
     // size_t messageSize = message.dataSize;

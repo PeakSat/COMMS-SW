@@ -100,7 +100,7 @@ void GNSSTask::parser(uint8_t* buf, GNSSData& compact) {
     GNSSMessageString.assign(buf, buf + GNSSPayloadSize);
     minmea_sentence_rmc frame_rmc{};
     minmea_sentence_gga frame_gga{};
-    LOG_INFO << GNSSMessageString.c_str();
+    // LOG_INFO << GNSSMessageString.c_str();
     char* line = strtok(&GNSSMessageString[0], "\n"); // Tokenize the string by newline characters
 
     while (line != nullptr) {
@@ -253,7 +253,7 @@ void GNSSTask::execute() {
                         // filter the messages
                         // fix quality 1 means : valid position fix, SPS mode
                         //                        if (compact.fix_quality == 1 && compact.satellites_tracked > 3)
-                        GNSSprint(compact);
+                        // GNSSprint(compact);
                         timeoutCounter = 0;
                     }
                 } else {
