@@ -1,6 +1,4 @@
 #pragma once
-
-
 #include "Task.hpp"
 #include "main.h"
 #include "at86rf215.hpp"

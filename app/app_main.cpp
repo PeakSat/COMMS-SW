@@ -18,7 +18,10 @@
 #include "TMP117Task.hpp"
 #include "CANDriver.hpp"
 #include "eMMC.hpp"
+#include "RF_TXTask.hpp"
+#include "RF_RXTask.hpp"
 #include "git_version.h"
+#include "at86rf215.hpp"
 
 
 void app_main(void) {
@@ -27,25 +30,31 @@ void app_main(void) {
     if (eMMC::memoryMap[eMMC::firmware].endAddress != 0) {
         __NOP();
     }
-
-    transceiverTask.emplace();
     uartGatekeeperTask.emplace();
-    eMMCTask.emplace();
-    gnssTask.emplace();
+    //    transceiverTask.emplace();
+    rf_rxtask.emplace();
+    //    rf_txtask.emplace();
 
-    ina3221Task.emplace();
-    canGatekeeperTask.emplace();
-    tmp117Task.emplace();
-    canTestTask.emplace();
+    //    eMMCTask.emplace();
+    //    gnssTask.emplace();
 
-    transceiverTask->createTask();
+
+    //    ina3221Task.emplace();
+    //    canGatekeeperTask.emplace();
+    //    tmp117Task.emplace();
+    //    canTestTask.emplace();
     uartGatekeeperTask->createTask();
-    eMMCTask->createTask();
-    gnssTask->createTask();
-    ina3221Task->createTask();
-    canGatekeeperTask->createTask();
-    tmp117Task->createTask();
-    canTestTask->createTask();
+    //    transceiverTask->createTask();
+    rf_rxtask->createTask();
+    //    rf_txtask->createTask();
+
+    //    eMMCTask->createTask();
+    //    gnssTask->createTask();
+    //    ina3221Task->createTask();
+    //    canGatekeeperTask->createTask();
+    //    tmp117Task->createTask();
+    //    canTestTask->createTask();
+
 
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
 
@@ -60,7 +69,7 @@ void app_main(void) {
 
 extern "C" [[maybe_unused]] void EXTI1_IRQHandler(void) {
     HAL_GPIO_EXTI_IRQHandler(RF_IRQ_Pin);
-    transceiverTask->transceiver.handle_irq();
+    transceiver.handle_irq();
 }
 
 /* Callback in non blocking modes (DMA) */

@@ -36,12 +36,11 @@ void TransceiverTask::setConfiguration(uint16_t pllFrequency09, uint8_t pllChann
     CustomConfig.pllFrequency09 = pllFrequency09;
     CustomConfig.pllChannelNumber09 = pllChannelNumber09;
     CustomConfig.pllChannelMode09 = AT86RF215::PLLChannelMode::FineResolution450;
-    CustomConfig.transceiverSampleRate09 = AT86RF215::TransmitterSampleRate::FS_400;
     CustomConfig.continuousTransmit09 = false;
     CustomConfig.baseBandEnable09 = true;
     CustomConfig.physicalLayerType09 = PhysicalLayerType::BB_MRFSK;
     CustomConfig.frameCheckSequenceType09 = FrameCheckSequenceType::FCS_32;
-    CustomConfig.txOutPower09 = 0;
+
     transceiver.config = CustomConfig;
 }
 
