@@ -42,6 +42,9 @@ namespace AT86RF215 {
         BasebandCoreConfig basebandCoreConfig;
         FrequencySynthesizer freqSynthesizerConfig;
         AuxilarySettings auxilarySettings;
+        InterruptsConfig interruptsConfig;
+        RadioInterruptsConfig radioInterruptsConfig;
+        IQInterfaceConfig iqInterfaceConfig;
         /// Flag indicating that a TX procedure is ongoing
         bool tx_ongoing;
         /// Flag indicating that an RX procedure is ongoing
@@ -78,6 +81,15 @@ namespace AT86RF215 {
         }
         void setAuxilarySettings(AuxilarySettings&& AuxilarySettings) {
             auxilarySettings = std::move(AuxilarySettings);
+        }
+        void setInterruptConfig(InterruptsConfig&& InterruptsConfig) {
+            interruptsConfig = std::move(InterruptsConfig);
+        }
+        void setRadioInterruptConfig(RadioInterruptsConfig&& RadioInterruptsConfig) {
+            radioInterruptsConfig = std::move(RadioInterruptsConfig);
+        }
+        void setIQInterfaceConfig(IQInterfaceConfig&& IQInterfaceConfig) {
+            iqInterfaceConfig = std::move(IQInterfaceConfig);
         }
         /* Writes a byte to a specified address
          *
@@ -1037,9 +1049,9 @@ namespace AT86RF215 {
          * @param energy_time_basis			Time basis multiplied by the detection factor to determine the averaging window
          * @param err						Pointer to raised error
          */
-        void setup_rssi(Transceiver transceiver, EnergyDetectionMode energy_mode,
-                        uint8_t energy_detect_factor,
-                        EnergyDetectionTimeBasis energy_time_basis, Error& err);
+        void setup_rx_energy_detection(Transceiver transceiver, EnergyDetectionMode energy_mode,
+                                       uint8_t energy_detect_factor,
+                                       EnergyDetectionTimeBasis energy_time_basis, Error& err);
 
         /**
          * Sets up internal crystal oscillator

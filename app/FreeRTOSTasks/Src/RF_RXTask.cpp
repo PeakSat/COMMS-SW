@@ -4,21 +4,6 @@
 using namespace AT86RF215;
 
 
-uint16_t RF_RXTask::calculatePllChannelFrequency09(uint32_t frequency) {
-    uint32_t N = (frequency - 377000) * 65536 / 6500;
-    return N >> 8;
-}
-
-/*
-* The frequency cannot be lower than 377000 as specified in section 6.3.2. The frequency range related
-* to Fine Resolution Channel Scheme CNM.CM = 1 is from 389.5MHz to 510MHz
-*/
-uint8_t RF_RXTask::calculatePllChannelNumber09(uint32_t frequency) {
-    uint32_t N = (frequency - 377000) * 65536 / 6500;
-    return N & 0xFF;
-}
-
-
 uint8_t RF_RXTask::checkTheSPI() {
     uint8_t spi_error = 0;
     DevicePartNumber dpn = transceiver.get_part_number(error);

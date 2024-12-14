@@ -148,10 +148,13 @@ namespace AT86RF215 {
         FrameCheckSequenceType frameCheckSequenceType09, frameCheckSequenceType24;
         bool baseBandEnable09, baseBandEnable24;
         PhysicalLayerType physicalLayerType09, physicalLayerType24;
+
         // BBCn_FSKO
         // BBCn_FSK1
         // BBCn_FSK2
         // BBCn_FSK3
+        // BBCn_FSK4
+
 
         static BasebandCoreConfig DefaultBasebandCoreConfig() {
             return {
@@ -238,6 +241,7 @@ namespace AT86RF215 {
         AutomaticVoltageExternal automaticVoltageExternal09, automaticVoltageExternal24;
         PowerAmplifierVoltageControl powerAmplifierVoltageControl09, powerAmplifierVoltageControl24;
         // RFn_PADFE
+        //
 
         static AuxilarySettings DefaultAuxilarySettings() {
             return {
@@ -251,23 +255,134 @@ namespace AT86RF215 {
                 //
             };
         }
+        void set_RFn_AUXS(
+            ExternalLNABypass extLNA09,            // externalLNABypass09
+            AutomaticGainControlMAP agcMap09,      // automaticGainControlMAP09
+            AnalogVoltageEnable avEn09,            // analogVoltageEnable09
+            AutomaticVoltageExternal avExt09,      // automaticVoltageExternal09
+            PowerAmplifierVoltageControl pavCtrl09 // powerAmplifierVoltageControl09
+        ) {
+            externalLNABypass09 = extLNA09;
+            automaticGainControlMAP09 = agcMap09;
+            analogVoltageEnable09 = avEn09;
+            automaticVoltageExternal09 = avExt09;
+            powerAmplifierVoltageControl09 = pavCtrl09;
+        }
     };
-    struct AT86RF215Configuration {
 
-        SFDSearchSpace sfdSearchSpace = SFDSearchSpace::NSFD1;
-        RXSpuriousCompensation rxSpuriousCompensation =
-            RXSpuriousCompensation::DISABLED;
-        ReducePowerConsumption reducePowerConsumption =
-            ReducePowerConsumption::DISABLED;
-        EnableProprietaryModes enableProprietaryModes =
-            EnableProprietaryModes::NOT_SUPPORTED;
-        FCSType fcsType = FCSType::FCS32;
-        ReceiveMode receiveMode = ReceiveMode::OQPSKONLY;
-        OQPSKPulseShapingFilter oqpskPulseShapingFilter =
-            OQPSKPulseShapingFilter::BB_RC08;
-        OQPSKChipFrequency oqpskChipFrequency = OQPSKChipFrequency::BB_FCHIP100;
-        RXOOverride rxoOverride = RXOOverride::ENABLED;
-        RXOLEGOverride rxoLEGOverride = RXOLEGOverride::ENABLED;
+    struct IQInterfaceConfig {
+        // IQ Interface
+        // RF_IQIFC0
+        ExternalLoopback externalLoopback;
+        IQOutputCurrent iqOutputCurrent;
+        IQmodeVoltage iqmodeVoltage;
+        IQmodeVoltageIEE iqmodeVoltageIEE;
+        EmbeddedControlTX embeddedControlTX;
+        // RF_IQIFC1
+        ChipMode chipMode;
+        SkewAlignment skewAlignment;
+
+        static IQInterfaceConfig DefaultIQInterfaceConfig() {
+            return {
+                // RF_IQIFC0
+                .externalLoopback = ExternalLoopback::DISABLED,
+                .iqOutputCurrent = IQOutputCurrent::CURR_2_MA,
+                .iqmodeVoltage = IQmodeVoltage::MODE_200_MV,
+                .iqmodeVoltageIEE = IQmodeVoltageIEE::CMV,
+                .embeddedControlTX = EmbeddedControlTX::DISABLED,
+                // RF_IQIFC1
+                .chipMode = ChipMode::RF_MODE_BBRF,
+                .skewAlignment = SkewAlignment::SKEW3906NS};
+        }
+    };
+
+    struct InterruptsConfig {
+        // BBCn_IRQM
+        bool frameBufferLevelIndication09, frameBufferLevelIndication24;
+        bool agcRelease09, agcRelease24;
+        bool agcHold09, agcHold24;
+        bool transmitterFrameEnd09, transmitterFrameEnd24;
+        bool receiverExtendedMatch09, receiverExtendedMatch24;
+        bool receiverAddressMatch09, receiverAddressMatch24;
+        bool receiverFrameEnd09, receiverFrameEnd24;
+        bool receiverFrameStart09, receiverFrameStart24;
+
+        static InterruptsConfig DefaultInterruptsConfig() {
+            return {
+                .frameBufferLevelIndication09 = true,
+                .frameBufferLevelIndication24 = true,
+                .agcRelease09 = true,
+                .agcRelease24 = true,
+                .agcHold09 = true,
+                .agcHold24 = true,
+                .transmitterFrameEnd09 = true,
+                .transmitterFrameEnd24 = true,
+                .receiverExtendedMatch09 = true,
+                .receiverExtendedMatch24 = true,
+                .receiverAddressMatch09 = true,
+                .receiverAddressMatch24 = true,
+                .receiverFrameEnd09 = true,
+                .receiverFrameEnd24 = true,
+                .receiverFrameStart09 = true,
+                .receiverFrameStart24 = true};
+        }
+        void setupInterruptsConfig(bool fbl,
+                                   bool ar,
+                                   bool ah,
+                                   bool tfe,
+                                   bool rem,
+                                   bool ram,
+                                   bool rfe,
+                                   bool rfs) {
+            frameBufferLevelIndication09 = fbl;
+            agcRelease09 = ar;
+            agcHold09 = ah;
+            transmitterFrameEnd09 = tfe;
+            receiverExtendedMatch09 = rem;
+            receiverAddressMatch09 = ram;
+            receiverFrameEnd09 = rfe;
+            receiverFrameStart09 = rfs;
+        }
+    };
+
+    struct RadioInterruptsConfig {
+        // RFn_IRQM
+        bool iqIfSynchronizationFailure09, iqIfSynchronizationFailure24;
+        bool transceiverError09, transceiverError24;
+        bool batteryLow09, batteryLow24;
+        bool energyDetectionCompletion09, energyDetectionCompletion24;
+        bool transceiverReady09, transceiverReady24;
+        bool wakeup09, wakeup24;
+
+
+        static RadioInterruptsConfig DefaultRadioInterruptsConfig() {
+            return {
+                // RFn_IRQM
+                .iqIfSynchronizationFailure09 = true,
+                .transceiverError09 = true,
+                .batteryLow09 = true,
+                .energyDetectionCompletion09 = true,
+                .transceiverReady09 = true,
+                .wakeup09 = true,
+            };
+        }
+        // Setup function to configure values
+        void setupRadioInterruptsConfig(bool syncFail,
+                                        bool txErr,
+                                        bool batLow,
+                                        bool edComp,
+                                        bool txReady,
+                                        bool wake) {
+            iqIfSynchronizationFailure09 = syncFail;
+            transceiverError09 = txErr;
+            batteryLow09 = batLow;
+            energyDetectionCompletion09 = edComp;
+            transceiverReady09 = txReady;
+            wakeup09 = wake;
+        }
+    };
+
+    struct AT86RF215Configuration {
 
         // Battery Monitor
         BatteryMonitorVoltage batteryMonitorVoltage =
@@ -279,52 +394,7 @@ namespace AT86RF215 {
         CrystalTrim crystalTrim = CrystalTrim::TRIM_00;
         bool fastStartUp = false;
 
-        // IQ Interface
-        ExternalLoopback externalLoopback = ExternalLoopback::DISABLED;
-        IQOutputCurrent iqOutputCurrent = IQOutputCurrent::CURR_2_MA;
-        IQmodeVoltage iqmodeVoltage = IQmodeVoltage::MODE_200_MV;
-        IQmodeVoltageIEE iqmodeVoltageIEE = IQmodeVoltageIEE::CMV;
-        EmbeddedControlTX embeddedControlTX = EmbeddedControlTX::DISABLED;
-        ChipMode chipMode = ChipMode::RF_MODE_BBRF;
-        SkewAlignment skewAlignment = SkewAlignment::SKEW3906NS;
-
-
-        // Enabled Interrupts
-
-        // Baseband IRQ
-        // All interrupts enabled
-        bool frameBufferLevelIndication09 = true;
-        bool frameBufferLevelIndication24 = true;
-        bool agcRelease09 = true;
-        bool agcRelease24 = true;
-        bool agcHold09 = true;
-        bool agcHold24 = true;
-        bool transmitterFrameEnd09 = true;
-        bool transmitterFrameEnd24 = true;
-        bool receiverExtendedMatch09 = true;
-        bool receiverExtendedMatch24 = true;
-        bool receiverAddressMatch09 = true;
-        bool receiverAddressMatch24 = true;
-        bool receiverFrameEnd09 = true;
-        bool receiverFrameEnd24 = true;
-        bool receiverFrameStart09 = true;
-        bool receiverFrameStart24 = true;
-
-        // Radio IRQ
-        bool iqIfSynchronizationFailure09 = true;
-        bool iqIfSynchronizationFailure24 = true;
-        bool trasnceiverError09 = true;
-        bool trasnceiverError24 = true;
-        bool batteryLow09 = true;
-        bool batteryLow24 = true;
-        bool energyDetectionCompletion09 = true;
-        bool energyDetectionCompletion24 = true;
-        bool transceiverReady09 = true;
-        bool transceiverReady24 = true;
-        bool wakeup09 = true;
-        bool wakeup24 = true;
-
-        // IRQ Config
+        // RFn_CFG
         bool irqMaskMode = true;
         IRQPolarity irqPolarity = IRQPolarity::ACTIVE_HIGH;
         PadDriverStrength padDriverStrength = PadDriverStrength::RF_DRV4;

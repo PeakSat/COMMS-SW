@@ -1455,9 +1455,9 @@ namespace AT86RF215 {
         spi_write_8(RF_BMDVC, reg, err);
     }
 
-    void At86rf215::setup_rssi(Transceiver transceiver,
-                               EnergyDetectionMode energy_mode, uint8_t energy_detect_factor,
-                               EnergyDetectionTimeBasis energy_time_basis, Error& err) {
+    void At86rf215::setup_rx_energy_detection(Transceiver transceiver,
+                                              EnergyDetectionMode energy_mode, uint8_t energy_detect_factor,
+                                              EnergyDetectionTimeBasis energy_time_basis, Error& err) {
         uint8_t reg;
         RegisterAddress regedc;
         RegisterAddress regedd;
@@ -1608,17 +1608,17 @@ namespace AT86RF215 {
         }
 
         // Set IRQ masks
-        setup_irq_mask(Transceiver::RF09, config.iqIfSynchronizationFailure09, config.trasnceiverError09,
-                       config.batteryLow09, config.energyDetectionCompletion09, config.transceiverReady09,
-                       config.wakeup09, config.frameBufferLevelIndication09, rxConfig.agcEnabled09, config.agcRelease09,
-                       config.agcHold09, config.transmitterFrameEnd09, config.receiverExtendedMatch09,
-                       config.receiverAddressMatch09, config.receiverFrameEnd09, config.receiverFrameStart09, err);
+        setup_irq_mask(Transceiver::RF09, radioInterruptsConfig.iqIfSynchronizationFailure09, radioInterruptsConfig.transceiverError09,
+                       radioInterruptsConfig.batteryLow09, radioInterruptsConfig.energyDetectionCompletion09, radioInterruptsConfig.transceiverReady09,
+                       radioInterruptsConfig.wakeup09, interruptsConfig.frameBufferLevelIndication09, rxConfig.agcEnabled09, interruptsConfig.agcRelease09,
+                       interruptsConfig.agcHold09, interruptsConfig.transmitterFrameEnd09, interruptsConfig.receiverExtendedMatch09,
+                       interruptsConfig.receiverAddressMatch09, interruptsConfig.receiverFrameEnd09, interruptsConfig.receiverFrameStart09, err);
 
-        setup_irq_mask(Transceiver::RF24, config.iqIfSynchronizationFailure24, config.trasnceiverError24,
-                       config.batteryLow24, config.energyDetectionCompletion24, config.transceiverReady24,
-                       config.wakeup24, config.frameBufferLevelIndication24, rxConfig.agcEnabled24, config.agcRelease24,
-                       config.agcHold24, config.transmitterFrameEnd24, config.receiverExtendedMatch24,
-                       config.receiverAddressMatch24, config.receiverFrameEnd24, config.receiverFrameStart24, err);
+        setup_irq_mask(Transceiver::RF24, radioInterruptsConfig.iqIfSynchronizationFailure24, radioInterruptsConfig.transceiverError24,
+                       radioInterruptsConfig.batteryLow24, radioInterruptsConfig.energyDetectionCompletion24, radioInterruptsConfig.transceiverReady24,
+                       radioInterruptsConfig.wakeup24, interruptsConfig.frameBufferLevelIndication24, rxConfig.agcEnabled24, interruptsConfig.agcRelease24,
+                       interruptsConfig.agcHold24, interruptsConfig.transmitterFrameEnd24, interruptsConfig.receiverExtendedMatch24,
+                       interruptsConfig.receiverAddressMatch24, interruptsConfig.receiverFrameEnd24, interruptsConfig.receiverFrameStart24, err);
 
         // Set IRQ pin
         setup_irq_cfg(config.irqMaskMode, config.irqPolarity,
@@ -1692,19 +1692,19 @@ namespace AT86RF215 {
         }
 
         // Set up IQ interface
-        setup_iq(config.externalLoopback, config.iqOutputCurrent,
-                 config.iqmodeVoltage, config.iqmodeVoltageIEE,
-                 config.embeddedControlTX, config.chipMode, config.skewAlignment,
+        setup_iq(iqInterfaceConfig.externalLoopback, iqInterfaceConfig.iqOutputCurrent,
+                 iqInterfaceConfig.iqmodeVoltage, iqInterfaceConfig.iqmodeVoltageIEE,
+                 iqInterfaceConfig.embeddedControlTX, iqInterfaceConfig.chipMode, iqInterfaceConfig.skewAlignment,
                  err);
         if (err != Error::NO_ERRORS) {
             return;
         }
 
-        // Set up RSSI
-        setup_rssi(Transceiver::RF09, rxConfig.energyDetectionMode09,
-                   rxConfig.energyDetectFactor09, rxConfig.energyDetectionBasis09, err);
-        setup_rssi(Transceiver::RF24, rxConfig.energyDetectionMode24,
-                   rxConfig.energyDetectFactor24, rxConfig.energyDetectionBasis24, err);
+        // Set up energy detection // RFn_EDC, RFn_EDD
+        setup_rx_energy_detection(Transceiver::RF09, rxConfig.energyDetectionMode09,
+                                  rxConfig.energyDetectFactor09, rxConfig.energyDetectionBasis09, err);
+        setup_rx_energy_detection(Transceiver::RF24, rxConfig.energyDetectionMode24,
+                                  rxConfig.energyDetectFactor24, rxConfig.energyDetectionBasis24, err);
 
         if (err != Error::NO_ERRORS) {
             return;

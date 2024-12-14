@@ -52,11 +52,11 @@ void TransceiverTask::receiverConfig(bool agc_enable) {
     reg = reg | (static_cast<uint8_t>(agc_enable));
     transceiver.spi_write_8(regagcc, reg, error);
 
-    transceiver.setup_rssi(AT86RF215::RF09,
-                           AT86RF215::EnergyDetectionMode::RF_EDAUTO,
-                           16,
-                           AT86RF215::EnergyDetectionTimeBasis::RF_8MS,
-                           error);
+    transceiver.setup_rx_energy_detection(AT86RF215::RF09,
+                                          AT86RF215::EnergyDetectionMode::RF_EDAUTO,
+                                          16,
+                                          AT86RF215::EnergyDetectionTimeBasis::RF_8MS,
+                                          error);
 }
 
 /*

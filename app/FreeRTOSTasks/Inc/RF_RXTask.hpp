@@ -16,8 +16,6 @@ public:
     using PacketType = etl::array<uint8_t, MaxPacketLength>;
     RF_RXTask() : Task("Transceiver signal transmission") {}
     void execute();
-    uint8_t calculatePllChannelNumber09(uint32_t frequency);
-    uint16_t calculatePllChannelFrequency09(uint32_t frequency);
     uint8_t checkTheSPI();
     void createTask() {
         xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,

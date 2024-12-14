@@ -36,6 +36,8 @@ void app_main(void) {
     transceiver.setBaseBandCoreConfig(BasebandCoreConfig::DefaultBasebandCoreConfig());
     transceiver.setFrequencySynthesizerConfig(FrequencySynthesizer::DefaultFrequencySynthesizerConfig());
     transceiver.setAuxilarySettings(AuxilarySettings::DefaultAuxilarySettings());
+    transceiver.setInterruptConfig(InterruptsConfig::DefaultInterruptsConfig());
+    transceiver.setRadioInterruptConfig(RadioInterruptsConfig::DefaultRadioInterruptsConfig());
 
     uartGatekeeperTask.emplace();
     //    transceiverTask.emplace();
