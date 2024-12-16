@@ -36,7 +36,7 @@ namespace AT86RF215 {
 
     class At86rf215 {
     public:
-        AT86RF215Configuration config;
+        GeneralConfiguration generalConfig;
         RXConfig rxConfig;
         TXConfig txConfig;
         BasebandCoreConfig basebandCoreConfig;
@@ -62,11 +62,13 @@ namespace AT86RF215 {
          *
          */
         // Constructor with general config only
-        At86rf215(SPI_HandleTypeDef* hspim, const AT86RF215Configuration&& generalConfig)
+        At86rf215(SPI_HandleTypeDef* hspim)
             : hspi(hspim),
-              config(std::move(generalConfig)), // Correctly moving the config
               tx_ongoing(false), rx_ongoing(false), agc_held(false) {}
 
+        void setGeneralConfig(GeneralConfiguration&& GeneralConfig) {
+            generalConfig = std::move(GeneralConfig);
+        }
         void setRXConfig(RXConfig&& RXConfig) {
             rxConfig = std::move(RXConfig); // Move the new config into rxConfig
         }
@@ -994,7 +996,7 @@ namespace AT86RF215 {
         void setup_tx_frontend(Transceiver transceiver,
                                PowerAmplifierRampTime pa_ramp_time,
                                TransmitterCutOffFrequency cutoff,
-                               TxRelativeCutoffFrequency tx_rel_cutoff, bool direct_mod,
+                               TxRelativeCutoffFrequency tx_rel_cutoff, Direct_Mod_Enable_FSKDM direct_mod,
                                TransmitterSampleRate tx_sample_rate,
                                PowerAmplifierCurrentControl pa_curr_control, uint8_t tx_out_power,
                                ExternalLNABypass ext_lna_bypass, AutomaticGainControlMAP agc_map,
@@ -1121,6 +1123,31 @@ namespace AT86RF215 {
          */
         uint8_t get_irq(Transceiver transceiver, Error& err);
 
+        void set_bbc_fskc0_config(Transceiver transceiver,
+                                  Bandwidth_time_product bt, Mod_index_scale midxs, Mod_index midx, FSK_mod_order mord,
+                                  Error& err);
+        void set_bbc_fskc1_config(Transceiver transceiver,
+                                  Freq_Inversion freq_inv, MR_FSK_symbol_rate sr,
+                                  Error& err);
+        void set_bbc_fskc2_config(Transceiver transceiver, Preamble_Detection preamble_det,
+                                  Receiver_Override rec_override,
+                                  Receiver_Preamble_Timeout rec_preamble_timeout,
+                                  Mode_Switch_Enable mode_switch_en,
+                                  Preamble_Inversion preamble_inversion,
+                                  FEC_Scheme fec_sheme,
+                                  Interleaving_Enable interleaving_enable, Error& err);
+        void set_bbc_fskc3_config(Transceiver transceiver, SFD_Detection_Threshold sfdDetectionThreshold,
+                                  Preamble_Detection_Threshold preambleDetectionThreshold,
+                                  Error& err);
+        void set_bbc_fskc4_config(Transceiver transceiver,
+                                  SFD_Quantization sfd_quantization,
+                                  SFD_32 sfd_32,
+                                  Raw_Mode_Reversal_Bit raw_mode_reversal,
+                                  CSFD1 csfd1,
+                                  CSFD0 csfd0,
+                                  Error& err);
+        void set_bbc_fskphrtx(Transceiver transceiver, SFD_Used sfdUsed, Data_Whitening dataWhitening, Error& err);
+        void set_bbc_fskdm(Transceiver transceiver, FSK_Preamphasis_Enable fskPreamphasisEnable, Direct_Mod_Enable_FSKDM directModEnableFskdm, Error& err);
         /*
          * This function is called automatically whenever an interrupt is raised. It reads the interrupt status registers
          * and takes action depending on the raised interrupt status.

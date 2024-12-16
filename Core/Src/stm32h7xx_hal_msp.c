@@ -273,7 +273,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
     PeriphClkInitStruct.PLL3.PLL3R = 75;
     PeriphClkInitStruct.PLL3.PLL3RGE = RCC_PLL3VCIRANGE_3;
     PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOMEDIUM;
-    PeriphClkInitStruct.PLL3.PLL3FRACN = 4096.0;
+    PeriphClkInitStruct.PLL3.PLL3FRACN = 4096;
     PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C4CLKSOURCE_PLL3;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
     {

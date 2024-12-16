@@ -31,6 +31,7 @@ void app_main(void) {
         __NOP();
     }
     // Default settings for the transceiver
+    transceiver.setGeneralConfig(GeneralConfiguration::DefaultGeneralConfig());
     transceiver.setRXConfig(RXConfig::DefaultRXConfig());
     transceiver.setTXConfig(TXConfig::DefaultTXConfig());
     transceiver.setBaseBandCoreConfig(BasebandCoreConfig::DefaultBasebandCoreConfig());
@@ -38,6 +39,7 @@ void app_main(void) {
     transceiver.setAuxilarySettings(AuxilarySettings::DefaultAuxilarySettings());
     transceiver.setInterruptConfig(InterruptsConfig::DefaultInterruptsConfig());
     transceiver.setRadioInterruptConfig(RadioInterruptsConfig::DefaultRadioInterruptsConfig());
+    transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());
 
     uartGatekeeperTask.emplace();
     //    transceiverTask.emplace();

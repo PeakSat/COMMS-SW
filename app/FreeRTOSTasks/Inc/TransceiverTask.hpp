@@ -83,7 +83,6 @@ public:
     }
 
 private:
-    AT86RF215::AT86RF215Configuration CustomConfig;
     constexpr static uint16_t DelayMs = 1;
     constexpr static uint16_t TaskStackDepth = 6000;
     constexpr static uint32_t FrequencyUHF = 401000;

@@ -8,7 +8,6 @@ extern SPI_HandleTypeDef hspi4;
 
 using namespace AT86RF215;
 
-AT86RF215::At86rf215 TransceiverTask::transceiver = AT86RF215::At86rf215(&hspi4, AT86RF215::AT86RF215Configuration());
 
 uint8_t TransceiverTask::checkTheSPI() {
     uint8_t spi_error = 0;
@@ -107,7 +106,6 @@ void TransceiverTask::txSRandTxFilter() {
 void TransceiverTask::txAnalogFrontEnd() {
     AT86RF215::RegisterAddress regtxcutc;
     regtxcutc = AT86RF215::RF09_TXCUTC;
-
     uint8_t reg = transceiver.spi_read_8(regtxcutc, error);
     // PARAMP Config
     transceiver.spi_write_8(regtxcutc, reg | (static_cast<uint8_t>(AT86RF215::PowerAmplifierRampTime::RF_PARAMP32U) << 6), error);

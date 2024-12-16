@@ -1,4 +1,4 @@
-#pragma once
+
 #include "CANDriver.hpp"
 #include "CANGatekeeperTask.hpp"
 #include "TPProtocol.hpp"

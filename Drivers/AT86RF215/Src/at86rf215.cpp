@@ -1,7 +1,5 @@
 #include "at86rf215.hpp"
 #include "main.h"
-//#include "FreeRTOS.h"
-//#include "task.h"
 #include "Task.hpp"
 #include "RF_TXTask.hpp"
 #include "RF_RXTask.hpp"
@@ -9,7 +7,7 @@
 
 namespace AT86RF215 {
 
-    AT86RF215::At86rf215 transceiver = At86rf215(&hspi4, AT86RF215Configuration());
+    AT86RF215::At86rf215 transceiver = At86rf215(&hspi4);
 
     void At86rf215::spi_write_8(uint16_t address, uint8_t value, Error& err) {
         uint8_t msg[3] = {static_cast<uint8_t>(0x80 | ((address >> 8) & 0x7F)), static_cast<uint8_t>(address & 0xFF), value};
@@ -1372,7 +1370,7 @@ namespace AT86RF215 {
 
     void At86rf215::setup_tx_frontend(Transceiver transceiver,
                                       PowerAmplifierRampTime pa_ramp_time, TransmitterCutOffFrequency cutoff,
-                                      TxRelativeCutoffFrequency tx_rel_cutoff, bool direct_mod,
+                                      TxRelativeCutoffFrequency tx_rel_cutoff, Direct_Mod_Enable_FSKDM direct_mod,
                                       TransmitterSampleRate tx_sample_rate,
                                       PowerAmplifierCurrentControl pa_curr_control, uint8_t tx_out_power,
                                       ExternalLNABypass ext_lna_bypass, AutomaticGainControlMAP agc_map,
@@ -1383,7 +1381,7 @@ namespace AT86RF215 {
         RegisterAddress regpac;
         RegisterAddress regauxs;
 
-        uint8_t reg;
+        uint8_t reg = 0;
 
         if (transceiver == Transceiver::RF09) {
             regtxcut = RF09_TXCUTC;
@@ -1396,7 +1394,6 @@ namespace AT86RF215 {
             regpac = RF24_PAC;
             regauxs = RF24_AUXS;
         }
-
         // Set RFn_TXCUTC
         reg = (static_cast<uint8_t>(pa_ramp_time) << 6) | static_cast<uint8_t>(cutoff);
         spi_write_8(regtxcut, reg, err);
@@ -1410,7 +1407,6 @@ namespace AT86RF215 {
         if (err != Error::NO_ERRORS) {
             return;
         }
-
         // Set RFn_PAC
         reg = (static_cast<uint8_t>(pa_curr_control) << 5) | (tx_out_power & 0x1F);
         spi_write_8(regpac, reg, err);
@@ -1421,6 +1417,9 @@ namespace AT86RF215 {
         // Set RFn_AUXS
         reg = (static_cast<uint8_t>(ext_lna_bypass) << 7) | (static_cast<uint8_t>(agc_map) << 5) | (static_cast<uint8_t>(avg_ext) << 4) | (static_cast<uint8_t>(av_enable) << 3) | (static_cast<uint8_t>(pa_vcontrol));
         spi_write_8(regauxs, reg, err);
+        if (err != Error::NO_ERRORS) {
+            return;
+        }
     }
 
     void At86rf215::setup_iq(ExternalLoopback external_loop,
@@ -1621,8 +1620,8 @@ namespace AT86RF215 {
                        interruptsConfig.receiverAddressMatch24, interruptsConfig.receiverFrameEnd24, interruptsConfig.receiverFrameStart24, err);
 
         // Set IRQ pin
-        setup_irq_cfg(config.irqMaskMode, config.irqPolarity,
-                      config.padDriverStrength, err);
+        setup_irq_cfg(generalConfig.irqMaskMode, generalConfig.irqPolarity,
+                      generalConfig.padDriverStrength, err);
 
         // Set PLL
         configure_pll(Transceiver::RF09, freqSynthesizerConfig.channelCenterFrequency09,
@@ -1648,7 +1647,20 @@ namespace AT86RF215 {
         if (err != Error::NO_ERRORS) {
             return;
         }
-
+        /// BBCn_FSKC0
+        set_bbc_fskc0_config(RF09, basebandCoreConfig.bandwidth_time_09, basebandCoreConfig.midxs_09, basebandCoreConfig.midx_09, basebandCoreConfig.mord_09, err);
+        /// BBCn_FSKC1
+        set_bbc_fskc1_config(RF09, basebandCoreConfig.freq_inv_09, basebandCoreConfig.sr_09, err);
+        /// BBCn_FSKC2
+        set_bbc_fskc2_config(RF09, basebandCoreConfig.preamble_detection_09, basebandCoreConfig.receiver_override_09, basebandCoreConfig.receiver_preamble_timeout_09, basebandCoreConfig.mode_switch_en_09, basebandCoreConfig.preamble_inversion_09, basebandCoreConfig.fec_scheme_09, basebandCoreConfig.interleaving_enable_09, err);
+        /// BBCn_FSKC3
+        set_bbc_fskc3_config(RF09, basebandCoreConfig.sfdt_09, basebandCoreConfig.prdt_09, err);
+        /// BBC_FSKC4
+        set_bbc_fskc4_config(RF09, basebandCoreConfig.sfdQuantization_09, basebandCoreConfig.sfd32_09, basebandCoreConfig.rawModeReversalBit_09, basebandCoreConfig.csfd1_09, basebandCoreConfig.csfd0_09, err);
+        /// BBCn_FSKPHRTX
+        set_bbc_fskphrtx(RF09, basebandCoreConfig.sfdUsed_09, basebandCoreConfig.dataWhitening_09, err);
+        /// BBCn_FSKDM
+        set_bbc_fskdm(RF09, basebandCoreConfig.fskPreamphasisEnable_09, basebandCoreConfig.directModEnableFskdm_09, err);
         // Set TX front-end
         setup_tx_frontend(Transceiver::RF09, txConfig.powerAmplifierRampTime09,
                           txConfig.transmitterCutOffFrequency09,
@@ -1672,7 +1684,6 @@ namespace AT86RF215 {
         if (err != Error::NO_ERRORS) {
             return;
         }
-
         // Set up RX front-end
         setup_rx_frontend(Transceiver::RF09, rxConfig.ifInversion09, rxConfig.ifShift09,
                           rxConfig.receiverBandwidth09, rxConfig.rxRelativeCutoffFrequency09,
@@ -1690,7 +1701,6 @@ namespace AT86RF215 {
         if (err != Error::NO_ERRORS) {
             return;
         }
-
         // Set up IQ interface
         setup_iq(iqInterfaceConfig.externalLoopback, iqInterfaceConfig.iqOutputCurrent,
                  iqInterfaceConfig.iqmodeVoltage, iqInterfaceConfig.iqmodeVoltageIEE,
@@ -1711,7 +1721,7 @@ namespace AT86RF215 {
         }
 
         // Set up battery
-        setup_battery(config.batteryMonitorVoltage, config.batteryMonitorHighRange,
+        setup_battery(generalConfig.batteryMonitorVoltage, generalConfig.batteryMonitorHighRange,
                       err);
 
         if (err != Error::NO_ERRORS) {
@@ -1719,7 +1729,7 @@ namespace AT86RF215 {
         }
 
         // Set up crystal oscillator
-        setup_crystal(config.fastStartUp, config.crystalTrim, err);
+        setup_crystal(generalConfig.fastStartUp, generalConfig.crystalTrim, err);
     }
 
     uint8_t At86rf215::get_irq(Transceiver transceiver, Error& err) {
@@ -1729,6 +1739,225 @@ namespace AT86RF215 {
             return spi_read_8(RF24_IRQS, err);
         }
         return 0;
+    }
+
+    void At86rf215::set_bbc_fskc0_config(Transceiver transceiver,
+                                         Bandwidth_time_product bt, Mod_index_scale midxs, Mod_index midx, FSK_mod_order mord,
+                                         Error& err) {
+        // Define the appropriate register for BBCn_FSKC0 based on the transceiver
+        RegisterAddress reg_address;
+        if (transceiver == RF09) {
+            reg_address = BBC0_FSKC0; // Replace with actual RF09 register address
+        } else if (transceiver == RF24) {
+            reg_address = BBC1_FSKC0; // Replace with actual RF24 register address
+        } else {
+            return;
+        }
+
+        // Read the current register value and mask out the fields to preserve other bits
+        uint8_t reg_value = spi_read_8(reg_address, err);
+        if (err != Error::NO_ERRORS) {
+            return; // Return early if SPI read fails
+        }
+        reg_value &= 0x00; // Clear the bits that will be set explicitly
+
+        // Clear existing values in BT, MIDXS, MIDX, and MORD
+        reg_value |= ((static_cast<uint8_t>(bt) & 0x03) << 6);    // BT: Bits [7:6]
+        reg_value |= ((static_cast<uint8_t>(midxs) & 0x03) << 4); // MIDXS: Bits [5:4]
+        reg_value |= ((static_cast<uint8_t>(midx) & 0x07) << 1);  // MIDX: Bits [3:1]
+        reg_value |= (static_cast<uint8_t>(mord) & 0x01);         // MORD: Bit [0]
+
+        // Write the updated value back to the register
+        spi_write_8(reg_address, reg_value, err);
+
+        if (err != Error::NO_ERRORS) {
+            return;
+        }
+    }
+    void At86rf215::set_bbc_fskc1_config(Transceiver transceiver,
+                                         Freq_Inversion freq_inv, MR_FSK_symbol_rate sr,
+                                         Error& err) {
+        // Define the appropriate register for BBCn_FSKC1 based on the transceiver
+        RegisterAddress reg_address;
+        if (transceiver == RF09) {
+            reg_address = BBC0_FSKC1; // Replace with actual RF09 register address
+        } else if (transceiver == RF24) {
+            reg_address = BBC1_FSKC1; // Replace with actual RF24 register address
+        } else {
+            return;
+        }
+        // Read the current register value and mask out the fields to preserve other bits
+        uint8_t reg_value = spi_read_8(reg_address, err);
+        if (err != Error::NO_ERRORS) {
+            return; // Return early if SPI read fails
+        }
+        // clear all bits except bit 4 (counting from 4)
+        reg_value &= (0x1 << 4);
+        reg_value |= (static_cast<uint8_t>(freq_inv) & 0x1) << 5;
+        reg_value |= (static_cast<uint8_t>(sr) & 0xF);
+        // Write the updated value back to the register
+        spi_write_8(reg_address, reg_value, err);
+        if (err != Error::NO_ERRORS) {
+            return;
+        }
+    }
+    void At86rf215::set_bbc_fskc2_config(Transceiver transceiver, Preamble_Detection preamble_det,
+                                         Receiver_Override rec_override,
+                                         Receiver_Preamble_Timeout rec_preamble_timeout,
+                                         Mode_Switch_Enable mode_switch_en,
+                                         Preamble_Inversion preamble_inversion,
+                                         FEC_Scheme fec_scheme,
+                                         Interleaving_Enable interleaving_enable, Error& err) {
+        // Define the appropriate register for BBCn_FSKC2 based on the transceiver
+        RegisterAddress reg_address;
+        if (transceiver == RF09) {
+            reg_address = BBC0_FSKC2; // Replace with actual RF09 register address
+        } else if (transceiver == RF24) {
+            reg_address = BBC1_FSKC2; // Replace with actual RF24 register address
+        } else {
+            return;
+        }
+        // Read the current register value and mask out the fields to preserve other bits
+        uint8_t reg_value = spi_read_8(reg_address, err);
+        if (err != Error::NO_ERRORS) {
+            return; // Return early if SPI read fails
+        }
+        // Update the register value with provided configurations
+        reg_value &= 0x00; // Clear the bits that will be set explicitly
+        // Bit 7: PDTM - Preamble Detection Mode
+        reg_value |= (static_cast<uint8_t>(preamble_det) & 0x1) << 7;
+        // Bits 6-5: RXO - Receiver Override
+        reg_value |= (static_cast<uint8_t>(rec_override) & 0x3) << 5;
+        // Bit 4: RXPTO - Receiver Preamble Time Out
+        reg_value |= (static_cast<uint8_t>(rec_preamble_timeout) & 0x1) << 4;
+        // Bit 3: MSE - Mode Switch Enable
+        reg_value |= (static_cast<uint8_t>(mode_switch_en) & 0x1) << 3;
+        // Bit 2: PRI - Preamble Inversion
+        reg_value |= (static_cast<uint8_t>(preamble_inversion) & 0x1) << 2;
+        // Bit 1: FECS - FEC Scheme
+        reg_value |= (static_cast<uint8_t>(fec_scheme) & 0x1) << 1;
+        // Bit 0: FECIE - Interleaving Enable
+        reg_value |= (static_cast<uint8_t>(interleaving_enable) & 0x1) << 0;
+        // Write the updated value back to the register
+        spi_write_8(reg_address, reg_value, err);
+
+        if (err != Error::NO_ERRORS) {
+            return;
+        }
+    }
+
+    void At86rf215::set_bbc_fskc3_config(Transceiver transceiver, SFD_Detection_Threshold sfdDetectionThreshold, Preamble_Detection_Threshold preambleDetectionThreshold, Error& err) {
+        // Define the appropriate register for BBCn_FSKC2 based on the transceiver
+        RegisterAddress reg_address;
+        if (transceiver == RF09) {
+            reg_address = BBC0_FSKC3; // Replace with actual RF09 register address
+        } else if (transceiver == RF24) {
+            reg_address = BBC1_FSKC3; // Replace with actual RF24 register address
+        } else {
+            return;
+        }
+        // Read the current register value and mask out the fields to preserve other bits
+        uint8_t reg_value = spi_read_8(reg_address, err);
+        if (err != Error::NO_ERRORS) {
+            return; // Return early if SPI read fails
+        }
+        // Update the register value with provided configurations
+        reg_value &= 0x00; // Clear the bits that will be set explicitly
+        reg_value |= (static_cast<uint8_t>(sfdDetectionThreshold) & 0xF) << 4;
+        reg_value |= (static_cast<uint8_t>(preambleDetectionThreshold) & 0xF) << 0;
+        // Write the updated value back to the register
+        spi_write_8(reg_address, reg_value, err);
+        if (err != Error::NO_ERRORS) {
+            return;
+        }
+    }
+
+    void At86rf215::set_bbc_fskc4_config(Transceiver transceiver,
+                                         SFD_Quantization sfd_quantization,
+                                         SFD_32 sfd_32,
+                                         Raw_Mode_Reversal_Bit raw_mode_reversal,
+                                         CSFD1 csfd1,
+                                         CSFD0 csfd0,
+                                         Error& err) {
+        // Define the appropriate register address for BBCn_FSKC4 based on the transceiver
+        RegisterAddress reg_address;
+        if (transceiver == RF09) {
+            reg_address = BBC0_FSKC4; // Replace with the actual RF09 register address
+        } else if (transceiver == RF24) {
+            reg_address = BBC1_FSKC4; // Replace with the actual RF24 register address
+        } else {
+            return; // Return early if the transceiver is invalid
+        }
+
+        // Read the current register value and mask out the fields to preserve other bits
+        uint8_t reg_value = spi_read_8(reg_address, err);
+        if (err != Error::NO_ERRORS) {
+            return; // Return early if SPI read fails
+        }
+        // clear all bits except bit 7
+        reg_value &= (0x01) << 7;
+        reg_value |= (static_cast<uint8_t>(sfd_quantization) & 0x1) << 6;
+        reg_value |= (static_cast<uint8_t>(sfd_32) & 0x1) << 5;
+        reg_value |= (static_cast<uint8_t>(raw_mode_reversal) & 0x1) << 4;
+        reg_value |= (static_cast<uint8_t>(csfd1) & 0x3) << 2;
+        reg_value |= (static_cast<uint8_t>(csfd0) & 0x3) << 0;
+        // Write the updated value back to the register
+        spi_write_8(reg_address, reg_value, err);
+        if (err != Error::NO_ERRORS) {
+            return;
+        }
+    }
+    void At86rf215::set_bbc_fskphrtx(Transceiver transceiver, SFD_Used sfdUsed, Data_Whitening dataWhitening, Error& err) {
+        // Define the appropriate register address for BBC0_FSKPHRTX based on the transceiver
+        RegisterAddress reg_address;
+        if (transceiver == RF09) {
+            reg_address = BBC0_FSKPHRTX; // Replace with the actual RF09 register address
+        } else if (transceiver == RF24) {
+            reg_address = BBC1_FSKPHRTX; // Replace with the actual RF24 register address
+        } else {
+            return; // Return early if the transceiver is invalid
+        }
+
+        // Read the current register value and mask out the fields to preserve other bits
+        uint8_t reg_value = spi_read_8(reg_address, err);
+        if (err != Error::NO_ERRORS) {
+            return; // Return early if SPI read fails
+        }
+        // clear the bits to be updated
+        // 0000 1000 | 0000 0100 = 0000 1100 -> 1111 0011 -> reg_value = reg_value & 1111 0011
+        reg_value &= ~((0x1 << 3) | (0x1 << 2));
+        reg_value |= (static_cast<uint8_t>(sfdUsed) & 0x1) << 3;
+        reg_value |= (static_cast<uint8_t>(dataWhitening) & 0x1) << 2;
+        spi_write_8(reg_address, reg_value, err);
+        if (err != Error::NO_ERRORS) {
+            return;
+        }
+    }
+
+    void At86rf215::set_bbc_fskdm(Transceiver transceiver, FSK_Preamphasis_Enable fskPreamphasisEnable, Direct_Mod_Enable_FSKDM directModEnableFskdm, Error& err) {
+        // Define the appropriate register address for BBCn_FSKDM based on the transceiver
+        RegisterAddress reg_address;
+        if (transceiver == RF09) {
+            reg_address = BBC0_FSKDM; // Replace with the actual RF09 register address
+        } else if (transceiver == RF24) {
+            reg_address = BBC1_FSKDM; // Replace with the actual RF24 register address
+        } else {
+            return; // Return early if the transceiver is invalid
+        }
+
+        // Read the current register value and mask out the fields to preserve other bits
+        uint8_t reg_value = spi_read_8(reg_address, err);
+        if (err != Error::NO_ERRORS) {
+            return; // Return early if SPI read fails
+        }
+        // clear bits [1:0]
+        reg_value &= ~((0x01 << 1) | (0x01 << 0));
+        reg_value |= (static_cast<uint8_t>(fskPreamphasisEnable) & 0x1) << 1;
+        reg_value |= (static_cast<uint8_t>(directModEnableFskdm) & 0x1) << 0;
+        spi_write_8(reg_address, reg_value, err);
+        if (err != Error::NO_ERRORS) {
+            return;
+        }
     }
 
     void At86rf215::handle_irq(void) {
@@ -1741,7 +1970,6 @@ namespace AT86RF215 {
         if ((irq & InterruptMask::IFSynchronization) != 0) {
             // I/Q IF Synchronization Failure handling
             IFSynchronization_flag = true;
-            xTaskNotify(rf_txtask->taskHandle, 0, eSetBits);
         }
         if ((irq & InterruptMask::TransceiverError) != 0) {
             // Transceiver Error handling
@@ -1775,7 +2003,7 @@ namespace AT86RF215 {
             // Wakeup handling
         }
 
-        //Baseband IRQ
+        /// Baseband IRQ
         irq = spi_read_8(RegisterAddress::BBC0_IRQS, err);
         if ((irq & InterruptMask::FrameBufferLevelIndication) != 0) {
             // Frame Buffer Level Indication handling
@@ -1803,7 +2031,6 @@ namespace AT86RF215 {
         if ((irq & InterruptMask::ReceiverFrameEnd) != 0) {
             ReceiverFrameEnd_flag = true;
             if (rx_ongoing) {
-                //                packetReception(Transceiver::RF09, err); // hard_fault if enabled for packets above 106 bytes
                 rx_ongoing = false;
             }
         }

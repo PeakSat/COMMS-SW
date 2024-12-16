@@ -1,6 +1,7 @@
 #pragma once
 #include "at86rf215definitions.hpp"
 #include <cstdint>
+#include <etl/array.h>
 
 namespace AT86RF215 {
 
@@ -24,7 +25,6 @@ namespace AT86RF215 {
         AutomaticGainTarget automaticGainTarget09, automaticGainTarget24;
         uint8_t gainControlWord09, gainControlWord24;
 
-        // default rx config
         static RXConfig DefaultRXConfig() {
             return {
                 // RFn_RXBWC
@@ -96,7 +96,7 @@ namespace AT86RF215 {
     struct TXConfig {
         // RFn_TXDFE
         TxRelativeCutoffFrequency txRelativeCutoffFrequency09, txRelativeCutoffFrequency24;
-        bool directModulation09, directModulation24;
+        Direct_Mod_Enable_FSKDM directModulation09, directModulation24;
         TransmitterSampleRate transceiverSampleRate09, transceiverSampleRate24;
         // RFn_TXCUTC
         PowerAmplifierRampTime powerAmplifierRampTime09, powerAmplifierRampTime24;
@@ -109,23 +109,16 @@ namespace AT86RF215 {
             return {
                 // RFn_TXDFE
                 .txRelativeCutoffFrequency09 = TxRelativeCutoffFrequency::FCUT_0375,
-                .txRelativeCutoffFrequency24 = TxRelativeCutoffFrequency::FCUT_0375,
-                .directModulation09 = true,
-                .directModulation24 = false,
+                .directModulation09 = Direct_Mod_Enable_FSKDM::direct_mod_enabled,
                 .transceiverSampleRate09 = TransmitterSampleRate::FS_400,
-                .transceiverSampleRate24 = TransmitterSampleRate::FS_400,
                 // RFn_TXCUTC
                 .powerAmplifierRampTime09 = PowerAmplifierRampTime::RF_PARAMP4U,
-                .powerAmplifierRampTime24 = PowerAmplifierRampTime::RF_PARAMP4U,
                 .transmitterCutOffFrequency09 = TransmitterCutOffFrequency::RF_FLC100KHZ,
-                .transmitterCutOffFrequency24 = TransmitterCutOffFrequency::RF_FLC100KHZ,
                 // RF_n_PAC
                 .powerAmplifierCurrentControl09 = PowerAmplifierCurrentControl::PA_NO,
-                .powerAmplifierCurrentControl24 = PowerAmplifierCurrentControl::PA_NO,
-                .txOutPower09 = 0x00,
-                .txOutPower24 = 0x00};
+                .txOutPower09 = 0x00};
         }
-        void setTXDFE(TxRelativeCutoffFrequency cutoffFrequency09, bool modulation09, TransmitterSampleRate sampleRate09) {
+        void setTXDFE(TxRelativeCutoffFrequency cutoffFrequency09, Direct_Mod_Enable_FSKDM modulation09, TransmitterSampleRate sampleRate09) {
             txRelativeCutoffFrequency09 = cutoffFrequency09;
             directModulation09 = modulation09;
             transceiverSampleRate09 = sampleRate09;
@@ -148,31 +141,83 @@ namespace AT86RF215 {
         FrameCheckSequenceType frameCheckSequenceType09, frameCheckSequenceType24;
         bool baseBandEnable09, baseBandEnable24;
         PhysicalLayerType physicalLayerType09, physicalLayerType24;
-
-        // BBCn_FSKO
-        // BBCn_FSK1
-        // BBCn_FSK2
-        // BBCn_FSK3
-        // BBCn_FSK4
-
+        /// BBCn_FSKCO
+        Bandwidth_time_product bandwidth_time_09, bandwidth_time_24;
+        Mod_index_scale midxs_09, midxs_24;
+        Mod_index midx_09, midx_24;
+        FSK_mod_order mord_09, mord_24;
+        /// BBCn_FSKC1
+        Freq_Inversion freq_inv_09, freq_inv_24;
+        MR_FSK_symbol_rate sr_09, sr_24;
+        /// BBCn_FSKC2
+        Preamble_Detection preamble_detection_09, preamble_detection_24;
+        Receiver_Override receiver_override_09, receiver_override_24;
+        Receiver_Preamble_Timeout receiver_preamble_timeout_09, receiver_preamble_timeout_24;
+        Mode_Switch_Enable mode_switch_en_09, mode_switch_en_24;
+        Preamble_Inversion preamble_inversion_09, preamble_inversion_24;
+        FEC_Scheme fec_scheme_09, fec_scheme_24;
+        Interleaving_Enable interleaving_enable_09, interleaving_enable_24;
+        /// BBCn_FSKC3
+        SFD_Detection_Threshold sfdt_09, sfdt_24;
+        Preamble_Detection_Threshold prdt_09, prdt_24;
+        /// BBCn_FSKC4
+        SFD_Quantization sfdQuantization_09, sfdQuantization_24;
+        SFD_32 sfd32_09, sfd32_24;
+        Raw_Mode_Reversal_Bit rawModeReversalBit_09, rawModeReversalBit_24;
+        CSFD1 csfd1_09, csfd1_24;
+        CSFD0 csfd0_09, csfd0_24;
+        /// BBCn_FSKPHRTX
+        SFD_Used sfdUsed_09, sfdUsed_24;
+        Data_Whitening dataWhitening_09, dataWhitening_24;
+        /// BBCn_FSKDM
+        FSK_Preamphasis_Enable fskPreamphasisEnable_09, fskPreamphasisEnable_24;
+        Direct_Mod_Enable_FSKDM directModEnableFskdm_09, directModEnableFskdm_24;
 
         static BasebandCoreConfig DefaultBasebandCoreConfig() {
             return {
-                // BBCn_PC
+                /// BBCn_PC
                 .continuousTransmit09 = false,
-                .continuousTransmit24 = false,
                 .frameCheckSequenceFilterEn09 = false,
-                .frameCheckSequenceFilterEn24 = false,
                 .transmitterAutoFrameCheckSequence09 = true,
-                .transmitterAutoFrameCheckSequence24 = true,
                 .frameCheckSequenceType09 = FrameCheckSequenceType::FCS_32,
-                .frameCheckSequenceType24 = FrameCheckSequenceType::FCS_32,
                 .baseBandEnable09 = true,
                 .baseBandEnable24 = false,
                 .physicalLayerType09 = PhysicalLayerType::BB_MRFSK,
-                .physicalLayerType24 = PhysicalLayerType::BB_OFF};
+                .physicalLayerType24 = PhysicalLayerType::BB_OFF,
+                /// BBCn_FSKC0
+                .bandwidth_time_09 = Bandwidth_time_product::BT_1_0,
+                .midxs_09 = Mod_index_scale::s_1_0,
+                .midx_09 = Mod_index::bf_1_000,
+                .mord_09 = FSK_mod_order::binary_fsk,
+                /// BBCn_FSKC1
+                .freq_inv_09 = Freq_Inversion::freq_inversion_off,
+                .sr_09 = MR_FSK_symbol_rate::sr_50,
+                /// BBCn_FSKC2
+                .preamble_detection_09 = Preamble_Detection::preamble_det_without_rssi,
+                .receiver_override_09 = Receiver_Override::restart_by_18db_stronger_frame,
+                .receiver_preamble_timeout_09 = Receiver_Preamble_Timeout::timeout_disabled,
+                .mode_switch_en_09 = Mode_Switch_Enable::disabled,
+                .preamble_inversion_09 = Preamble_Inversion::no_inversion,
+                .fec_scheme_09 = FEC_Scheme::NRNSC,
+                .interleaving_enable_09 = Interleaving_Enable::enabled,
+                /// BBCn_FSKC3
+                .sfdt_09 = SFD_Detection_Threshold::default_sfd_IEEE,
+                .prdt_09 = Preamble_Detection_Threshold::increased_preamble_sensitivity,
+                // BBCn_FSC4
+                .sfdQuantization_09 = SFD_Quantization::SOFT_DECISION,
+                .sfd32_09 = SFD_32::TWO_16BIT_SFD,
+                .rawModeReversalBit_09 = Raw_Mode_Reversal_Bit::MSB_FIRST,
+                .csfd1_09 = CSFD1::CODED_IEEE_MODE,
+                .csfd0_09 = CSFD0::UNCODED_IEEE_MODE,
+                /// BBCn_FSKPHRTX
+                .sfdUsed_09 = SFD_Used::sfd0_used,
+                .dataWhitening_09 = Data_Whitening::psdu_data_whitening_enabled,
+                /// BBCn_FSKDM
+                .fskPreamphasisEnable_09 = FSK_Preamphasis_Enable::preamphasis_disabled,
+                .directModEnableFskdm_09 = Direct_Mod_Enable_FSKDM::direct_mod_enabled,
+            };
         }
-
+        /// BBC_PC
         void setBBC_PC(bool ct09, bool fcsfEn09, bool tautoFcs09, FrameCheckSequenceType fcsType09, bool bbEn09, PhysicalLayerType plType09) {
             continuousTransmit09 = ct09;
             frameCheckSequenceFilterEn09 = fcsfEn09;
@@ -180,6 +225,58 @@ namespace AT86RF215 {
             frameCheckSequenceType09 = fcsType09;
             baseBandEnable09 = bbEn09;
             physicalLayerType09 = plType09;
+        }
+        /// BBC_FSKC0
+        void setBBC_FSKC0(Bandwidth_time_product bwTime09, Mod_index_scale midxs09,
+                          Mod_index midx09, FSK_mod_order mord09) {
+            bandwidth_time_09 = bwTime09;
+            midxs_09 = midxs09;
+            midx_09 = midx09;
+            mord_09 = mord09;
+        }
+        /// BBC_FSKC1
+        void setBBC_FSKC1(Freq_Inversion freqInv09, MR_FSK_symbol_rate sr09) {
+            freq_inv_09 = freqInv09;
+            sr_09 = sr09;
+        }
+        /// BBC_FSKC2
+        void setBBC_FSKC2(Preamble_Detection preambleDet09, Receiver_Override recOverride09,
+                          Receiver_Preamble_Timeout recPreambleTimeout09, Mode_Switch_Enable modeSwitchEn09,
+                          Preamble_Inversion preambleInv09, FEC_Scheme fecScheme09,
+                          Interleaving_Enable interleavingEn09) {
+            preamble_detection_09 = preambleDet09;
+            receiver_override_09 = recOverride09;
+            receiver_preamble_timeout_09 = recPreambleTimeout09;
+            mode_switch_en_09 = modeSwitchEn09;
+            preamble_inversion_09 = preambleInv09;
+            fec_scheme_09 = fecScheme09;
+            interleaving_enable_09 = interleavingEn09;
+        }
+        /// BBC_FSKC3
+        void setBBC_FSKC3(SFD_Detection_Threshold sfdDetectionThreshold, Preamble_Detection_Threshold preambleDetectionThreshold) {
+            sfdt_09 = sfdDetectionThreshold;
+            prdt_09 = preambleDetectionThreshold;
+        }
+        /// BBC_FSKC4
+        void setBBC_FSKC4(SFD_Quantization sfdQuantization, SFD_32 sfd32,
+                          Raw_Mode_Reversal_Bit rawModeReversalBit,
+                          CSFD1 csfd1, CSFD0 csfd2) {
+            // Set values for the 09 band
+            sfdQuantization_09 = sfdQuantization;
+            sfd32_09 = sfd32;
+            rawModeReversalBit_09 = rawModeReversalBit;
+            csfd1_09 = csfd1;
+            csfd0_09 = csfd2;
+        }
+        /// BBCn_FSKPHRTX
+        void set_BBC_FSKPHRTX(SFD_Used sfdused, Data_Whitening dataWhitening) {
+            sfdUsed_09 = sfdused;
+            dataWhitening_09 = dataWhitening;
+        }
+        /// BBCn_FSKPHRTX
+        void set_BBC_FSKDM(FSK_Preamphasis_Enable fskPreamphasisEnable, Direct_Mod_Enable_FSKDM directModEnableFskdm) {
+            fskPreamphasisEnable_09 = fskPreamphasisEnable;
+            directModEnableFskdm_09 = directModEnableFskdm;
         }
     };
 
@@ -226,10 +323,19 @@ namespace AT86RF215 {
             channelCenterFrequency09 = (N >> 8) & 0xFFFF; // Take bits 8-23
             channelNumber09 = N & 0xFF;                   // Extract the lowest byte (bits 0-7)
         }
+
         // Get frequency based on CCF0 and CNL
-        uint32_t getFrequency_FineResolution_CMN_1() {
+        double getFrequency_FineResolution_CMN_1() {
             uint32_t N_channel = ((uint32_t) channelCenterFrequency09 << 8) | channelNumber09; // Reconstruct full N_channel
-            return 377000 + (6500 * N_channel) / 65536;
+            return 377000.0 + (6500.0 * N_channel) / 65536.0;
+        }
+        //
+        etl::array<uint8_t, 3> getFrequency_in_bytes() {
+            etl::array<uint8_t, 3> arr{};                                   // Use etl::array for embedded compatibility
+            arr[2] = channelNumber09;                                       // Channel Number
+            arr[1] = static_cast<uint8_t>(channelCenterFrequency09 >> 8);   // Upper byte
+            arr[0] = static_cast<uint8_t>(channelCenterFrequency09 & 0xFF); // Lower byte
+            return arr;                                                     // Safe return by value
         }
     };
 
@@ -354,7 +460,6 @@ namespace AT86RF215 {
         bool transceiverReady09, transceiverReady24;
         bool wakeup09, wakeup24;
 
-
         static RadioInterruptsConfig DefaultRadioInterruptsConfig() {
             return {
                 // RFn_IRQM
@@ -382,7 +487,12 @@ namespace AT86RF215 {
         }
     };
 
-    struct AT86RF215Configuration {
+    struct GeneralConfiguration {
+
+        // RFn_CFG
+        bool irqMaskMode;
+        IRQPolarity irqPolarity;
+        PadDriverStrength padDriverStrength;
 
         // Battery Monitor
         BatteryMonitorVoltage batteryMonitorVoltage =
@@ -394,10 +504,12 @@ namespace AT86RF215 {
         CrystalTrim crystalTrim = CrystalTrim::TRIM_00;
         bool fastStartUp = false;
 
-        // RFn_CFG
-        bool irqMaskMode = true;
-        IRQPolarity irqPolarity = IRQPolarity::ACTIVE_HIGH;
-        PadDriverStrength padDriverStrength = PadDriverStrength::RF_DRV4;
+        static struct GeneralConfiguration DefaultGeneralConfig() {
+            return {
+                .irqMaskMode = true,
+                .irqPolarity = IRQPolarity::ACTIVE_HIGH,
+                .padDriverStrength = PadDriverStrength::RF_DRV4,
+            };
+        }
     };
-
 } // namespace AT86RF215

@@ -20,6 +20,142 @@ namespace AT86RF215 {
         RF_RESET = 0x7,
         RF_INVALID = 0x8,
     };
+    // BBCn_FSKC0
+    enum class Bandwidth_time_product {
+        BT_0_5 = 0x0,
+        BT_1_0 = 0x1,
+        BT_1_5 = 0x2,
+        BT_2_0 = 0x3,
+    };
+    enum class Mod_index_scale {
+        s_0_850 = 0x0,
+        s_1_0 = 0x1,
+        s_1_125 = 0x2,
+        s_1_250 = 0x3,
+    };
+    enum class Mod_index {
+        bf_0_375 = 0x0,
+        bf_0_500 = 0x1,
+        bf_0_750 = 0x2,
+        bf_1_000 = 0x3,
+        bf_1_250 = 0x4,
+        bf_1_500 = 0x5,
+        bf_1_750 = 0x6,
+        bf_2_000 = 0x7,
+    };
+
+    enum class FSK_mod_order {
+        binary_fsk = 0x0,
+        four_fsk = 0x1,
+    };
+    /// BBCn_FSKC1
+
+    enum class Freq_Inversion {
+        freq_inversion_off = 0x0,
+        freq_inversion_on = 0x1
+    };
+    enum class MR_FSK_symbol_rate {
+        sr_50 = 0x0,
+        sr_100 = 0x1,
+        sr_150 = 0x2,
+        sr_200 = 0x3,
+        sr_300 = 0x4,
+        sr_400 = 0x5,
+    };
+    /// BBC_FSKC2
+    enum class Preamble_Detection {
+        preamble_det_without_rssi = 0x0,
+        preamble_det_with_rssi = 0x1
+    };
+
+    enum class Receiver_Override {
+        restart_by_6db_stronger_frame = 0x0,  // Receiver restarted by >6dB stronger frame
+        restart_by_12db_stronger_frame = 0x1, // Receiver restarted by >12dB stronger frame
+        restart_by_18db_stronger_frame = 0x2, // Receiver restarted by >18dB stronger frame
+        override_disabled = 0x3               // Receiver override disabled
+    };
+
+    enum class Receiver_Preamble_Timeout {
+        timeout_disabled = 0x0, // Receiver preamble timeout disabled
+        timeout_enabled = 0x1   // Receiver preamble timeout enabled
+    };
+
+
+    enum class Mode_Switch_Enable {
+        disabled = 0x0, // Mode Switch disabled
+        enabled = 0x1   // Mode Switch enabled
+    };
+
+
+    enum class Preamble_Inversion {
+        no_inversion = 0x0, // No inversion of FSK preamble frequency deviation
+        inversion = 0x1     // Inversion of FSK preamble frequency deviation
+    };
+
+
+    enum class FEC_Scheme {
+        NRNSC = 0x0, // Non-recursive and non-systematic convolutional code (NRNSC)
+        RSC = 0x1    // Recursive and systematic convolutional code (RSC)
+    };
+
+
+    enum class Interleaving_Enable {
+        disabled = 0x0, // Interleaving disabled
+        enabled = 0x1   // Interleaving enabled
+    };
+
+    /// BBC_FSKC3
+    enum class SFD_Detection_Threshold {
+        default_sfd_IEEE = 0x8,
+        sfd_weak = 15,
+    };
+    enum class Preamble_Detection_Threshold {
+        default_value = 0x5,
+        increased_preamble_sensitivity = 0x0
+    };
+    /// BBC_FSKC4
+    enum class SFD_Quantization {
+        SOFT_DECISION = 0x0, // Soft decision at bit positions
+        HARD_DECISION = 0x1  // Hard decision at bit positions
+    };
+    enum class SFD_32 {
+        TWO_16BIT_SFD = 0x0,   // Search for two 16-bit SFDs
+        SINGLE_32BIT_SFD = 0x1 // Search for a single 32-bit SFD
+    };
+    enum class Raw_Mode_Reversal_Bit {
+        LSB_FIRST = 0x0, // Least Significant Bit first
+        MSB_FIRST = 0x1  // Most Significant Bit first
+    };
+    enum class CSFD1 {
+        UNCODED_IEEE_MODE = 0x0, // Uncoded IEEE mode
+        UNCODED_RAW_MODE = 0x1,  // Uncoded RAW mode
+        CODED_IEEE_MODE = 0x2,   // Coded IEEE mode
+        CODED_RAW_MODE = 0x3     // Coded RAW mode
+    };
+    enum class CSFD0 {
+        UNCODED_IEEE_MODE = 0x0, // Uncoded IEEE mode
+        UNCODED_RAW_MODE = 0x1,  // Uncoded RAW mode
+        CODED_IEEE_MODE = 0x2,   // Coded IEEE mode
+        CODED_RAW_MODE = 0x3     // Coded RAW mode
+    };
+    /// BBCn_FSKPHRTX
+    enum class SFD_Used {
+        sfd0_used = 0x0,
+        sfd1_used = 0x1,
+    };
+    enum class Data_Whitening {
+        psdu_data_whitening_disabled = 0x0,
+        psdu_data_whitening_enabled = 0x1,
+    };
+    /// BBCn_FSKDM
+    enum class FSK_Preamphasis_Enable {
+        preamphasis_disabled = 0x0,
+        preamphasis_enabled = 0x1,
+    };
+    enum class Direct_Mod_Enable_FSKDM {
+        direct_mod_disabled = 0x0,
+        direct_mod_enabled = 0x1,
+    };
 
     enum class InterruptMask {
         FrameBufferLevelIndication = 0x80,
