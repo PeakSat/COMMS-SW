@@ -26,12 +26,14 @@ namespace CAN::Application {
      * CAN-TP message IDs, as specified in DDJF_OBDH.
      */
     enum MessageIDs : uint16_t {
+        ACK = 6,
+        NACK = 21,
         SendParameters = 0x01,
         RequestParameters = 0x02,
         PerformFunction = 0x03,
         EventReport = 0x10,
         TMPacket = 0x20,
-        TCPacket = 0x21,
+        TCPacket = 0x23, // Changed because 21 is NACK in ascii
         CCSDSPacket = 0x022,
         Ping = 0x30,
         Pong = 0x31,
