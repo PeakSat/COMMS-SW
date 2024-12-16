@@ -2,6 +2,9 @@
 #include "Logger.hpp"
 #include "main.h"
 #include "ECSS_Definitions.hpp"
+#include "FreeRTOS.h"
+#include <semphr.h>
+#include <TPProtocol.hpp>
 
 using namespace CAN;
 
@@ -48,6 +51,8 @@ void CAN::configCANFilter(uint32_t rx_fifo) {
 }
 
 void CAN::initialize(uint8_t fifo_select) {
+
+    CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE = xSemaphoreCreateMutex();
     configCANFilter(fifo_select);
     configureTxHeader();
 
@@ -140,6 +145,7 @@ void CAN::convertLengthToDLC(uint8_t length) {
         CAN::txHeader.DataLength = FDCAN_DLC_BYTES_64;
     }
 }
+
 
 void CAN::send(const CAN::Packet& message, CAN::ActiveBus outgoingBus) {
     CAN::txHeader.Identifier = message.id;

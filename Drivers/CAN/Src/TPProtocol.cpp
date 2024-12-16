@@ -7,6 +7,8 @@
 
 using namespace CAN;
 
+CANTransactionHandler CAN_TRANSMIT_Handler;
+
 void TPProtocol::processSingleFrame(const CAN::Packet& message) {
     TPMessage tpMessage;
     tpMessage.decodeId(message.id);
@@ -109,7 +111,7 @@ void TPProtocol::parseMessage(TPMessage& message) {
 }
 
 
-void TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
+bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
 
     size_t messageSize = message.dataSize;
     uint32_t id = message.encodeId();
@@ -120,12 +122,21 @@ void TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
         for (size_t idx = 0; idx < messageSize; idx++) {
             data.at(idx + 1) = message.data[idx];
         }
-        canGatekeeperTask->send({id, data}, isISR);
+        if (message.data[0] == Application::ACK) {
+            // Don't wait if it's an ack response
+            canGatekeeperTask->send({id, data}, isISR);
+        }else {
+            xSemaphoreTake(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE, portMAX_DELAY);
+            canGatekeeperTask->send({id, data}, isISR);
+            xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
+        }
 
-        return;
+        return false;
     }
 
     // First Frame
+    xSemaphoreTake(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE, portMAX_DELAY);
+    CAN_TRANSMIT_Handler.ACKReceived=false;
     {
         // 4 MSB bits is the Frame Type identifier and the 4 LSB are the leftmost 4 bits of the data length.
         uint8_t firstByte = (First << 6) | ((messageSize >> 8) & 0b111111);
@@ -154,5 +165,25 @@ void TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
         }
 
         canGatekeeperTask->send({id, consecutiveFrame}, isISR);
+    }
+
+    uint32_t startTime = xTaskGetTickCount();
+    while (true) {
+        vTaskDelay(1);
+        // ACK received
+        if (CAN_TRANSMIT_Handler.ACKReceived == true) {
+            xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
+            return false;
+            LOG_DEBUG << "CAN ACK received";
+            __NOP();
+        }
+
+        // Transaction timed out
+        if (xTaskGetTickCount() > (CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT  + startTime)) {
+            xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
+            return true;
+            LOG_DEBUG << "CAN ACK timeout";
+            __NOP();
+        }
     }
 }

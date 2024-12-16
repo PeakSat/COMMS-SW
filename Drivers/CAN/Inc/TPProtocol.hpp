@@ -3,8 +3,19 @@
 #include "Frame.hpp"
 #include "TPMessage.hpp"
 #include <cstdint>
+#include "FreeRTOS.h"
+#include <semphr.h>
 
-
+/**
+ *
+ */
+struct CANTransactionHandler {
+    SemaphoreHandle_t CAN_TRANSMIT_SEMAPHORE;
+    bool ACKReceived = false;
+    // bool NACKReceived = false; // todo
+    uint32_t CAN_ACK_TIMEOUT = 1000; //ms
+};
+extern CANTransactionHandler CAN_TRANSMIT_Handler;
 namespace CAN::TPProtocol {
     /**
      * Types of CAN-TP protocol frames.
@@ -61,5 +72,5 @@ namespace CAN::TPProtocol {
      * however idx only reaches a maximum value of 62 which makes the position in the consecutiveFrame array valid.
      * The message.data[] part reaches the maximum index of 62 for the first frame, continues from 63 up to 125 etc.
      */
-    void createCANTPMessage(const TPMessage& message, bool isISR);
+    bool createCANTPMessage(const TPMessage& message, bool isISR);
 } // namespace CAN::TPProtocol
