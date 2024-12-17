@@ -36,7 +36,7 @@ void app_main(void) {
     transceiver.setTXConfig(TXConfig::DefaultTXConfig());
     transceiver.setBaseBandCoreConfig(BasebandCoreConfig::DefaultBasebandCoreConfig());
     transceiver.setFrequencySynthesizerConfig(FrequencySynthesizer::DefaultFrequencySynthesizerConfig());
-    transceiver.setAuxilarySettings(AuxilarySettings::DefaultAuxilarySettings());
+    transceiver.setExternalFrontEndControlConfig(ExternalFrontEndConfig::DefaultExternalFrontEndConfig());
     transceiver.setInterruptConfig(InterruptsConfig::DefaultInterruptsConfig());
     transceiver.setRadioInterruptConfig(RadioInterruptsConfig::DefaultRadioInterruptsConfig());
     transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());

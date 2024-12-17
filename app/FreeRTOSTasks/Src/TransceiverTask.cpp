@@ -31,33 +31,6 @@ TransceiverTask::PacketType TransceiverTask::createRandomPacket(uint16_t length)
     return packet;
 }
 
-
-void TransceiverTask::receiverConfig(bool agc_enable) {
-    transceiver.setup_rx_frontend(AT86RF215::RF09,
-                                  false,
-                                  false,
-                                  AT86RF215::ReceiverBandwidth::RF_BW200KHZ_IF250KHZ,
-                                  AT86RF215::RxRelativeCutoffFrequency::FCUT_0375,
-                                  AT86RF215::ReceiverSampleRate::FS_400,
-                                  false,
-                                  AT86RF215::AverageTimeNumberSamples::AVGS_8,
-                                  false,
-                                  AT86RF215::AutomaticGainTarget::DB30,
-                                  23,
-                                  error);
-    // ENABLE AGC
-    RegisterAddress regagcc = AT86RF215::RF09_AGCC;
-    uint8_t reg = transceiver.spi_read_8(regagcc, error);
-    reg = reg | (static_cast<uint8_t>(agc_enable));
-    transceiver.spi_write_8(regagcc, reg, error);
-
-    transceiver.setup_rx_energy_detection(AT86RF215::RF09,
-                                          AT86RF215::EnergyDetectionMode::RF_EDAUTO,
-                                          16,
-                                          AT86RF215::EnergyDetectionTimeBasis::RF_8MS,
-                                          error);
-}
-
 /*
 * The frequency cannot be lower than 377000 as specified in section 6.3.2. The frequency range related
 * to Fine Resolution Channel Scheme CNM.CM=1 is from 389.5MHz to 510MHz
@@ -78,7 +51,7 @@ uint8_t TransceiverTask::calculatePllChannelNumber09(uint32_t frequency) {
 
 void TransceiverTask::directModConfigAndPreEmphasisFilter(bool enableDM, bool enablePE, bool recommended) {
     if (enableDM) {
-        transceiver.set_direct_modulation(RF09, enableDM, error);
+        //        transceiver.set_direct_modulation(RF09, enableDM, error);
         transceiver.spi_write_8(BBC0_FSKDM, 0b00000001, error);
         if (enablePE) {
             transceiver.spi_write_8(BBC0_FSKDM, 0b00000011, error);

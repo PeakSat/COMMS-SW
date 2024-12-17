@@ -14,6 +14,7 @@ public:
         TX,
         RX
     } rfModes;
+
     constexpr static uint16_t MaxPacketLength = 1024;
     using PacketType = etl::array<uint8_t, MaxPacketLength>;
     RF_RXTask() : Task("Transceiver signal transmission") {}
@@ -28,7 +29,8 @@ public:
 
 private:
     constexpr static uint16_t TaskStackDepth = 15000;
-    constexpr static uint32_t FrequencyUHFRX = 401000;
+    /// frequency in kHz
+    constexpr static uint32_t FrequencyUHFRX = 401500;
     AT86RF215::Error error;
     StackType_t taskStack[TaskStackDepth];
 };

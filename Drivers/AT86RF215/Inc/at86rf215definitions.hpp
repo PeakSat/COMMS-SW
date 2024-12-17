@@ -323,13 +323,6 @@ namespace AT86RF215 {
         RF_EDOFF = 0x3, ///< Energy detection measurement is disabled.
     };
 
-    enum class ReceiverEnergyDetectionAveragingDuration {
-        REDAD_2U = 0x0,   ///< 2μs
-        REDAD_8U = 0x1,   ///< 8μs
-        REDAD_32U = 0x2,  ///< 32μs
-        REDAD_128U = 0x3, ///< 128μs
-    };
-
     enum class ReceiverBandwidth {
         RF_BW160KHZ_IF250KHZ = 0x0,   ///< fBW=160kHz 	fIF=250kHz
         RF_BW200KHZ_IF250KHZ = 0x1,   ///< fBW=200kHz 	fIF=250kHz
@@ -419,8 +412,24 @@ namespace AT86RF215 {
         AVGS_64 = 0x3,
     };
 
+    enum class AGCReset {
+        default_agc_reset = 0x0,
+        reset_agc_and_set_max_gain = 0x1
+    };
+
+    enum class AGCFreezeControl {
+        no_freeze = 0x0,
+        freeze_to_current_value = 0x1
+    };
+
+    enum class AGCEnable {
+        agc_disabled = 0x0,
+        agc_enabled = 0x1
+    };
+
     enum class AnalogVoltageEnable {
         DISABLED = 0x0,
+        // If this bit is set to 1, the analog voltage regulator turns on in state TRXOFF. This setting enables faster transition from state TRXOFF to TXPREP or RX.
         ENABLED = 0x1,
     };
 
@@ -429,6 +438,18 @@ namespace AT86RF215 {
         PAVC_2V2 = 0x1, ///< 2.2 V
         PAVC_2V4 = 0x2, ///< 2.4 V
         PAVC_INVALID = 0x3,
+    };
+
+    /// RFn_PADFE
+    enum class ExternalFrontEndControl {
+        /// Configuration 0: no Frontend control; FEAnn and FEBnn output is always 0
+        no_front_end_control = 0x0,
+        /// Configuration 1: (1 pin is TX switch; 1 pin is RX switch; LNA can be bypassed)
+        front_end_config_one = 0x1,
+        /// Configuration 2: (1 pin is enable, 1 pin is TXRX switch; 1 | 0 additional option)
+        front_end_config_txrx_switch = 0x2,
+        /// Configuration 3: (1 pin is TXRX switch, 1 pin is LNA Bypass, 1 pin (MCU) is enable)
+        front_end_config_three = 0x3
     };
 
     enum class BatteryMonitorStatus {
