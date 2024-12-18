@@ -685,14 +685,6 @@ namespace AT86RF215 {
     }
 
 
-    void At86rf215::transmitBasebandPacketsRx(Transceiver transceiver, Error& err) {
-        set_state(transceiver, State::RF_TRXOFF, err);
-        if (err != Error::NO_ERRORS) {
-            return;
-        }
-        set_state(transceiver, State::RF_RX, err);
-    }
-
     void At86rf215::packetReception(Transceiver transceiver, Error& err) {
         if (err != Error::NO_ERRORS) {
             return;
@@ -1363,9 +1355,36 @@ namespace AT86RF215 {
         spi_write_8(reg_address, reg_value, err);
     }
 
+    etl::expected<uint16_t, Error> At86rf215::get_received_length(Transceiver transceiver, Error& err) {
+        RegisterAddress reg_address_low;
+        RegisterAddress reg_address_high;
+
+        // Determine the appropriate register addresses based on the transceiver
+        if (transceiver == RF09) {
+            reg_address_low = BBC0_RXFLL; // Replace with actual RF09 register address
+            reg_address_high = BBC0_RXFLH;
+        } else {
+            reg_address_low = BBC1_RXFLL; // Replace with actual RF24 register address
+            reg_address_high = BBC1_RXFLH;
+        }
+        uint8_t low_length_byte = spi_read_8(reg_address_low, err);
+        if (err != Error::NO_ERRORS) {
+            return etl::unexpected<Error>(err); // Return the error
+        }
+
+        // Read the high-length byte
+        uint8_t high_length_byte = spi_read_8(reg_address_high, err);
+        if (err != Error::NO_ERRORS) {
+            return etl::unexpected<Error>(err); // Return the error
+        }
+        // Combine the bytes to form the received length
+        uint16_t received_length = (static_cast<uint16_t>(high_length_byte) << 8) | low_length_byte;
+        return received_length;
+    }
+
     void At86rf215::handle_irq(void) {
         Error err = Error::NO_ERRORS;
-
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         /* Sub 1-GHz Transceiver */
 
         // Radio IRQ
@@ -1385,7 +1404,6 @@ namespace AT86RF215 {
             EnergyDetectionCompletion_flag = true;
             rx_ongoing = false;
             cca_ongoing = false;
-            energy_measurement = get_receiver_energy_detection(Transceiver::RF09, err);
         }
         if ((irq & InterruptMask::TransceiverReady) != 0) {
             TransceiverReady_flag = true;
@@ -1418,6 +1436,7 @@ namespace AT86RF215 {
         }
         if ((irq & InterruptMask::AGCHold) != 0) {
             // AGC Hold handling
+            xTaskNotifyFromISR(rf_rxtask->taskHandle, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
@@ -1433,6 +1452,7 @@ namespace AT86RF215 {
         }
         if ((irq & InterruptMask::ReceiverFrameEnd) != 0) {
             ReceiverFrameEnd_flag = true;
+            xTaskNotifyFromISR(rf_rxtask->taskHandle, RECEIVE_FRAME_END, eSetBits, &xHigherPriorityTaskWoken);
             if (rx_ongoing) {
                 rx_ongoing = false;
             }
@@ -1459,7 +1479,6 @@ namespace AT86RF215 {
         if ((irq & InterruptMask::EnergyDetectionCompletion) != 0) {
             rx_ongoing = false;
             cca_ongoing = false;
-            energy_measurement = get_receiver_energy_detection(Transceiver::RF24, err);
         }
         if ((irq & InterruptMask::TransceiverReady) != 0) {
             if (rx_ongoing) {

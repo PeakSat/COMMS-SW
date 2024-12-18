@@ -1,7 +1,7 @@
 #include "Logger.hpp"
 #include "INA3221Task.hpp"
 
-#define NEW_EQM
+//#define NEW_EQM
 
 void ina3221Task::display(const Channel channel, const bool displayShuntVoltage, const bool displayBusVoltage,
                           const bool displayCurrent, const bool displayPower) {
@@ -17,19 +17,19 @@ void ina3221Task::display(const Channel channel, const bool displayShuntVoltage,
     auto channelIndex = static_cast<std::underlying_type_t<Channel>>(channel);
     if (displayShuntVoltage) {
         auto shuntVoltage = std::get<0>(channelMeasurement.value())[channelIndex];
-        LOG_DEBUG << "Channel shunt Voltage\t" << channelString.data() << ": " << shuntVoltage.value() << " uV ";
+        LOG_INFO << "Channel shunt Voltage\t" << channelString.data() << ": " << shuntVoltage.value() << " uV ";
     }
     if (displayBusVoltage) {
         auto busVoltage = std::get<1>(channelMeasurement.value())[channelIndex];
-        LOG_DEBUG << "Channel bus Voltage\t" << channelString.data() << ": " << busVoltage.value() << " uV ";
+        LOG_INFO << "Channel bus Voltage\t" << channelString.data() << ": " << (busVoltage.value()) / 1000 << " mV ";
     }
     if (displayCurrent) {
         auto current = std::get<2>(channelMeasurement.value())[channelIndex];
-        LOG_DEBUG << "Channel shunt current\t" << channelString.data() << ": " << current.value() << " uA ";
+        LOG_INFO << "Channel shunt current\t" << channelString.data() << ": " << current.value() / 1000 << " mA ";
     }
     if (displayPower) {
         auto power = std::get<3>(channelMeasurement.value())[channelIndex];
-        LOG_DEBUG << "Channel power\t\t" << channelString.data() << ": " << power.value() << " mW";
+        LOG_INFO << "Channel power\t\t" << channelString.data() << ": " << power.value() << " mW";
     }
 }
 

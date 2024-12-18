@@ -44,8 +44,8 @@ void app_main(void) {
     rf_rxtask.emplace();
     //    rf_txtask.emplace();
 
-    //    eMMCTask.emplace();
-    //    gnssTask.emplace();
+    //        eMMCTask.emplace();
+    //        gnssTask.emplace();
 
 
     ina3221Task.emplace();
@@ -56,8 +56,8 @@ void app_main(void) {
     rf_rxtask->createTask();
     //    rf_txtask->createTask();
 
-    //    eMMCTask->createTask();
-    //    gnssTask->createTask();
+    //        eMMCTask->createTask();
+    //        gnssTask->createTask();
     ina3221Task->createTask();
     //    canGatekeeperTask->createTask();
     //    tmp117Task->createTask();

@@ -7,19 +7,13 @@
 #include "etl/optional.h"
 #include <etl/expected.h>
 #include "main.h"
+#define RECEIVE_FRAME_END (1 << 0)
+#define AGC_HOLD (1 << 1)
 
 using namespace AT86RF215;
 class RF_RXTask : public Task {
 public:
-    typedef enum {
-        TX,
-        RX
-    } rfModes;
-
-    constexpr static uint16_t MaxPacketLength = 1024;
-    using PacketType = etl::array<uint8_t, MaxPacketLength>;
-    RF_RXTask() : Task("Transceiver signal transmission") {}
-    void setRFmode(uint8_t mode);
+    RF_RXTask() : Task("RF RX TASK") {}
     void execute();
     etl::expected<void, Error> check_transceiver_connection();
     void createTask() {

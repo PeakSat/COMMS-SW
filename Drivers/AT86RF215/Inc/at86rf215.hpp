@@ -4,6 +4,7 @@
 #include "at86rf215config.hpp"
 #include <utility>
 #include <cstdint>
+#include <etl/expected.h>
 
 const uint16_t TIMEOUT = 1000;
 typedef struct __SPI_HandleTypeDef SPI_HandleTypeDef;
@@ -752,17 +753,9 @@ namespace AT86RF215 {
         void transmitBasebandPacketsTx(Transceiver transceiver, uint8_t* packet,
                                        uint16_t length, Error& err);
 
-        /**
-         * Begins receiving operations for Rx packet
-         *
-         * @param transceiver		Specifies the transceiver used
-         * @param err				Pointer to raised error
-         */
-        void transmitBasebandPacketsRx(Transceiver transceiver, Error& err);
-
+        etl::expected<uint16_t, Error> get_received_length(Transceiver transceiver, Error& err);
         void packetReception(Transceiver transceiver, Error& err);
-        uint8_t received_packet[2047] = {0};
-        uint8_t energy_measurement = 0;
+        uint8_t received_packet[2047];
         // flags for interrupts //
 
         // radio interrupts //
