@@ -5,7 +5,6 @@
 
 /* App includes. */
 #include "app_main.h"
-#include "TransceiverTask.hpp"
 #include "UARTGatekeeperTask.hpp"
 #include "eMMCTask.hpp"
 #include "GNSSTask.hpp"
@@ -42,7 +41,6 @@ void app_main(void) {
     transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());
 
     uartGatekeeperTask.emplace();
-    //    transceiverTask.emplace();
     rf_rxtask.emplace();
     //    rf_txtask.emplace();
 
@@ -50,18 +48,17 @@ void app_main(void) {
     //    gnssTask.emplace();
 
 
-    //    ina3221Task.emplace();
+    ina3221Task.emplace();
     //    canGatekeeperTask.emplace();
     //    tmp117Task.emplace();
     //    canTestTask.emplace();
     uartGatekeeperTask->createTask();
-    //    transceiverTask->createTask();
     rf_rxtask->createTask();
     //    rf_txtask->createTask();
 
     //    eMMCTask->createTask();
     //    gnssTask->createTask();
-    //    ina3221Task->createTask();
+    ina3221Task->createTask();
     //    canGatekeeperTask->createTask();
     //    tmp117Task->createTask();
     //    canTestTask->createTask();

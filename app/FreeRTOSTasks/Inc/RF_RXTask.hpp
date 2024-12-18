@@ -5,6 +5,7 @@
 #include "queue.h"
 #include "etl/array.h"
 #include "etl/optional.h"
+#include <etl/expected.h>
 #include "main.h"
 
 using namespace AT86RF215;
@@ -20,7 +21,7 @@ public:
     RF_RXTask() : Task("Transceiver signal transmission") {}
     void setRFmode(uint8_t mode);
     void execute();
-    uint8_t checkTheSPI();
+    etl::expected<void, Error> check_transceiver_connection();
     void createTask() {
         xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,
                           RF_RXTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,

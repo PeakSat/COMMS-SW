@@ -1,3 +1,4 @@
+
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
 
@@ -16,156 +17,37 @@ void RF_RXTask::setRFmode(uint8_t mode) {
     }
 }
 
-uint8_t RF_RXTask::checkTheSPI() {
-    uint8_t spi_error = 0;
+
+etl::expected<void, Error> RF_RXTask::check_transceiver_connection() {
     DevicePartNumber dpn = transceiver.get_part_number(error);
-    etl::string<LOGGER_MAX_MESSAGE_SIZE> output;
-    if (dpn == DevicePartNumber::AT86RF215) {
-        output = "SPI IS OK";
-        Logger::log(Logger::debug, output);
+    if (error == AT86RF215::Error::NO_ERRORS && dpn == DevicePartNumber::AT86RF215) {
+        LOG_DEBUG << "RF_PN: " << transceiver.spi_read_8(RF_PN, error);
+        return {}; /// success
     }
 
-    else {
-        spi_error = 1;
-        LOG_DEBUG << "SPI ERROR";
-        transceiver.chip_reset(error);
-    }
-    return spi_error;
+    else
+        return etl::unexpected<Error>(error);
 }
 
 
 void RF_RXTask::execute() {
-    LOG_DEBUG << "RF RX TASK";
-    // set up-link frequency
+    LOG_INFO << "RF RX TASK";
+    /// Set the Up-link frequency
     transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
     transceiver.configure_pll(AT86RF215::RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-    /// try to enable the 5V right away from the cubemx
+    /// Try to enable the 5V right away from the CubeMX
     vTaskDelay(pdMS_TO_TICKS(5000));
-    HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
-    LOG_DEBUG << "RF 5V ENABLED";
-    /// Check the SPI connection
-    while (checkTheSPI() != 0) {
-        vTaskDelay(10);
-    };
-    uint8_t read_reg;
-    transceiver.setup(error);
-    ///
-    transceiver.set_state(RF09, State::RF_TXPREP, error);
-    read_reg = transceiver.spi_read_8(BBC0_PC, error);
-    LOG_DEBUG << "#### Baseband Core Config ####";
-    LOG_DEBUG << "BBC0_PC = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKC0, error);
-    LOG_DEBUG << "BBC0_FSKC0" << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKC1, error);
-    LOG_DEBUG << "BBC0_FSKC1 = " << read_reg;
-    /// RX AGC and Receiver Gain
-    read_reg = transceiver.spi_read_8(BBC0_FSKC2, error);
-    LOG_DEBUG << "BBC0_FSKC2 = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKC3, error);
-    LOG_DEBUG << "BBC0_FSKC3 = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKC4, error);
-    LOG_DEBUG << "BBC0_FSKC4 = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKPLL, error);
-    LOG_DEBUG << "BBC0_FSKPLL = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKSFD0L, error);
-    LOG_DEBUG << "BBC0_FSKSFD0L = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKSFD0H, error);
-    LOG_DEBUG << "BBC0_FSKSFD0H = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKSFD1L, error);
-    LOG_DEBUG << "BBC0_FSKSFD1L = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKSFD1H, error);
-    LOG_DEBUG << "BBC0_FSKSFD1H = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKPHRTX, error);
-    LOG_DEBUG << "BBC0_FSKPHRTX = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKPHRRX, error);
-    LOG_DEBUG << "BBC0_FSKPHRRX = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKRRXFLL, error);
-    LOG_DEBUG << "BBC0_FSKRRXFLL = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKRRXFLH, error);
-    LOG_DEBUG << "BBC0_FSKRRXFLH = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKRPC, error);
-    LOG_DEBUG << "BBC0_FSKRPC = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKRPCONT, error);
-    LOG_DEBUG << "BBC0_FSKRPCONT = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKRPCOFFT, error);
-    LOG_DEBUG << "BBC0_FSKRPCOFFT = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKDM, error);
-    LOG_DEBUG << "BBC0_FSKDM = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKPE0, error);
-    LOG_DEBUG << "BBC0_FSKPE0 = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKPE1, error);
-    LOG_DEBUG << "BBC0_FSKPE1 = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_FSKPE2, error);
-    LOG_DEBUG << "BBC0_FSKPE2 = " << read_reg;
-    LOG_DEBUG << "#### TRANSMITTER DIGITAL FRONT END ####";
-    read_reg = transceiver.spi_read_8(RF09_TXDFE, error);
-    LOG_DEBUG << "RF09_TXDFE = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_TXCUTC, error);
-    LOG_DEBUG << "RF09_TXCUTC = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_PAC, error);
-    LOG_DEBUG << "RF09_PAC = " << read_reg;
-    LOG_DEBUG << "#### External Front End Control ####";
-    read_reg = transceiver.spi_read_8(RF09_AUXS, error);
-    LOG_DEBUG << "RF09_AUXS = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_PADFE, error);
-    LOG_DEBUG << "RF09_PADFE = " << read_reg;
-    LOG_DEBUG << "RECEIVER";
-    read_reg = transceiver.spi_read_8(RF09_RXBWC, error);
-    LOG_DEBUG << "RF09_RXBWC = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_RXDFE, error);
-    LOG_DEBUG << "RF09_RXDFE = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_AGCC, error);
-    LOG_DEBUG << "RF09_AGCC = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_AGCS, error);
-    LOG_DEBUG << "RF09_AGCS = " << read_reg;
-    int read_rssi = transceiver.int_spi_read_8(RF09_RSSI, error);
-    LOG_DEBUG << "RF09_RSSI = " << read_rssi;
-    read_reg = transceiver.spi_read_8(RF09_EDC, error);
-    LOG_DEBUG << "RF09_EDC = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_EDD, error);
-    LOG_DEBUG << "RF09_EDD = " << read_reg;
-    int read_edv = transceiver.int_spi_read_8(RF09_EDV, error);
-    LOG_DEBUG << "RF09_EDV = " << read_edv;
-    LOG_DEBUG << "#### Frequency Synthesizer Regs ####";
-    read_reg = transceiver.spi_read_8(RF09_CS, error);
-    LOG_DEBUG << "RF09_CS = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_CCF0L, error);
-    LOG_DEBUG << "RF09_CCF0L = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_CCF0H, error);
-    LOG_DEBUG << "RF09_CCF0H = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_CNL, error);
-    LOG_DEBUG << "RF09_CNL = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_CNM, error);
-    LOG_DEBUG << "RF09_CNM = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_PLL, error);
-    LOG_DEBUG << "RF09_PLL = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_PLLCF, error);
-    LOG_DEBUG << "RF09_PLLCF = " << read_reg;
-    LOG_DEBUG << "Frequency from the Config file [kHz]: " << transceiver.freqSynthesizerConfig.getFrequency_FineResolution_CMN_1();
-    etl::array<uint8_t, 3> arr = transceiver.freqSynthesizerConfig.getFrequency_in_bytes();
-    LOG_DEBUG << "values that were set from the config";
-    LOG_DEBUG << "CCFOL (Lower Byte): " << arr[0];
-    LOG_DEBUG << "CCFOH (Higher Byte): " << arr[1];
-    LOG_DEBUG << "CNL: " << arr[2];
-    LOG_DEBUG << "N channel value" << transceiver.freqSynthesizerConfig.calculateN_FineResolution_CMN_1(FrequencyUHFRX);
-    LOG_DEBUG << "#### IRQ ####";
-    read_reg = transceiver.spi_read_8(BBC0_IRQM, error);
-    LOG_DEBUG << "BBC0_IRQM = " << read_reg;
-    read_reg = transceiver.spi_read_8(BBC0_IRQS, error);
-    LOG_DEBUG << "BBC0_IRQS = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_IRQM, error);
-    LOG_DEBUG << "RF09_IRQM = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_IRQS, error);
-    LOG_DEBUG << "RF09_IRQS = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF_CFG, error);
-    LOG_DEBUG << "RF_CFG = " << read_reg;
-    LOG_DEBUG << "#### Battery Monitor ####";
-    LOG_DEBUG << "RF_BMDVC = " << transceiver.spi_read_8(RF_BMDVC, error);
-    LOG_DEBUG << "#### Crystal Oscillator Control ####";
-    LOG_DEBUG << "RF_XOC = " << transceiver.spi_read_8(RF_XOC, error);
-    LOG_DEBUG << "#### STATE MACHINE REGS ####";
-    read_reg = transceiver.spi_read_8(RF09_STATE, error);
-    LOG_DEBUG << "Transceiver State = " << read_reg;
-    read_reg = transceiver.spi_read_8(RF09_CMD, error);
-    LOG_DEBUG << "Transceiver command = " << read_reg;
+    HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
+    //    LOG_INFO << "RF 5V ENABLED";
+    /// Check transceiver connection
+    //    auto status = check_transceiver_connection();
+    //    if(status.has_value()){
+    //        LOG_INFO << "TRANSCEIVER CONNECTION OK";
+    //    }
+    //    else
+    //        LOG_ERROR << "TRANSCEIVER ERROR" << status.error();
+    //    transceiver.setup(error);
+    while (1) {
+    }
 }
