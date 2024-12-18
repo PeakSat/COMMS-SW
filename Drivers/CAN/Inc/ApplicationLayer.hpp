@@ -38,9 +38,9 @@ namespace CAN::Application {
         Ping = 0x30,
         Pong = 0x31,
         LogMessage = 0x40,
-        UTCTime = 0x200,
-        BusSwitchover = 0x400,
-        Heartbeat = 0x700
+        UTCTime = 0x50,
+        BusSwitchover = 0x51,
+        Heartbeat = 0x52
     };
 
     /**
