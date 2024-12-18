@@ -125,7 +125,8 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
         if (message.data[0] == Application::ACK) {
             // Don't wait if it's an ack response
             canGatekeeperTask->send({id, data}, isISR);
-        }else {
+            return false;
+        } else {
             xSemaphoreTake(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE, portMAX_DELAY);
             canGatekeeperTask->send({id, data}, isISR);
             xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
@@ -136,7 +137,7 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
 
     // First Frame
     xSemaphoreTake(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE, portMAX_DELAY);
-    CAN_TRANSMIT_Handler.ACKReceived=false;
+    CAN_TRANSMIT_Handler.ACKReceived = false;
     {
         // 4 MSB bits is the Frame Type identifier and the 4 LSB are the leftmost 4 bits of the data length.
         uint8_t firstByte = (First << 6) | ((messageSize >> 8) & 0b111111);
@@ -179,7 +180,7 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
         }
 
         // Transaction timed out
-        if (xTaskGetTickCount() > (CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT  + startTime)) {
+        if (xTaskGetTickCount() > (CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT + startTime)) {
             xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
             return true;
             LOG_DEBUG << "CAN ACK timeout";
