@@ -132,6 +132,7 @@ void CANGatekeeperTask::execute() {
                     ACKmessage.appendUint8(CAN::Application::MessageIDs::ACK);
 
                     CAN::TPProtocol::createCANTPMessage(ACKmessage, false);
+                    xTaskNotifyGive(canGatekeeperTask->taskHandle);
 
                     // Parse message
                     CAN::TPMessage message;

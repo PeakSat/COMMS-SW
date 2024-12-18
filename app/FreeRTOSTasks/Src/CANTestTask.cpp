@@ -22,12 +22,28 @@ void CANTestTask::execute() {
         if (activeBus == CAN::ActiveBus::Redundant) {
             activeBus = CAN::ActiveBus::Main;
             canGatekeeperTask->switchActiveBus(activeBus);
-            CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
+            // CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
+            for (int i = 0; i < 3; i++) {
+                if (!CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false)) {
+                    LOG_DEBUG << "CAN: ACK received";
+                    break;
+                } else if (i == 3) {
+                    LOG_ERROR << "CAN: ACK not received";
+                }
+            }
             LOG_DEBUG << "REDUNDANT CAN is sending";
         } else {
             activeBus = CAN::ActiveBus::Redundant;
             canGatekeeperTask->switchActiveBus(activeBus);
-            CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
+            // CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
+            for (int i = 0; i < 3; i++) {
+                if (!CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false)) {
+                    LOG_DEBUG << "CAN: ACK received";
+                    break;
+                } else if (i == 2) {
+                    LOG_ERROR << "CAN: ACK not received";
+                }
+            }
             LOG_DEBUG << "MAIN CAN is sending";
         }
         while (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue)) {

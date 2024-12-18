@@ -194,14 +194,14 @@ namespace CAN::Application {
     }
     */
 
-    void createLogMessage(NodeIDs destinationAddress, bool isMulticast, const String<ECSSMaxMessageSize>& log,
+    bool createLogMessage(NodeIDs destinationAddress, bool isMulticast, const String<ECSSMaxMessageSize>& log,
                           bool isISR) {
         TPMessage message = {{CAN::NodeID, destinationAddress, isMulticast}};
 
         message.appendUint8(MessageIDs::LogMessage);
         message.appendString(log);
 
-        CAN::TPProtocol::createCANTPMessage(message, isISR);
+        return CAN::TPProtocol::createCANTPMessage(message, isISR);
     }
 
     void parseMessage(const CAN::Packet& message) {

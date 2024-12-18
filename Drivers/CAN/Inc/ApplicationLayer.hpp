@@ -180,7 +180,7 @@ namespace CAN::Application {
      * @param isMulticast Whether the message is to be sent to a multicast group.
      * @param log A LogEntry to be sent.
      */
-    void createLogMessage(NodeIDs destinationAddress, bool isMulticast, const String<ECSSMaxMessageSize>& log,
+    bool createLogMessage(NodeIDs destinationAddress, bool isMulticast, const String<ECSSMaxMessageSize>& log,
                           bool isISR);
 
     /**
