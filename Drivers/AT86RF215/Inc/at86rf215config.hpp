@@ -56,7 +56,7 @@ namespace AT86RF215 {
                 /// Maximum Receive Gain
                 .gainControlWord09 = 23,
                 /// RFn_EDC // RFn_EDD //
-                .energyDetectionMode09 = EnergyDetectionMode::RF_EDSINGLE,
+                .energyDetectionMode09 = EnergyDetectionMode::RF_EDAUTO,
                 .energyDetectionMode24 = EnergyDetectionMode::RF_EDAUTO,
                 .energyDetectDurationFactor09 = 0x10,
                 .energyDetectDurationFactor24 = 0x10,
@@ -211,11 +211,11 @@ namespace AT86RF215 {
                 .sfdQuantization_09 = SFD_Quantization::SOFT_DECISION,
                 .sfd32_09 = SFD_32::TWO_16BIT_SFD,
                 .rawModeReversalBit_09 = Raw_Mode_Reversal_Bit::MSB_FIRST,
-                .csfd1_09 = CSFD1::CODED_IEEE_MODE,
+                .csfd1_09 = CSFD1::UNCODED_IEEE_MODE,
                 .csfd0_09 = CSFD0::UNCODED_IEEE_MODE,
                 /// BBCn_FSKPHRTX
-                .sfdUsed_09 = SFD_Used::sfd1_used,
-                .dataWhitening_09 = Data_Whitening::psdu_data_whitening_disabled,
+                .sfdUsed_09 = SFD_Used::sfd0_used,
+                .dataWhitening_09 = Data_Whitening::psdu_data_whitening_enabled,
                 /// BBCn_FSKDM
                 .fskPreamphasisEnable_09 = FSK_Preamphasis_Enable::preamphasis_disabled,
                 .directModEnableFskdm_09 = Direct_Mod_Enable_FSKDM::direct_mod_enabled,
@@ -277,7 +277,7 @@ namespace AT86RF215 {
             sfdUsed_09 = sfdused;
             dataWhitening_09 = dataWhitening;
         }
-        /// BBCn_FSKPHRTX
+        /// BBCn_FSKDM
         void set_BBC_FSKDM(FSK_Preamphasis_Enable fskPreamphasisEnable, Direct_Mod_Enable_FSKDM directModEnableFskdm) {
             fskPreamphasisEnable_09 = fskPreamphasisEnable;
             directModEnableFskdm_09 = directModEnableFskdm;
@@ -305,11 +305,11 @@ namespace AT86RF215 {
             FrequencySynthesizer fs{
                 .frequency = 401000,
                 // spacing = channelSpacing * 25kHz
-                .channelSpacing09 = 0x2,
+                .channelSpacing09 = 0x10,
                 .channelSpacing24 = 0xA,
                 .channelMode09 = PLLChannelMode::FineResolution450,
                 .channelMode24 = PLLChannelMode::FineResolution2443,
-                .loopBandwidth09 = PLLBandwidth::BWLarger,
+                .loopBandwidth09 = PLLBandwidth::BWDefault,
                 .loopBandwidth24 = PLLBandwidth::BWDefault,
             };
             fs.setFrequency_FineResolution_CMN_1(fs.frequency);
@@ -354,6 +354,7 @@ namespace AT86RF215 {
         ExternalFrontEndControl externalFrontEnd_09, externalFrontEnd_24;
         static ExternalFrontEndConfig DefaultExternalFrontEndConfig() {
             return {
+                .externalLNABypass09 = ExternalLNABypass::FALSE,
                 .automaticGainControlMAP09 = AutomaticGainControlMAP::AGC_BACKOFF_12,
                 .analogVoltageEnable09 = AnalogVoltageEnable::ENABLED,
                 .automaticVoltageExternal09 = AutomaticVoltageExternal::DISABLED,
@@ -495,18 +496,19 @@ namespace AT86RF215 {
 
     struct GeneralConfiguration {
 
-        // RFn_CFG
+        /// RFn_CFG
         bool irqMaskMode;
         IRQPolarity irqPolarity;
         PadDriverStrength padDriverStrength;
 
-        // Battery Monitor
-        BatteryMonitorVoltage batteryMonitorVoltage =
-            BatteryMonitorVoltage::BMHR_270_180;
+        /// RF_BMDVC
+        /// Generation of an interrupt if supply voltage (EVDD) drops below the configured threshold level
+        BatteryMonitorVoltageThreshold batteryMonitorVoltage =
+            BatteryMonitorVoltageThreshold::BMHR_292_195;
         BatteryMonitorHighRange batteryMonitorHighRange =
-            BatteryMonitorHighRange::LOW_RANGE;
+            BatteryMonitorHighRange::HIGH_RANGE;
 
-        // Crystal oscillator
+        /// Crystal oscillator - RF_XOC
         CrystalTrim crystalTrim = CrystalTrim::TRIM_00;
         bool fastStartUp = false;
 

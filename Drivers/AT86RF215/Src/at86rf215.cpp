@@ -721,13 +721,17 @@ namespace AT86RF215 {
         spi_block_read_8(regfbtxs, length, received_packet, err);
     }
 
-
-    void At86rf215::set_battery_monitor_status(bool status, Error& err) {
-        uint8_t bmdvc = spi_read_8(RF_BMDVC, err) & 0x1F;
-        if (err != Error::NO_ERRORS)
+    void At86rf215::set_battery_monitor_control(BatteryMonitorHighRange range, BatteryMonitorVoltageThreshold threshold, Error& err) {
+        if (err != Error::NO_ERRORS) {
             return;
-        spi_write_8(RF_BMDVC, (static_cast<uint8_t>(status) << 5) | bmdvc, err);
+        }
+        set_battery_monitor_high_range(range, err);
+        if (err != Error::NO_ERRORS) {
+            return;
+        }
+        set_battery_monitor_voltage_threshold(threshold, err);
     }
+
 
     BatteryMonitorStatus At86rf215::get_battery_monitor_status(Error& err) {
         uint8_t status = (spi_read_8(RF_BMDVC, err) & 0x20) >> 5;
@@ -747,11 +751,12 @@ namespace AT86RF215 {
     }
 
     void At86rf215::set_battery_monitor_voltage_threshold(
-        BatteryMonitorVoltage threshold, Error& err) {
-        uint8_t bmvt = spi_read_8(RF_BMDVC, err) & 0x30;
+        BatteryMonitorVoltageThreshold threshold, Error& err) {
+        uint8_t reg_value_bmvt = spi_read_8(RF_BMDVC, err);
+        reg_value_bmvt &= ~(0xF);
         if (err != Error::NO_ERRORS)
             return;
-        spi_write_8(RF_BMDVC, bmvt | static_cast<uint8_t>(threshold), err);
+        spi_write_8(RF_BMDVC, reg_value_bmvt | static_cast<uint8_t>(threshold), err);
     }
 
     uint8_t At86rf215::get_battery_monitor_voltage_threshold(Error& err) {
@@ -853,12 +858,6 @@ namespace AT86RF215 {
                                   Error& err) {
         uint8_t reg = (static_cast<uint8_t>(fast_start_up) << 4) | static_cast<uint8_t>(crystal_trim);
         spi_write_8(RF_XOC, reg, err);
-    }
-
-    void At86rf215::setup_battery(BatteryMonitorVoltage battery_monitor_voltage,
-                                  BatteryMonitorHighRange battery_monitor_high_range, Error& err) {
-        uint8_t reg = (static_cast<uint8_t>(battery_monitor_high_range) << 4) | static_cast<uint8_t>(battery_monitor_voltage);
-        spi_write_8(RF_BMDVC, reg, err);
     }
 
     void At86rf215::setup_rx_energy_detection(Transceiver transceiver,
@@ -1139,7 +1138,8 @@ namespace AT86RF215 {
             return;
         }
 
-        /// Set up energy detection // RFn_EDC, RFn_EDD
+        /// Set up energy detection
+        /// RFn_EDC, RFn_EDD
         setup_rx_energy_detection(Transceiver::RF09, rxConfig.energyDetectionMode09,
                                   rxConfig.energyDetectDurationFactor09, rxConfig.energyDetectionBasis09, err);
         if (err != Error::NO_ERRORS) {
@@ -1147,14 +1147,14 @@ namespace AT86RF215 {
         }
 
         /// Set up battery
-        setup_battery(generalConfig.batteryMonitorVoltage, generalConfig.batteryMonitorHighRange,
-                      err);
-
+        /// RF_BMDVC
+        set_battery_monitor_control(generalConfig.batteryMonitorHighRange, generalConfig.batteryMonitorVoltage, err);
         if (err != Error::NO_ERRORS) {
             return;
         }
 
-        // Set up crystal oscillator
+        /// Set up crystal oscillator
+        /// RF_XOC
         setup_crystal(generalConfig.fastStartUp, generalConfig.crystalTrim, err);
     }
 

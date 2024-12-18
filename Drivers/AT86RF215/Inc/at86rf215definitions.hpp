@@ -469,7 +469,7 @@ namespace AT86RF215 {
         NSFD1_2_3 = 0x3, //Search for SFD_1 and SFD_2 and SFD_3
     };
 
-    enum class BatteryMonitorVoltage {
+    enum class BatteryMonitorVoltageThreshold {
         BMHR_255_170 = 0x0, //BMHR=1: 2.550V  | BMHR=0: 1.70V
         BMHR_262_175 = 0x1, ///< BMHR=1: 2.625V | BMHR=0: 1.75V
         BMHR_270_180 = 0x2, ///< BMHR=1: 2.700V | BMHR=0: 1.80V

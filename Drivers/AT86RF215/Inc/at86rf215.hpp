@@ -541,9 +541,9 @@ namespace AT86RF215 {
          * @param threshold			Battery voltage threshold
          * @param err				Pointer to raised error
          */
-        void set_battery_monitor_voltage_threshold(BatteryMonitorVoltage threshold,
+        void set_battery_monitor_voltage_threshold(BatteryMonitorVoltageThreshold threshold,
                                                    Error& err);
-
+        void set_battery_monitor_control(BatteryMonitorHighRange range, BatteryMonitorVoltageThreshold threshold, Error& err);
         /*
          * Get voltage threshold for battery monitoring
          *
@@ -641,15 +641,6 @@ namespace AT86RF215 {
          */
         void setup_crystal(bool fast_start_up, CrystalTrim crystal_trim,
                            Error& err);
-
-        /**
-         * Sets up battery monitoring
-         *
-         * @param battery_monitor_voltage		Configures the voltage threshold
-         * @param battery_monitor_high_range	Specifies whether low or high  range is enabled
-         */
-        void setup_battery(BatteryMonitorVoltage battery_monitor_voltage,
-                           BatteryMonitorHighRange battery_monitor_high_range, Error& err);
 
         /**
          * Sets up IRQ behavior
