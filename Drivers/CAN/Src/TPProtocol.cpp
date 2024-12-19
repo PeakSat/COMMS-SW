@@ -129,6 +129,7 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
         } else {
             xSemaphoreTake(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE, portMAX_DELAY);
             canGatekeeperTask->send({id, data}, isISR);
+            xTaskNotifyGive(canGatekeeperTask->taskHandle);
             xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
         }
 
@@ -147,6 +148,7 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
         etl::array<uint8_t, CAN::MaxPayloadLength> firstFrame = {firstByte, secondByte};
 
         canGatekeeperTask->send({id, firstFrame}, isISR);
+        xTaskNotifyGive(canGatekeeperTask->taskHandle);
     }
 
     // Consecutive Frames
@@ -166,6 +168,7 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
         }
 
         canGatekeeperTask->send({id, consecutiveFrame}, isISR);
+        xTaskNotifyGive(canGatekeeperTask->taskHandle);
     }
 
     uint32_t startTime = xTaskGetTickCount();
