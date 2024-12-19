@@ -280,7 +280,7 @@ void TransceiverTask::execute() {
             vTaskDelay(pdMS_TO_TICKS(200));
             transceiver.set_state(AT86RF215::RF09, State::RF_TX, error);
             transceiver.TransmitterFrameEnd_flag = false;
-            LOG_DEBUG << "PACKET IS SENT " << sent_packets;
+            // LOG_DEBUG << "PACKET IS SENT " << sent_packets;
         }
         //        LOG_DEBUG << "{END OF" << this->TaskName << "}" ;
     }

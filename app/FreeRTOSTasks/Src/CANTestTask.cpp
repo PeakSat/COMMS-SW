@@ -27,7 +27,7 @@ void CANTestTask::execute() {
                 if (!CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false)) {
                     LOG_DEBUG << "CAN: ACK received";
                     break;
-                } else if (i == 3) {
+                } else if (i == 2) {
                     LOG_ERROR << "CAN: ACK not received";
                 }
             }

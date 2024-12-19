@@ -50,7 +50,7 @@ void TemperatureSensorsTask::execute() {
         for (auto s: sensors) {
             temperature = s.sensorObject.getTemperature(true);
             if (temperature.first == TMP117::Error::NoErrors) {
-                LOG_DEBUG << "Temperature at " << s.sensorName.data() << ": " << temperature.second;
+                // LOG_DEBUG << "Temperature at " << s.sensorName.data() << ": " << temperature.second;
             } else {
                 LOG_ERROR << "Could not get temperature at " << s.sensorName.data() << ". Error: "
                           << errorString(temperature.first).data();

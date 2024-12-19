@@ -47,7 +47,7 @@ void ina3221Task::execute() {
         if (not channelMeasurement.has_value())
             LOG_ERROR << "Could not get current measurements!";
         else {
-            display(Channel::RF_UHF, true, true, true, true);
+            // display(Channel::RF_UHF, true, true, true, true);
         }
         vTaskDelay(pdMS_TO_TICKS(DelayMs));
     }
