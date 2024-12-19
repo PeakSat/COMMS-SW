@@ -112,8 +112,13 @@ void CANGatekeeperTask::execute() {
                     if (i + FrameNumber == 0) {
                         CANPacketHandler->PacketID = in_frame_handler.pointerToData[2];
                     } else {
-                        CANPacketHandler->Buffer[(FrameNumber * (CAN::MaxPayloadLength - 2)) + i - 1] = in_frame_handler.pointerToData[i + 2];
-                        CANPacketHandler->TailPointer = CANPacketHandler->TailPointer + 1;
+                        if (sizeof(CANPacketHandler->Buffer) / sizeof(CANPacketHandler->Buffer[0]) > (FrameNumber * (CAN::MaxPayloadLength - 2)) + i - 1) {
+                            CANPacketHandler->Buffer[(FrameNumber * (CAN::MaxPayloadLength - 2)) + i - 1] = in_frame_handler.pointerToData[i + 2];
+                            CANPacketHandler->TailPointer = CANPacketHandler->TailPointer + 1;
+                        } else {
+                            // buffer size exceeded
+                            CANPacketHandler->TailPointer = 0;
+                        }
                     }
                 }
                 __NOP();
@@ -121,9 +126,13 @@ void CANGatekeeperTask::execute() {
             } else if (frameType == CAN::TPProtocol::Frame::Final) {
                 if ((CANPacketHandler->PacketSize - CANPacketHandler->TailPointer) < (CAN::MaxPayloadLength - 2) && CANPacketHandler->PacketSize != 0) {
                     for (uint32_t i = 0; (CANPacketHandler->PacketSize > CANPacketHandler->TailPointer); i++) {
-
-                        CANPacketHandler->Buffer[CANPacketHandler->TailPointer] = in_frame_handler.pointerToData[i + 2];
-                        CANPacketHandler->TailPointer = CANPacketHandler->TailPointer + 1;
+                        if (sizeof(CANPacketHandler->Buffer) / sizeof(CANPacketHandler->Buffer[0]) > CANPacketHandler->TailPointer) {
+                            CANPacketHandler->Buffer[CANPacketHandler->TailPointer] = in_frame_handler.pointerToData[i + 2];
+                            CANPacketHandler->TailPointer = CANPacketHandler->TailPointer + 1;
+                        } else {
+                            // buffer size exceeded
+                            CANPacketHandler->TailPointer = 0;
+                        }
                     }
 
                     // Send ACK
