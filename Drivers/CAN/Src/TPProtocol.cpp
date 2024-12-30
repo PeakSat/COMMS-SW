@@ -167,6 +167,10 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
             consecutiveFrame.at(idx + 2) = message.data[idx + UsableDataLength * (currentConsecutiveFrameCount - 1)];
         }
 
+        if (currentConsecutiveFrameCount % 4 == 3) { // Make sure the output buffers do not overflow
+            vTaskDelay(1);
+        }
+
         canGatekeeperTask->send({id, consecutiveFrame}, isISR);
         xTaskNotifyGive(canGatekeeperTask->taskHandle);
     }
