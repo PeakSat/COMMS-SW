@@ -28,7 +28,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # Extract the issue body
-          ISSUE_BODY=$(gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} --jq '.body')
+          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
           echo "Issue Body: $ISSUE_BODY"
 
           # Count tasks
@@ -43,8 +43,6 @@ jobs:
           if [ "$TOTAL_TASKS" -eq 0 ]; then
             echo "No tasks found."
             echo "progress=0" >> $GITHUB_ENV
-            echo "completed=0" >> $GITHUB_ENV
-            echo "total=0" >> $GITHUB_ENV
             exit 0
           fi
 
@@ -52,8 +50,6 @@ jobs:
           PROGRESS=$(( COMPLETED_TASKS * 100 / TOTAL_TASKS ))
           echo "Progress: $PROGRESS%"
           echo "progress=$PROGRESS" >> $GITHUB_ENV
-          echo "completed=$COMPLETED_TASKS" >> $GITHUB_ENV
-          echo "total=$TOTAL_TASKS" >> $GITHUB_ENV
 
       - name: Update the issue labels with progress
         if: env.progress != ''
@@ -71,26 +67,38 @@ jobs:
           OLD_PROGRESS_LABELS=$(echo "$CURRENT_LABELS" | jq -r '.[] | select(test("^Progress: [0-9]+%$"))')
           echo "Old Progress Labels: $OLD_PROGRESS_LABELS"
 
-          # Initialize arrays for labels to remove and to add
-          REMOVE_LABELS=()
+          # Define new progress label
           ADD_LABEL="Progress: $PROGRESS%"
 
-          # Populate the remove labels array if old progress labels exist
+          # Check if the label already exists in the repository
+          LABEL_EXISTS=$(gh api repos/${{github.repository}}/labels --jq ".[] | select(.name == \"$ADD_LABEL\")")
+          if [ -z "$LABEL_EXISTS" ]; then
+            echo "Label does not exist. Creating it..."
+            gh api repos/${{github.repository}}/labels --method POST --field name="$ADD_LABEL" --field color="7057ff"
+          else
+            echo "Label already exists."
+          fi
+
+          # Prepare remove labels command
+          REMOVE_LABELS_STR=""
           if [ -n "$OLD_PROGRESS_LABELS" ]; then
             while IFS= read -r label; do
-              REMOVE_LABELS+=("--remove-label" "\"$label\"")
+              REMOVE_LABELS_STR+="--remove-label \"$label\" "
             done <<< "$OLD_PROGRESS_LABELS"
           fi
 
-          # Convert arrays to strings
-          REMOVE_LABELS_STR=$(IFS=" " ; echo "${REMOVE_LABELS[*]}")
+          # Debugging commands
+          echo "Remove Labels Command: $REMOVE_LABELS_STR"
+          echo "Add Label Command: $ADD_LABEL"
 
-          # Update the issue labels
+          # Update issue labels
           if [ -n "$REMOVE_LABELS_STR" ]; then
+            # If there are labels to remove
             eval gh issue edit ${{github.event.issue.number}} \
               $REMOVE_LABELS_STR \
               --add-label "\"$ADD_LABEL\""
           else
+            # If there are no labels to remove, skip --remove-label
             gh issue edit ${{github.event.issue.number}} \
               --add-label "\"$ADD_LABEL\""
           fi
