@@ -2,7 +2,7 @@ name: Update Task Progress
 
 on:
   issues:
-    types: [edited, opened]
+    types: [edited]
 
 jobs:
   update-progress:
@@ -11,7 +11,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
 
       - name: Debug environment
         run: |
@@ -22,6 +21,7 @@ jobs:
           else
             echo "GH_TOKEN is set correctly."
           fi
+
       - name: Calculate task progress
         id: calculate-progress
         env:
@@ -29,39 +29,61 @@ jobs:
         run: |
           # Extract the issue body
           ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
-          # Debug log for the issue body
           echo "Issue Body: $ISSUE_BODY"
-          # Count total tasks (checkboxes) and completed tasks
+
+          # Count tasks
           TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[.\]' | wc -l)
           COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[x\]' | wc -l)
-          # Debug log for task counts
+
+          # Debug logs
           echo "Total tasks: $TOTAL_TASKS"
           echo "Completed tasks: $COMPLETED_TASKS"
+
+          # Handle no tasks
           if [ "$TOTAL_TASKS" -eq 0 ]; then
             echo "No tasks found."
             echo "progress=0" >> $GITHUB_ENV
+            echo "completed=0" >> $GITHUB_ENV
+            echo "total=0" >> $GITHUB_ENV
             exit 0
           fi
-          # Calculate progress percentage
+
+          # Calculate progress
           PROGRESS=$(( COMPLETED_TASKS * 100 / TOTAL_TASKS ))
           echo "Progress: $PROGRESS%"
           echo "progress=$PROGRESS" >> $GITHUB_ENV
-      - name: Update the issue with progress
-        if: env.progress != '' # No 'env' block needed
+          echo "completed=$COMPLETED_TASKS" >> $GITHUB_ENV
+          echo "total=$TOTAL_TASKS" >> $GITHUB_ENV
+
+      - name: Update the issue title with progress
+        if: env.progress != ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          # Use calculated progress and task counts
           PROGRESS="${{ env.progress }}"
-          # Fetch the existing issue body
-          CURRENT_BODY="$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')"
-          # Remove any existing progress line (if present)
-          CLEANED_BODY=$(echo "$CURRENT_BODY" | sed '/^## Progress:/d')
-          # Add the progress at the top with heading size ##
-          UPDATED_BODY=$(echo -e "## Progress: $PROGRESS%\n\n$CLEANED_BODY")
-          # Debug log for the updated issue body
-          echo "Updated Issue Body:"
-          echo "$UPDATED_BODY"
-          # Update the issue with properly formatted body
-          gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
-            --method PATCH \
-            --field body="$UPDATED_BODY"
+                 
+          # Fetch current labels as an array of names
+          CURRENT_LABELS=$(gh api repos/${{github.repository}}/issues/${{github.event.issue.number}} --jq '[.labels[].name]')
+          echo "Current Labels: $CURRENT_LABELS"
+
+          # Identify old progress labels
+          OLD_PROGRESS_LABELS=$(echo "$CURRENT_LABELS" | jq -r '.[] | select(test("^Progress: [0-9]+%$"))')
+          echo "Old Progress Labels: $OLD_PROGRESS_LABELS"
+
+          # Initialize arrays for labels to remove and to add
+          REMOVE_LABELS=()
+          ADD_LABEL="Progress: $PROGRESS%"
+
+          # Populate the remove labels array
+          while IFS= read -r label; do
+            REMOVE_LABELS+=("--remove-label" "\"$label\"")
+          done <<< "$OLD_PROGRESS_LABELS"
+
+          # Convert arrays to strings
+          REMOVE_LABELS_STR=$(IFS=" " ; echo "${REMOVE_LABELS[*]}")
+
+          # Update the issue labels
+          eval gh issue edit ${{github.event.issue.number}} \
+            $REMOVE_LABELS_STR \
+            --add-label "\"$ADD_LABEL\""
