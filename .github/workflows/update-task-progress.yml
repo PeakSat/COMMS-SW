@@ -28,7 +28,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # Extract the issue body
-          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
+          ISSUE_BODY=$(gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} --jq '.body')
           echo "Issue Body: $ISSUE_BODY"
 
           # Count tasks
@@ -55,14 +55,14 @@ jobs:
           echo "completed=$COMPLETED_TASKS" >> $GITHUB_ENV
           echo "total=$TOTAL_TASKS" >> $GITHUB_ENV
 
-      - name: Update the issue title with progress
+      - name: Update the issue labels with progress
         if: env.progress != ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Use calculated progress and task counts
+          # Use calculated progress
           PROGRESS="${{ env.progress }}"
-                 
+
           # Fetch current labels as an array of names
           CURRENT_LABELS=$(gh api repos/${{github.repository}}/issues/${{github.event.issue.number}} --jq '[.labels[].name]')
           echo "Current Labels: $CURRENT_LABELS"
@@ -75,15 +75,22 @@ jobs:
           REMOVE_LABELS=()
           ADD_LABEL="Progress: $PROGRESS%"
 
-          # Populate the remove labels array
-          while IFS= read -r label; do
-            REMOVE_LABELS+=("--remove-label" "\"$label\"")
-          done <<< "$OLD_PROGRESS_LABELS"
+          # Populate the remove labels array if old progress labels exist
+          if [ -n "$OLD_PROGRESS_LABELS" ]; then
+            while IFS= read -r label; do
+              REMOVE_LABELS+=("--remove-label" "\"$label\"")
+            done <<< "$OLD_PROGRESS_LABELS"
+          fi
 
           # Convert arrays to strings
           REMOVE_LABELS_STR=$(IFS=" " ; echo "${REMOVE_LABELS[*]}")
 
           # Update the issue labels
-          eval gh issue edit ${{github.event.issue.number}} \
-            $REMOVE_LABELS_STR \
-            --add-label "\"$ADD_LABEL\""
+          if [ -n "$REMOVE_LABELS_STR" ]; then
+            eval gh issue edit ${{github.event.issue.number}} \
+              $REMOVE_LABELS_STR \
+              --add-label "\"$ADD_LABEL\""
+          else
+            gh issue edit ${{github.event.issue.number}} \
+              --add-label "\"$ADD_LABEL\""
+          fi
