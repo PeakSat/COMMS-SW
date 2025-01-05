@@ -1,0 +1,67 @@
+name: Update Task Progress
+
+on:
+  issues:
+    types: [edited, opened]
+
+jobs:
+  update-progress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+
+      - name: Debug environment
+        run: |
+          echo "Checking GH_TOKEN environment variable..."
+          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+            echo "Error: GH_TOKEN is not set."
+            exit 1
+          else
+            echo "GH_TOKEN is set correctly."
+          fi
+      - name: Calculate task progress
+        id: calculate-progress
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Extract the issue body
+          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
+          # Debug log for the issue body
+          echo "Issue Body: $ISSUE_BODY"
+          # Count total tasks (checkboxes) and completed tasks
+          TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[.\]' | wc -l)
+          COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[x\]' | wc -l)
+          # Debug log for task counts
+          echo "Total tasks: $TOTAL_TASKS"
+          echo "Completed tasks: $COMPLETED_TASKS"
+          if [ "$TOTAL_TASKS" -eq 0 ]; then
+            echo "No tasks found."
+            echo "progress=0" >> $GITHUB_ENV
+            exit 0
+          fi
+          # Calculate progress percentage
+          PROGRESS=$(( COMPLETED_TASKS * 100 / TOTAL_TASKS ))
+          echo "Progress: $PROGRESS%"
+          echo "progress=$PROGRESS" >> $GITHUB_ENV
+      - name: Update the issue with progress
+        if: env.progress != '' # No 'env' block needed
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          PROGRESS="${{ env.progress }}"
+          # Fetch the existing issue body
+          CURRENT_BODY="$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')"
+          # Remove any existing progress line (if present)
+          CLEANED_BODY=$(echo "$CURRENT_BODY" | sed '/^## Progress:/d')
+          # Add the progress at the top with heading size ##
+          UPDATED_BODY=$(echo -e "## Progress: $PROGRESS%\n\n$CLEANED_BODY")
+          # Debug log for the updated issue body
+          echo "Updated Issue Body:"
+          echo "$UPDATED_BODY"
+          # Update the issue with properly formatted body
+          gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
+            --method PATCH \
+            --field body="$UPDATED_BODY"
