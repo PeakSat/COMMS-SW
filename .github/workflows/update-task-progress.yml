@@ -31,9 +31,9 @@ jobs:
           ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
           echo "Issue Body: $ISSUE_BODY"
 
-          # Count tasks
-          TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[.\]' | wc -l)
-          COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[x\]' | wc -l)
+          # Count tasks using stricter regex
+          TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oP '^\s*-\s*\[\s*[x ]\s*\]' | wc -l)
+          COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oP '^\s*-\s*\[\s*x\s*\]' | wc -l)
 
           # Debug logs
           echo "Total tasks: $TOTAL_TASKS"
