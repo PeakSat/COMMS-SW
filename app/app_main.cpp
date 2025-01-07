@@ -41,8 +41,8 @@ void app_main(void) {
     transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());
 
     uartGatekeeperTask.emplace();
-    rf_rxtask.emplace();
-    //    rf_txtask.emplace();
+    //    rf_rxtask.emplace();
+    rf_txtask.emplace();
 
     //        eMMCTask.emplace();
     //        gnssTask.emplace();
@@ -53,8 +53,10 @@ void app_main(void) {
     //    tmp117Task.emplace();
     //    canTestTask.emplace();
     uartGatekeeperTask->createTask();
-    rf_rxtask->createTask();
-    //    rf_txtask->createTask();
+    //    rf_rxtask->createTask();
+    rf_txtask->createTask();
+    // Ensure task handle is valid
+
 
     //        eMMCTask->createTask();
     //        gnssTask->createTask();
@@ -65,7 +67,6 @@ void app_main(void) {
 
 
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
-
     /* Start the scheduler. */
     vTaskStartScheduler();
 

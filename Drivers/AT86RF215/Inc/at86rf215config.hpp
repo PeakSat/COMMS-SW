@@ -6,11 +6,11 @@
 namespace AT86RF215 {
 
     struct RXConfig {
-        // RFn_RXBWC
+        /// RFn_RXBWC
         ReceiverBandwidth receiverBandwidth09, receiverBandwidth24;
         bool ifInversion09, ifInversion24;
         bool ifShift09, ifShift24;
-        // RFn_RXDFE
+        /// RFn_RXDFE
         RxRelativeCutoffFrequency rxRelativeCutoffFrequency09, rxRelativeCutoffFrequency24;
         ReceiverSampleRate receiverSampleRate09, receiverSampleRate24;
         /// RFn_AGCC
@@ -66,20 +66,17 @@ namespace AT86RF215 {
             };
         }
 
-        // update params
         void setRXBWC(ReceiverBandwidth bw09, bool inversion09, bool shift09) {
             receiverBandwidth09 = bw09;
             ifInversion09 = inversion09;
             ifShift09 = shift09;
         }
 
-        //
         void setRXDFE(RxRelativeCutoffFrequency cutoff09, ReceiverSampleRate sampleRate09) {
             rxRelativeCutoffFrequency09 = cutoff09;
             receiverSampleRate09 = sampleRate09;
         }
 
-        //
         void setEDC(EnergyDetectionTimeBasis timeBasis09, EnergyDetectionMode mode09,
                     uint8_t detectFactor09) {
             energyDetectionBasis09 = timeBasis09;
@@ -87,7 +84,6 @@ namespace AT86RF215 {
             energyDetectDurationFactor09 = detectFactor09;
         }
 
-        //
         void setAGCC(bool input09, AverageTimeNumberSamples avgSamples09, AGCEnable enabled09,
                      AutomaticGainTarget target09) {
             agcInput09 = input09;
@@ -98,27 +94,27 @@ namespace AT86RF215 {
     };
 
     struct TXConfig {
-        // RFn_TXDFE
+        /// RFn_TXDFE
         TxRelativeCutoffFrequency txRelativeCutoffFrequency09, txRelativeCutoffFrequency24;
         Direct_Mod_Enable_FSKDM directModulation09, directModulation24;
         TransmitterSampleRate transceiverSampleRate09, transceiverSampleRate24;
-        // RFn_TXCUTC
+        /// RFn_TXCUTC
         PowerAmplifierRampTime powerAmplifierRampTime09, powerAmplifierRampTime24;
         TransmitterCutOffFrequency transmitterCutOffFrequency09, transmitterCutOffFrequency24;
-        // RFn_PAC
+        /// RFn_PAC
         PowerAmplifierCurrentControl powerAmplifierCurrentControl09, powerAmplifierCurrentControl24;
         uint8_t txOutPower09, txOutPower24;
 
         static TXConfig DefaultTXConfig() {
             return {
-                // RFn_TXDFE
+                /// RFn_TXDFE
                 .txRelativeCutoffFrequency09 = TxRelativeCutoffFrequency::FCUT_0375,
                 .directModulation09 = Direct_Mod_Enable_FSKDM::direct_mod_enabled,
                 .transceiverSampleRate09 = TransmitterSampleRate::FS_400,
-                // RFn_TXCUTC
+                /// RFn_TXCUTC
                 .powerAmplifierRampTime09 = PowerAmplifierRampTime::RF_PARAMP4U,
                 .transmitterCutOffFrequency09 = TransmitterCutOffFrequency::RF_FLC100KHZ,
-                // RF_n_PAC
+                /// RF_n_PAC
                 .powerAmplifierCurrentControl09 = PowerAmplifierCurrentControl::PA_NO,
                 .txOutPower09 = 0x00};
         }
@@ -138,7 +134,7 @@ namespace AT86RF215 {
     };
 
     struct BasebandCoreConfig {
-        // BBCn_PC
+        /// BBCn_PC
         bool continuousTransmit09, continuousTransmit24;
         bool frameCheckSequenceFilterEn09, frameCheckSequenceFilterEn24;
         bool transmitterAutoFrameCheckSequence09, transmitterAutoFrameCheckSequence24;
@@ -286,7 +282,8 @@ namespace AT86RF215 {
 
     struct FrequencySynthesizer {
         /// Cached frequency for easy access
-        uint32_t frequency; // Frequency in kHz
+        /// Frequency in kHz
+        uint32_t frequency;
         /// RF_n CS
         uint8_t channelSpacing09, channelSpacing24;
         /// RFn_CCFOL - Channel Center Frequency F0 Low Byte
@@ -304,7 +301,7 @@ namespace AT86RF215 {
         static FrequencySynthesizer DefaultFrequencySynthesizerConfig() {
             FrequencySynthesizer fs{
                 .frequency = 401000,
-                // spacing = channelSpacing * 25kHz
+                /// spacing = channelSpacing * 25kHz
                 .channelSpacing09 = 0x10,
                 .channelSpacing24 = 0xA,
                 .channelMode09 = PLLChannelMode::FineResolution450,
@@ -328,12 +325,12 @@ namespace AT86RF215 {
             channelNumber09 = N & 0xFF;                   // Extract the lowest byte (bits 0-7)
         }
 
-        // Get frequency based on CCF0 and CNL
+        /// Get frequency based on CCF0 and CNL
         double getFrequency_FineResolution_CMN_1() {
             uint32_t N_channel = ((uint32_t) channelCenterFrequency09 << 8) | channelNumber09; // Reconstruct full N_channel
             return 377000.0 + (6500.0 * N_channel) / 65536.0;
         }
-        //
+
         etl::array<uint8_t, 3> getFrequency_in_bytes() {
             etl::array<uint8_t, 3> arr{};                                   // Use etl::array for embedded compatibility
             arr[2] = channelNumber09;                                       // Channel Number
@@ -377,26 +374,26 @@ namespace AT86RF215 {
     };
 
     struct IQInterfaceConfig {
-        // IQ Interface
-        // RF_IQIFC0
+        /// IQ Interface
+        /// RF_IQIFC0
         ExternalLoopback externalLoopback;
         IQOutputCurrent iqOutputCurrent;
         IQmodeVoltage iqmodeVoltage;
         IQmodeVoltageIEE iqmodeVoltageIEE;
         EmbeddedControlTX embeddedControlTX;
-        // RF_IQIFC1
+        /// RF_IQIFC1
         ChipMode chipMode;
         SkewAlignment skewAlignment;
 
         static IQInterfaceConfig DefaultIQInterfaceConfig() {
             return {
-                // RF_IQIFC0
+                /// RF_IQIFC0
                 .externalLoopback = ExternalLoopback::DISABLED,
                 .iqOutputCurrent = IQOutputCurrent::CURR_2_MA,
                 .iqmodeVoltage = IQmodeVoltage::MODE_200_MV,
                 .iqmodeVoltageIEE = IQmodeVoltageIEE::CMV,
                 .embeddedControlTX = EmbeddedControlTX::DISABLED,
-                // RF_IQIFC1
+                /// RF_IQIFC1
                 .chipMode = ChipMode::RF_MODE_BBRF,
                 .skewAlignment = SkewAlignment::SKEW3906NS};
         }
@@ -453,7 +450,7 @@ namespace AT86RF215 {
     };
 
     struct RadioInterruptsConfig {
-        // RFn_IRQM
+        /// RFn_IRQM
         bool iqIfSynchronizationFailure09, iqIfSynchronizationFailure24;
         bool transceiverError09, transceiverError24;
         bool batteryLow09, batteryLow24;
@@ -463,7 +460,7 @@ namespace AT86RF215 {
 
         static RadioInterruptsConfig DefaultRadioInterruptsConfig() {
             return {
-                // RFn_IRQM
+                /// RFn_IRQM
                 .iqIfSynchronizationFailure09 = true,
                 .iqIfSynchronizationFailure24 = false,
                 .transceiverError09 = true,
@@ -478,7 +475,6 @@ namespace AT86RF215 {
                 .wakeup24 = false,
             };
         }
-        // Setup function to configure values
         void setupRadioInterruptsConfig(bool syncFail,
                                         bool txErr,
                                         bool batLow,
@@ -500,7 +496,6 @@ namespace AT86RF215 {
         bool irqMaskMode;
         IRQPolarity irqPolarity;
         PadDriverStrength padDriverStrength;
-
         /// RF_BMDVC
         /// Generation of an interrupt if supply voltage (EVDD) drops below the configured threshold level
         BatteryMonitorVoltageThreshold batteryMonitorVoltage =

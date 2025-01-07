@@ -1,18 +1,24 @@
 #pragma once
-
 #include <at86rf215definitions.hpp>
 #include "at86rf215config.hpp"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
 #include <utility>
 #include <cstdint>
 #include <etl/expected.h>
 
+
 const uint16_t TIMEOUT = 1000;
 typedef struct __SPI_HandleTypeDef SPI_HandleTypeDef;
+extern SPI_HandleTypeDef hspi4;
 
 namespace AT86RF215 {
 
-
-    // Declare the transceiver object
+    struct transceiver_handler {
+        SemaphoreHandle_t transceiver_semaphore;
+        uint32_t getSemaphoreTimeout = 1000;
+    };
 
     enum Error {
         NO_ERRORS,
@@ -65,7 +71,7 @@ namespace AT86RF215 {
         // Constructor with general config only
         At86rf215(SPI_HandleTypeDef* hspim)
             : hspi(hspim),
-              tx_ongoing(false), rx_ongoing(false), agc_held(false) {}
+              tx_ongoing(false), rx_ongoing(false), agc_held(false), cca_ongoing(false) {}
 
         void setGeneralConfig(GeneralConfiguration&& GeneralConfig) {
             generalConfig = std::move(GeneralConfig);
@@ -109,7 +115,6 @@ namespace AT86RF215 {
          * @returns 		Returns the read byte
          */
         uint8_t spi_read_8(uint16_t address, Error& err);
-        int8_t int_spi_read_8(uint16_t address, Error& err);
 
         /* Writes a byte to a specified address
          *
@@ -131,23 +136,6 @@ namespace AT86RF215 {
          */
         uint8_t* spi_block_read_8(uint16_t address, uint8_t n, uint8_t* response,
                                   Error& err);
-
-        /* Writes a word to a specified address
-         *
-         * @param address	Specifies the address to write to
-         * @param value		The value to write to the specified address
-         * @param err		Pointer to raised error
-         */
-
-        /* Writes a word to a specified address
-         *
-         * @param address	Specifies the address to start writing to
-         * @param n			Number of bytes to write
-         * @param value		Pointer to array of values to write to address
-         * @param err		Pointer to raised error
-         */
-        void spi_write_16(uint16_t address, uint16_t value, Error& err);
-
         /*
          * Fetches the current state of the transceiver
          *
@@ -278,15 +266,6 @@ namespace AT86RF215 {
          * @param err	Pointer to raised error
          */
         uint8_t get_version_number(Error& err);
-
-        /*
-         * Sets the PLL frequency
-         *
-         * @param transceiver	Specify the transceiver used
-         * @param freq			PLL frequency
-         * @param err			Pointer to raised error
-         */
-        void set_pll_frequency(Transceiver transceiver, uint8_t freq, Error& err);
 
         /*
          * Gets the PLL frequency
@@ -454,35 +433,6 @@ namespace AT86RF215 {
             Transceiver transceiver, Error& err);
 
         /*
-         * Shows the preamble detection sensitivity threshold for MR-O-QPSK.
-         *
-         * @param transceiver		Specifies the transceiver used
-         * @param err				Pointer to raised error
-         * @return					Legacy O-QPSK preamble detections threshold (PDT0 value)
-         */
-        uint8_t get_preamble_detection_threshold_0(Transceiver transceiver,
-                                                   Error& err);
-        /*
-         *  This sub-register configures the search space of SFD words for MR-O-QPSK.
-         *
-         * @param transceiver		Specifies the transceiver used
-         * @param sfdss				Configures where the search of SFD words will be
-         * @param err				Pointer to raised error
-
-         */
-        void set_sfd_search_space(Transceiver transceiver, SFDSearchSpace sfd,
-                                  Error& err);
-
-        /*
-         * Shows which will be the search space of SFD words for MR-O-QPSK
-         *
-         * @param transceiver		Specifies the transceiver used
-         * @param err				Pointer to raised error
-         * @return					The search space of SFD words for MR-O-QPSK (NSFD sub-register value)
-         */
-        SFDSearchSpace get_sfd_search_space(Transceiver transceiver, Error& err);
-
-        /*
          * Set receiver energy detection average duration given by df*dtb
          *
          * @param transceiver		Specifies the transceiver used
@@ -500,16 +450,7 @@ namespace AT86RF215 {
          * @param err				Pointer to raised error
          */
         uint8_t get_ed_average_detection(Transceiver transceiver, Error& err);
-
         int8_t get_receiver_energy_detection(Transceiver transceiver, Error& err);
-
-
-        /* Set transceiver battery monitor status
-         *
-         * @param status			Battery monitor status
-         * @param err				Pointer to raised error
-         */
-        void set_battery_monitor_status(bool status, Error& err);
 
         /*
          * Get transceiver battery monitor status
@@ -754,16 +695,14 @@ namespace AT86RF215 {
                                        uint16_t length, Error& err);
 
         etl::expected<uint16_t, Error> get_received_length(Transceiver transceiver, Error& err);
+        etl::expected<void, Error> check_transceiver_connection(Error& err);
         void packetReception(Transceiver transceiver, Error& err);
         uint8_t received_packet[2047];
-        // flags for interrupts //
-
-        // radio interrupts //
+        /// Radio interrupts
         bool IFSynchronization_flag, TransceiverError_flag, EnergyDetectionCompletion_flag, TransceiverReady_flag, Wakeup_flag = false;
 
-        // baseband core interrupts //
+        /// Baseband Core Interrupts
         bool FrameBufferLevelIndication_flag, AGCRelease_flag, AGCHold_flag, TransmitterFrameEnd_flag, ReceiverExtendMatch_flag, ReceiverAddressMatch_flag, ReceiverFrameEnd_flag, ReceiverFrameStart_flag = false;
-
 
         /**
          * This is automatically called after triggering the packet reception

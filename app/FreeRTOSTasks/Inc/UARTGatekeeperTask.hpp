@@ -46,8 +46,8 @@ public:
     }
 
     void createTask() {
-        xTaskCreateStatic(vClassTask<UARTGatekeeperTask>, this->TaskName, UARTGatekeeperTask::TaskStackDepth, this,
-                          tskIDLE_PRIORITY + 3, this->taskStack, &(this->taskBuffer));
+        this->taskHandle = xTaskCreateStatic(vClassTask<UARTGatekeeperTask>, this->TaskName, UARTGatekeeperTask::TaskStackDepth, this,
+                                             tskIDLE_PRIORITY + 3, this->taskStack, &(this->taskBuffer));
     }
 };
 

@@ -2,6 +2,22 @@
 
 namespace AT86RF215 {
 
+#define MaxPacketLength 2048
+
+#define FBLI (1 << 0)
+#define RXFE (1 << 1)
+#define RXFS (1 << 2)
+#define AGC_HOLD (1 << 3)
+#define AGC_RELEASE (1 << 4)
+#define TXFE (1 << 5)
+/// RADIO
+#define IFSERR (1 << 6)
+#define BATL (1 << 7)
+#define TRXRDY (1 << 8)
+#define TRXERR (1 << 9)
+#define WAKEUP (1 << 10)
+
+
     enum class EnergyDetectionTimeBasis {
         RF_2MS = 0x0,
         RF_8MS = 0x1,

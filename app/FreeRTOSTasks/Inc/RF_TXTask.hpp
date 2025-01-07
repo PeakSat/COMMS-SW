@@ -8,22 +8,27 @@
 #include "main.h"
 
 using namespace AT86RF215;
-extern SPI_HandleTypeDef hspi4;
+
+using PacketType = etl::array<uint8_t, MaxPacketLength>;
+
+struct PacketData {
+    PacketType packet;
+    uint16_t length;
+};
 
 class RF_TXTask : public Task {
 public:
-    constexpr static uint16_t MaxPacketLength = 1024;
-    using PacketType = etl::array<uint8_t, MaxPacketLength>;
-    RF_TXTask() : Task("RF - TX Task") {}
+    RF_TXTask() : Task("RF-TX Task") {}
     void execute();
+    PacketData createRandomPacketData(uint16_t length);
+    uint8_t transmit_frame_flag, trx_ready = false;
     void createTask() {
-        xTaskCreateStatic(vClassTask<RF_TXTask>, this->TaskName,
-                          RF_TXTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
-                          this->taskStack, &(this->taskBuffer));
+        this->taskHandle = xTaskCreateStatic(vClassTask<RF_TXTask>, this->TaskName,
+                                             RF_TXTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             this->taskStack, &(this->taskBuffer));
     }
 
 private:
-    constexpr static uint16_t DelayMs = 1;
     constexpr static uint16_t TaskStackDepth = 15000;
     constexpr static uint32_t FrequencyUHFTX = 401000;
     AT86RF215::Error error;
