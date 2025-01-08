@@ -10,10 +10,15 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
 }
 
 void RF_TXTask::execute() {
-    vTaskDelay(6000);
+    vTaskDelay(5000);
     LOG_INFO << "RF TX TASK";
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     LOG_INFO << "5V CHANNEL ON";
+    /// Essential for the trx to be able to send and receive packets
+    /// (If you have it HIGH from the CubeMX the trx will not be able to send)
+    HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
+    vTaskDelay(20);
+    HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
     /// Check transceiver connection
     auto status = transceiver.check_transceiver_connection(error);
     if (status.has_value()) {
@@ -27,24 +32,22 @@ void RF_TXTask::execute() {
     transceiver.chip_reset(error);
     transceiver.setup(error);
     /// TX AMP
-    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-    LOG_DEBUG << "TX AMP DISABLED";
+    GPIO_PinState txamp = GPIO_PIN_SET;
+    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+    if (txamp)
+        LOG_DEBUG << "TX AMP DISABLED";
+    else
+        LOG_DEBUG << "TX AMP ENABLED";
+
     uint32_t receivedEvents = 0;
     while (1) {
         vTaskDelay(100);
         /// Read the state
         uint8_t read_reg = transceiver.spi_read_8(RF09_STATE, error);
         LOG_DEBUG << "Transceiver State = " << read_reg;
-        /// Creates a random packet
-        PacketData packetTestData = createRandomPacketData(10);
+        PacketData packetTestData = createRandomPacketData(MaxPacketLength);
         /// Writes to the TX buffer
         transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-        vTaskDelay(pdMS_TO_TICKS(200));
-        transceiver.set_state(AT86RF215::RF09, State::RF_TX, error);
-
-        if (transceiver.TransmitterFrameEnd_flag)
-            LOG_DEBUG << "SENT PACKET";
-
         if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(100))) {
             if (receivedEvents & TXFE) {
                 LOG_DEBUG << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;

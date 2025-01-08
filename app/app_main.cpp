@@ -29,7 +29,6 @@ void app_main(void) {
     if (eMMC::memoryMap[eMMC::firmware].endAddress != 0) {
         __NOP();
     }
-    // Default settings for the transceiver
     transceiver.setGeneralConfig(GeneralConfiguration::DefaultGeneralConfig());
     transceiver.setRXConfig(RXConfig::DefaultRXConfig());
     transceiver.setTXConfig(TXConfig::DefaultTXConfig());

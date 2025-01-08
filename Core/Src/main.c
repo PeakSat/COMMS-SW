@@ -643,8 +643,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, RF_SPI_SEL_Pin|ALERT_T_PA_U_Pin|FLAGB_TX_UHF_Pin|FLAGB_RX_UHF_Pin
-                          |EN_RX_UHF_Pin|ALERT_T_PCB_Pin|P5V_RF_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, RF_SPI_SEL_Pin|RF_RST_Pin|ALERT_T_PA_U_Pin|FLAGB_TX_UHF_Pin
+                          |FLAGB_RX_UHF_Pin|EN_RX_UHF_Pin|ALERT_T_PCB_Pin|P5V_RF_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, MMC_RST_Pin|MMC_EN_Pin, GPIO_PIN_SET);
@@ -660,9 +660,6 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, EN_PA_UHF_Pin|GNSS_EN_Pin, GPIO_PIN_SET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : RF_SPI_SEL_Pin RF_RST_Pin ALERT_T_PA_U_Pin FLAGB_TX_UHF_Pin
                            FLAGB_RX_UHF_Pin EN_RX_UHF_Pin ALERT_T_PCB_Pin P5V_RF_EN_Pin */

@@ -1437,7 +1437,6 @@ namespace AT86RF215 {
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
-            set_state(Transceiver::RF09, State::RF_TRXOFF, err);
             xTaskNotifyFromISR(rf_txtask->taskHandle, TXFE, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
