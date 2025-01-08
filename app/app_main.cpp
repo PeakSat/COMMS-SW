@@ -65,9 +65,10 @@ void app_main(void) {
     //    tmp117Task->createTask();
     //    canTestTask->createTask();
 
-
+    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     /* Start the scheduler. */
+
     vTaskStartScheduler();
 
     /* Should not get here. */

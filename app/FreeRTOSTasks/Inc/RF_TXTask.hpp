@@ -21,7 +21,6 @@ public:
     RF_TXTask() : Task("RF-TX Task") {}
     void execute();
     PacketData createRandomPacketData(uint16_t length);
-    uint8_t transmit_frame_flag, trx_ready = false;
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_TXTask>, this->TaskName,
                                              RF_TXTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
@@ -29,7 +28,7 @@ public:
     }
 
 private:
-    constexpr static uint16_t TaskStackDepth = 15000;
+    constexpr static uint16_t TaskStackDepth = 5000;
     constexpr static uint32_t FrequencyUHFTX = 401000;
     AT86RF215::Error error;
     StackType_t taskStack[TaskStackDepth];

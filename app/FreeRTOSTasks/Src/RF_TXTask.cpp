@@ -9,10 +9,8 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
     return data;
 }
 
-
 void RF_TXTask::execute() {
-    vTaskDelay(10000);
-    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+    vTaskDelay(6000);
     LOG_INFO << "RF TX TASK";
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     LOG_INFO << "5V CHANNEL ON";
@@ -23,17 +21,15 @@ void RF_TXTask::execute() {
     } else
         /// TODO: Error handling
         LOG_ERROR << "AT86RF215 ##ERROR## WITH CODE: " << status.error();
-    transceiver.chip_reset(error);
-    transceiver.setup(error);
     /// Set the down-link frequency
     transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFTX);
     transceiver.configure_pll(AT86RF215::RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
+    transceiver.chip_reset(error);
     transceiver.setup(error);
     /// TX AMP
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
     LOG_DEBUG << "TX AMP DISABLED";
     uint32_t receivedEvents = 0;
-
     while (1) {
         vTaskDelay(100);
         /// Read the state
@@ -46,18 +42,12 @@ void RF_TXTask::execute() {
         vTaskDelay(pdMS_TO_TICKS(200));
         transceiver.set_state(AT86RF215::RF09, State::RF_TX, error);
 
-        /// Read the state
-        read_reg = transceiver.spi_read_8(RF09_STATE, error);
-        LOG_DEBUG << "Transceiver State = " << read_reg;
-        LOG_DEBUG << "Flag frame end: " << transmit_frame_flag;
-        if (trx_ready) {
-            LOG_DEBUG << "Flag Transceiver ready: " << trx_ready;
-            trx_ready = false;
-        }
+        if (transceiver.TransmitterFrameEnd_flag)
+            LOG_DEBUG << "SENT PACKET";
+
         if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(100))) {
             if (receivedEvents & TXFE) {
                 LOG_DEBUG << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;
-                rf_txtask->transmit_frame_flag = false;
             }
             /// Handle TRXRDY flag
             if (receivedEvents & TRXRDY)

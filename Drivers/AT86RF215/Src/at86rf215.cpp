@@ -1397,7 +1397,6 @@ namespace AT86RF215 {
         }
         if ((irq & InterruptMask::TransceiverReady) != 0) {
             TransceiverReady_flag = true;
-            rf_txtask->trx_ready = true;
 
             if (rx_ongoing) {
                 // Switch to TX state once the transceiver is ready to send
@@ -1437,7 +1436,6 @@ namespace AT86RF215 {
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
-            rf_txtask->transmit_frame_flag = true;
             tx_ongoing = false;
             set_state(Transceiver::RF09, State::RF_TRXOFF, err);
             xTaskNotifyFromISR(rf_txtask->taskHandle, TXFE, eSetBits, &xHigherPriorityTaskWoken);
