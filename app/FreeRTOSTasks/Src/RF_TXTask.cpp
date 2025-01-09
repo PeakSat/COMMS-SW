@@ -44,7 +44,7 @@ void RF_TXTask::execute() {
         LOG_DEBUG << "TX AMP ENABLED";
 
     while (1) {
-        vTaskDelay(100);
+        vTaskDelay(1000);
         /// Read the state
         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
             uint8_t read_reg = transceiver.spi_read_8(RF09_STATE, error);
