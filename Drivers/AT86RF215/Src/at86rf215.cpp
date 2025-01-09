@@ -1378,15 +1378,15 @@ namespace AT86RF215 {
         /// Radio IRQ
         volatile uint8_t irq = spi_read_8(RegisterAddress::RF09_IRQS, err);
         if ((irq & InterruptMask::IFSynchronization) != 0) {
-            xTaskNotifyFromISR(rf_txtask->taskHandle, IFSERR, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            //            xTaskNotifyFromISR(rf_txtask->taskHandle, IFSERR, eSetBits, &xHigherPriorityTaskWoken);
+            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             // I/Q IF Synchronization Failure handling
             IFSynchronization_flag = true;
         }
         if ((irq & InterruptMask::TransceiverError) != 0) {
             // Transceiver Error handling
-            xTaskNotifyFromISR(rf_txtask->taskHandle, TRXERR, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            //            xTaskNotifyFromISR(rf_txtask->taskHandle, TRXERR, eSetBits, &xHigherPriorityTaskWoken);
+            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             TransceiverError_flag = true;
         }
         if ((irq & InterruptMask::BatteryLow) != 0) {
@@ -1411,8 +1411,8 @@ namespace AT86RF215 {
                 // Switch to TX state once the transceiver is ready to send
                 set_state(Transceiver::RF09, State::RF_TX, err);
             }
-            xTaskNotifyFromISR(rf_txtask->taskHandle, TRXRDY, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            //            xTaskNotifyFromISR(rf_rxtask->taskHandle, TRXRDY, eSetBits, &xHigherPriorityTaskWoken);
+            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::Wakeup) != 0) {
             Wakeup_flag = true;
@@ -1423,8 +1423,8 @@ namespace AT86RF215 {
         irq = spi_read_8(RegisterAddress::BBC0_IRQS, err);
         if ((irq & InterruptMask::FrameBufferLevelIndication) != 0) {
             // Frame Buffer Level Indication handling
-            xTaskNotifyFromISR(rf_txtask->taskHandle, FBLI, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            //            xTaskNotifyFromISR(rf_txtask->taskHandle, FBLI, eSetBits, &xHigherPriorityTaskWoken);
+            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             FrameBufferLevelIndication_flag = true;
         }
         if ((irq & InterruptMask::AGCRelease) != 0) {
@@ -1439,8 +1439,8 @@ namespace AT86RF215 {
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
-            xTaskNotifyFromISR(rf_txtask->taskHandle, TXFE, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            //            xTaskNotifyFromISR(rf_txtask->taskHandle, TXFE, eSetBits, &xHigherPriorityTaskWoken);
+            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
             // Receiver Extended Match handling

@@ -28,7 +28,7 @@ namespace AT86RF215 {
         static RXConfig DefaultRXConfig() {
             return {
                 /// RFn_RXBWC
-                .receiverBandwidth09 = ReceiverBandwidth::RF_BW160KHZ_IF250KHZ,
+                .receiverBandwidth09 = ReceiverBandwidth::RF_BW200KHZ_IF250KHZ,
                 .receiverBandwidth24 = ReceiverBandwidth::RF_BW160KHZ_IF250KHZ,
                 .ifInversion09 = false,
                 .ifInversion24 = false,
@@ -193,22 +193,22 @@ namespace AT86RF215 {
                 .freq_inv_09 = Freq_Inversion::freq_inversion_off,
                 .sr_09 = MR_FSK_symbol_rate::sr_50,
                 /// BBCn_FSKC2
-                .preamble_detection_09 = Preamble_Detection::preamble_det_without_rssi,
+                .preamble_detection_09 = Preamble_Detection::preamble_det_with_rssi,
                 .receiver_override_09 = Receiver_Override::restart_by_18db_stronger_frame,
                 .receiver_preamble_timeout_09 = Receiver_Preamble_Timeout::timeout_disabled,
                 .mode_switch_en_09 = Mode_Switch_Enable::disabled,
                 .preamble_inversion_09 = Preamble_Inversion::no_inversion,
                 .fec_scheme_09 = FEC_Scheme::NRNSC,
-                .interleaving_enable_09 = Interleaving_Enable::enabled,
+                .interleaving_enable_09 = Interleaving_Enable::disabled,
                 /// BBCn_FSKC3
                 .sfdt_09 = SFD_Detection_Threshold::default_sfd_IEEE,
-                .prdt_09 = Preamble_Detection_Threshold::increased_preamble_sensitivity,
+                .prdt_09 = Preamble_Detection_Threshold::default_value,
                 /// BBCn_FSC4
                 .sfdQuantization_09 = SFD_Quantization::SOFT_DECISION,
                 .sfd32_09 = SFD_32::TWO_16BIT_SFD,
                 .rawModeReversalBit_09 = Raw_Mode_Reversal_Bit::MSB_FIRST,
-                .csfd1_09 = CSFD1::UNCODED_IEEE_MODE,
-                .csfd0_09 = CSFD0::UNCODED_IEEE_MODE,
+                .csfd1_09 = CSFD1::CODED_IEEE_MODE,
+                .csfd0_09 = CSFD0::CODED_IEEE_MODE,
                 /// BBCn_FSKPHRTX
                 .sfdUsed_09 = SFD_Used::sfd0_used,
                 .dataWhitening_09 = Data_Whitening::psdu_data_whitening_enabled,

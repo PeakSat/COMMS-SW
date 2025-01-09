@@ -10,6 +10,11 @@ void RF_RXTask::execute() {
     /// Set the Up-link frequency
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     LOG_INFO << "5V CHANNEL ON";
+    // ENABLE THE RX SWITCH
+    HAL_GPIO_WritePin(EN_RX_UHF_GPIO_Port, EN_RX_UHF_Pin, GPIO_PIN_RESET);
+    LOG_DEBUG << "RX SWITCH ENABLED ";
+    HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_RESET);
+    LOG_DEBUG << "RX AMP ENABLED ";
     /// Essential for the trx to be able to send and receive packets
     /// (If you have it HIGH from the CubeMX the trx will not be able to send)
     HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
@@ -28,49 +33,45 @@ void RF_RXTask::execute() {
         transceiver.setup(error);
         xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
     }
-    xTaskNotify(rf_txtask->taskHandle, START_TX_TASK, eSetBits);
+    //    xTaskNotify(rf_txtask->taskHandle, START_TX_TASK, eSetBits);
     uint16_t received_length;
+    transceiver.set_state(AT86RF215::RF09, State::RF_TXPREP, error);
+    vTaskDelay(pdMS_TO_TICKS(20));
+    transceiver.set_state(AT86RF215::RF09, State::RF_RX, error);
+    if (transceiver.get_state(RF09, error) == RF_RX)
+        LOG_DEBUG << "STATE = RX";
+    uint32_t receivedEvents = 0;
     while (1) {
-        uint32_t receivedEvents = 0;
-        if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(1000))) {
-            if (receivedEvents & RXFE) {
-                LOG_DEBUG << "RECEIVE FRAME START";
-            }
-            if (receivedEvents & RXFE) {
-                LOG_DEBUG << "RECEIVE FRAME END";
-                if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-                    auto result = transceiver.get_received_length(RF09, error);
-                    if (result.has_value()) {
-                        received_length = result.value();
-                        LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
-                    } else {
-                        Error err = result.error();
-                        LOG_ERROR << "AT86RF215 ##ERROR## AT RX LENGTH RECEPTION WITH CODE: " << err;
-                    }
-                    xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-                }
-            }
-            if (receivedEvents & TRXRDY)
-                LOG_DEBUG << "TRANSCEIVER IS READY.";
-            if (receivedEvents & TRXERR)
-                LOG_ERROR << "PLL UNLOCKED.";
-            if (receivedEvents & IFSERR)
-                LOG_ERROR << "SYNCHRONIZATION ERROR.";
+        if (transceiver.get_state(RF09, error) == State::RF_RX)
+            LOG_INFO << "RX";
+        else {
+            LOG_ERROR << "STATE: " << transceiver.get_state(RF09, error);
         }
-        if (xTaskNotifyWait(AGC_HOLD, AGC_HOLD, &receivedEvents, pdMS_TO_TICKS(100)) == pdTRUE) {
-            if (receivedEvents & AGC_HOLD) {
-                /// TODO: HANDLE THE RECEIVED PACKET
-                LOG_DEBUG << "AGC HOLD NOTIFICATION";
+        if (transceiver.ReceiverFrameEnd_flag) {
+            transceiver.ReceiverFrameEnd_flag = false;
+            auto result = transceiver.get_received_length(RF09, error);
+            if (result.has_value()) {
+                received_length = result.value();
+                LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
+            } else {
+                Error err = result.error();
+                LOG_ERROR << "AT86RF215 ##ERROR## AT RX LENGTH RECEPTION WITH CODE: " << err;
+            }
+        }
+        if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, 5000)) {
+            if ((receivedEvents & RXFE) || (receivedEvents & AGC_HOLD)) {
+                LOG_DEBUG << "RECEIVE FRAME END || AGC HOLD";
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     if (result.has_value()) {
                         received_length = result.value();
                         LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
                     } else {
-                        /// TODO: Error handling
                         Error err = result.error();
                         LOG_ERROR << "AT86RF215 ##ERROR## AT RX LENGTH RECEPTION WITH CODE: " << err;
                     }
+                    vTaskDelay(20);
+                    transceiver.set_state(AT86RF215::RF09, State::RF_RX, error);
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
                 }
             }

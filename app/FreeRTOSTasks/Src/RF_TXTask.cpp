@@ -1,24 +1,25 @@
 #include "RF_TXTask.hpp"
 #include "Logger.hpp"
 
-PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
+PacketData RF_TXTask::createRandomPacketData(uint8_t length) {
     PacketData data{};
-    for (int i = 0; i < length; i++)
-        data.packet[i] = i % 100;
+    for (uint8_t i = 0; i < length; i++)
+        data.packet[i] = i;
     data.length = length;
     return data;
 }
 
 void RF_TXTask::execute() {
     uint32_t receivedEvents = 0;
-    if (xTaskNotifyWait(START_TX_TASK, START_TX_TASK, &receivedEvents, 10000) == pdTRUE) {
+    if (xTaskNotifyWait(START_TX_TASK, START_TX_TASK, &receivedEvents, portMAX_DELAY) == pdTRUE) {
         if (receivedEvents & START_TX_TASK) {
-            LOG_INFO << "Starting RF TX Task"; // Handle the event
+            LOG_INFO << "Starting RF TX Task NOMINALLY"; // Handle the event
         }
     } else {
         // In case the notification was not received, you can log or handle it
         LOG_ERROR << "RF RX Task notification error.";
     }
+    LOG_INFO << "Starting RF TX Task"; // Handle the event
     /// Check transceiver connection
     if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
         auto status = transceiver.check_transceiver_connection(error);
@@ -47,12 +48,10 @@ void RF_TXTask::execute() {
         vTaskDelay(1000);
         /// Read the state
         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-            uint8_t read_reg = transceiver.spi_read_8(RF09_STATE, error);
-            LOG_DEBUG << "Transceiver State = " << read_reg;
             PacketData packetTestData = createRandomPacketData(MaxPacketLength);
             /// Writes to the TX buffer
             transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-            if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(100))) {
+            if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(5000))) {
                 if (receivedEvents & TXFE) {
                     /// Give the mutex
                     LOG_DEBUG << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;

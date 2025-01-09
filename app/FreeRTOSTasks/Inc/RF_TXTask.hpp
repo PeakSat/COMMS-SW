@@ -20,7 +20,7 @@ class RF_TXTask : public Task {
 public:
     RF_TXTask() : Task("RF-TX Task") {}
     void execute();
-    PacketData createRandomPacketData(uint16_t length);
+    PacketData createRandomPacketData(uint8_t length);
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_TXTask>, this->TaskName,
                                              RF_TXTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
