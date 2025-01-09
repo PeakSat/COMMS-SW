@@ -656,10 +656,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, GAIN_SET_UHF_Pin|AGC_TEMP_UHF_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, EN_AGC_UHF_Pin|EN_PA_UHF_Pin|GNSS_RSTN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, EN_AGC_UHF_Pin|GNSS_RSTN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, EN_PA_UHF_Pin|GNSS_EN_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : RF_SPI_SEL_Pin RF_RST_Pin ALERT_T_PA_U_Pin FLAGB_TX_UHF_Pin
                            FLAGB_RX_UHF_Pin EN_RX_UHF_Pin ALERT_T_PCB_Pin P5V_RF_EN_Pin */
@@ -709,6 +709,7 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
+  HAL_NVIC_DisableIRQ(EXTI1_IRQn);
 /* USER CODE END MX_GPIO_Init_2 */
 }
 

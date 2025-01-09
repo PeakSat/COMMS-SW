@@ -5,7 +5,6 @@
 
 /* App includes. */
 #include "app_main.h"
-#include "TransceiverTask.hpp"
 #include "UARTGatekeeperTask.hpp"
 #include "eMMCTask.hpp"
 #include "GNSSTask.hpp"
@@ -18,6 +17,8 @@
 #include "TMP117Task.hpp"
 #include "CANDriver.hpp"
 #include "eMMC.hpp"
+#include "RF_TXTask.hpp"
+#include "RF_RXTask.hpp"
 #include "git_version.h"
 
 
@@ -27,29 +28,44 @@ void app_main(void) {
     if (eMMC::memoryMap[eMMC::firmware].endAddress != 0) {
         __NOP();
     }
+    transceiver.setGeneralConfig(GeneralConfiguration::DefaultGeneralConfig());
+    transceiver.setRXConfig(RXConfig::DefaultRXConfig());
+    transceiver.setTXConfig(TXConfig::DefaultTXConfig());
+    transceiver.setBaseBandCoreConfig(BasebandCoreConfig::DefaultBasebandCoreConfig());
+    transceiver.setFrequencySynthesizerConfig(FrequencySynthesizer::DefaultFrequencySynthesizerConfig());
+    transceiver.setExternalFrontEndControlConfig(ExternalFrontEndConfig::DefaultExternalFrontEndConfig());
+    transceiver.setInterruptConfig(InterruptsConfig::DefaultInterruptsConfig());
+    transceiver.setRadioInterruptConfig(RadioInterruptsConfig::DefaultRadioInterruptsConfig());
+    transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());
 
-    transceiverTask.emplace();
     uartGatekeeperTask.emplace();
+    rf_rxtask.emplace();
+    rf_txtask.emplace();
     eMMCTask.emplace();
     gnssTask.emplace();
+
 
     ina3221Task.emplace();
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
     canTestTask.emplace();
-
-    transceiverTask->createTask();
     uartGatekeeperTask->createTask();
+    rf_rxtask->createTask();
+    rf_txtask->createTask();
+    // Ensure task handle is valid
+
+
     eMMCTask->createTask();
     gnssTask->createTask();
     ina3221Task->createTask();
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
     canTestTask->createTask();
-
+    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
-
+    TransceiverHandler::initialize_semaphore();
     /* Start the scheduler. */
+
     vTaskStartScheduler();
 
     /* Should not get here. */
@@ -60,7 +76,7 @@ void app_main(void) {
 
 extern "C" [[maybe_unused]] void EXTI1_IRQHandler(void) {
     HAL_GPIO_EXTI_IRQHandler(RF_IRQ_Pin);
-    transceiverTask->transceiver.handle_irq();
+    transceiver.handle_irq();
 }
 
 /* Callback in non blocking modes (DMA) */
