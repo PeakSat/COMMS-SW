@@ -116,7 +116,7 @@ namespace AT86RF215 {
                 .transmitterCutOffFrequency09 = TransmitterCutOffFrequency::RF_FLC100KHZ,
                 /// RF_n_PAC
                 .powerAmplifierCurrentControl09 = PowerAmplifierCurrentControl::PA_NO,
-                .txOutPower09 = 0x00};
+                .txOutPower09 = 0x10};
         }
         void setTXDFE(TxRelativeCutoffFrequency cutoffFrequency09, Direct_Mod_Enable_FSKDM modulation09, TransmitterSampleRate sampleRate09) {
             txRelativeCutoffFrequency09 = cutoffFrequency09;
