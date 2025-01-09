@@ -110,8 +110,42 @@ void TPProtocol::parseMessage(TPMessage& message) {
     }
 }
 
-
 bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
+    if (!createCANTPMessageWithRetry(message, isISR, 2)) {
+        return 0;
+    } else {
+        //Change CAN bus
+        if (activeBus == CAN::ActiveBus::Redundant) {
+            activeBus = CAN::ActiveBus::Main;
+            canGatekeeperTask->switchActiveBus(Main);
+        } else {
+            activeBus = CAN::ActiveBus::Redundant;
+            canGatekeeperTask->switchActiveBus(Redundant);
+        }
+        if (!createCANTPMessageWithRetry(message, isISR, 2)) {
+            return 0;
+        } else {
+            //Packet transmit fialure
+            LOG_ERROR << "Packet transmit fialure";
+            return 1;
+        }
+    }
+}
+
+bool TPProtocol::createCANTPMessageWithRetry(const TPMessage& message, bool isISR, uint32_t NoOfRetries) {
+    for (uint32_t i = 0; i < NoOfRetries; i++) {
+        if (!createCANTPMessageNoRetransmit(message, isISR)) {
+            return 0;
+        }
+        if (i > 0) {
+            //number of retransmits ++
+            LOG_ERROR << "Retranmitted CAN packet";
+        }
+    }
+    return 1;
+}
+
+bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool isISR) {
 
     size_t messageSize = message.dataSize;
     uint32_t id = message.encodeId();

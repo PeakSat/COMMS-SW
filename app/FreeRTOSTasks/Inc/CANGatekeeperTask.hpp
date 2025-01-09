@@ -105,7 +105,7 @@ public:
    */
     static inline uint8_t storedPacketQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)];
 
-    const static inline uint16_t TaskStackDepth = 6000;
+    const static inline uint16_t TaskStackDepth = 7000;
 
     StackType_t taskStack[TaskStackDepth];
 

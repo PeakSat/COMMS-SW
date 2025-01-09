@@ -14,36 +14,24 @@ void CANTestTask::execute() {
     for (uint8_t idx = 0; idx < CAN::MaxPayloadLength; idx++) {
         message.push_back(idx);
     }
-    String<ECSSMaxMessageSize> testPayload1("CAN1 SAYS: SPONGEBOB SQUAREPANTS! ");
+    String<ECSSMaxMessageSize> testPayload1("ccccccccccccccccccccccccccccccccc");
 
-    String<ECSSMaxMessageSize> testPayload2("CAN2 SAYS: WHO LET THE DOGS OUT!?");
+    String<ECSSMaxMessageSize> testPayload2("ddddddddddddddddddddddddddddddddddd");
+
     CAN::ActiveBus activeBus = CAN::ActiveBus::Redundant;
+    int counter = 0;
     while (true) {
-        if (activeBus == CAN::ActiveBus::Redundant) {
-            activeBus = CAN::ActiveBus::Main;
-            canGatekeeperTask->switchActiveBus(activeBus);
+        if (counter == 0) {
+            counter = 1;
             // CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
-            for (int i = 0; i < 3; i++) {
-                if (!CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false)) {
-                    LOG_DEBUG << "CAN: ACK received";
-                    break;
-                } else if (i == 2) {
-                    LOG_ERROR << "CAN: ACK not received";
-                }
-            }
+            CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
+
             LOG_DEBUG << "REDUNDANT CAN is sending";
         } else {
-            activeBus = CAN::ActiveBus::Redundant;
-            canGatekeeperTask->switchActiveBus(activeBus);
+            counter = 0;
             // CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
-            for (int i = 0; i < 3; i++) {
-                if (!CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false)) {
-                    LOG_DEBUG << "CAN: ACK received";
-                    break;
-                } else if (i == 2) {
-                    LOG_ERROR << "CAN: ACK not received";
-                }
-            }
+            CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
+
             LOG_DEBUG << "MAIN CAN is sending";
         }
         while (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue)) {

@@ -4,6 +4,8 @@
 #include "TPMessage.hpp"
 #include <cstdint>
 #include "FreeRTOS.h"
+
+#include <CANDriver.hpp>
 #include <semphr.h>
 
 /**
@@ -17,6 +19,7 @@ struct CANTransactionHandler {
 };
 extern CANTransactionHandler CAN_TRANSMIT_Handler;
 namespace CAN::TPProtocol {
+    inline CAN::ActiveBus activeBus = CAN::ActiveBus::Redundant;
     /**
      * Types of CAN-TP protocol frames.
      */
@@ -73,4 +76,6 @@ namespace CAN::TPProtocol {
      * The message.data[] part reaches the maximum index of 62 for the first frame, continues from 63 up to 125 etc.
      */
     bool createCANTPMessage(const TPMessage& message, bool isISR);
+    bool createCANTPMessageWithRetry(const TPMessage& message, bool isISR, uint32_t NoOfRetries);
+    bool createCANTPMessageNoRetransmit(const TPMessage& message, bool isISR);
 } // namespace CAN::TPProtocol
