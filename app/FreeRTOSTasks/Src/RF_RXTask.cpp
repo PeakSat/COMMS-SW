@@ -33,31 +33,16 @@ void RF_RXTask::execute() {
         transceiver.setup(error);
         xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
     }
-    //    xTaskNotify(rf_txtask->taskHandle, START_TX_TASK, eSetBits);
     uint16_t received_length;
     transceiver.set_state(AT86RF215::RF09, State::RF_TXPREP, error);
     vTaskDelay(pdMS_TO_TICKS(20));
     transceiver.set_state(AT86RF215::RF09, State::RF_RX, error);
     if (transceiver.get_state(RF09, error) == RF_RX)
-        LOG_DEBUG << "STATE = RX";
+        LOG_INFO << "STATE = RX";
     uint32_t receivedEvents = 0;
+    HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
+    LOG_DEBUG << "RX AMP ENABLED ";
     while (1) {
-        if (transceiver.get_state(RF09, error) == State::RF_RX)
-            LOG_INFO << "RX";
-        else {
-            LOG_ERROR << "STATE: " << transceiver.get_state(RF09, error);
-        }
-        if (transceiver.ReceiverFrameEnd_flag) {
-            transceiver.ReceiverFrameEnd_flag = false;
-            auto result = transceiver.get_received_length(RF09, error);
-            if (result.has_value()) {
-                received_length = result.value();
-                LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
-            } else {
-                Error err = result.error();
-                LOG_ERROR << "AT86RF215 ##ERROR## AT RX LENGTH RECEPTION WITH CODE: " << err;
-            }
-        }
         if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, 5000)) {
             if ((receivedEvents & RXFE) || (receivedEvents & AGC_HOLD)) {
                 LOG_DEBUG << "RECEIVE FRAME END || AGC HOLD";

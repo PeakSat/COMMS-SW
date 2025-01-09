@@ -116,7 +116,7 @@ namespace AT86RF215 {
                 .transmitterCutOffFrequency09 = TransmitterCutOffFrequency::RF_FLC100KHZ,
                 /// RF_n_PAC
                 .powerAmplifierCurrentControl09 = PowerAmplifierCurrentControl::PA_NO,
-                .txOutPower09 = 0x10};
+                .txOutPower09 = 0x1F};
         }
         void setTXDFE(TxRelativeCutoffFrequency cutoffFrequency09, Direct_Mod_Enable_FSKDM modulation09, TransmitterSampleRate sampleRate09) {
             txRelativeCutoffFrequency09 = cutoffFrequency09;
@@ -211,7 +211,7 @@ namespace AT86RF215 {
                 .csfd0_09 = CSFD0::CODED_IEEE_MODE,
                 /// BBCn_FSKPHRTX
                 .sfdUsed_09 = SFD_Used::sfd0_used,
-                .dataWhitening_09 = Data_Whitening::psdu_data_whitening_enabled,
+                .dataWhitening_09 = Data_Whitening::psdu_data_whitening_disabled,
                 /// BBCn_FSKDM
                 .fskPreamphasisEnable_09 = FSK_Preamphasis_Enable::preamphasis_disabled,
                 .directModEnableFskdm_09 = Direct_Mod_Enable_FSKDM::direct_mod_enabled,
@@ -302,7 +302,7 @@ namespace AT86RF215 {
             FrequencySynthesizer fs{
                 .frequency = 401000,
                 /// spacing = channelSpacing * 25kHz
-                .channelSpacing09 = 0x10,
+                .channelSpacing09 = 0x30,
                 .channelSpacing24 = 0xA,
                 .channelMode09 = PLLChannelMode::FineResolution450,
                 .channelMode24 = PLLChannelMode::FineResolution2443,
@@ -416,7 +416,7 @@ namespace AT86RF215 {
                 .frameBufferLevelIndication24 = false,
                 .agcRelease09 = true,
                 .agcRelease24 = false,
-                .agcHold09 = false,
+                .agcHold09 = true,
                 .agcHold24 = false,
                 .transmitterFrameEnd09 = true,
                 .transmitterFrameEnd24 = false,
