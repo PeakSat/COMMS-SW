@@ -16,6 +16,7 @@ namespace AT86RF215 {
 #define TRXRDY (1 << 8)
 #define TRXERR (1 << 9)
 #define WAKEUP (1 << 10)
+#define START_TX_TASK (1 << 11)
 
 
     enum class EnergyDetectionTimeBasis {

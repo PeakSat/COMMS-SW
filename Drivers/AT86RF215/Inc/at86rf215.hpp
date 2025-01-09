@@ -15,10 +15,14 @@ extern SPI_HandleTypeDef hspi4;
 
 namespace AT86RF215 {
 
-    struct transceiver_handler {
-        SemaphoreHandle_t transceiver_semaphore;
-        uint32_t getSemaphoreTimeout = 1000;
+    class TransceiverHandler {
+    public:
+        static SemaphoreHandle_t transceiver_semaphore;
+        static void initialize_semaphore() {
+            transceiver_semaphore = xSemaphoreCreateMutex();
+        }
     };
+
 
     enum Error {
         NO_ERRORS,

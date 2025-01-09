@@ -20,7 +20,6 @@
 #include "RF_TXTask.hpp"
 #include "RF_RXTask.hpp"
 #include "git_version.h"
-#include "at86rf215.hpp"
 
 
 void app_main(void) {
@@ -40,7 +39,7 @@ void app_main(void) {
     transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());
 
     uartGatekeeperTask.emplace();
-    //    rf_rxtask.emplace();
+    rf_rxtask.emplace();
     rf_txtask.emplace();
 
     //        eMMCTask.emplace();
@@ -52,7 +51,7 @@ void app_main(void) {
     //    tmp117Task.emplace();
     //    canTestTask.emplace();
     uartGatekeeperTask->createTask();
-    //    rf_rxtask->createTask();
+    rf_rxtask->createTask();
     rf_txtask->createTask();
     // Ensure task handle is valid
 
@@ -66,6 +65,7 @@ void app_main(void) {
 
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
+    TransceiverHandler::initialize_semaphore();
     /* Start the scheduler. */
 
     vTaskStartScheduler();

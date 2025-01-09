@@ -15,15 +15,15 @@ public:
     RF_RXTask() : Task("RF RX TASK") {}
     void execute();
     void createTask() {
-        taskHandle = xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,
-                                       RF_RXTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
-                                       this->taskStack, &(this->taskBuffer));
+        this->taskHandle = xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,
+                                             RF_RXTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             this->taskStack, &(this->taskBuffer));
     }
 
 private:
     constexpr static uint16_t TaskStackDepth = 4000;
     /// Frequency in kHz
-    constexpr static uint32_t FrequencyUHFRX = 401500;
+    constexpr static uint32_t FrequencyUHFRX = 401000;
     AT86RF215::Error error;
     StackType_t taskStack[TaskStackDepth];
 };

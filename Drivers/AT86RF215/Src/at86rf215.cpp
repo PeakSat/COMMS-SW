@@ -1,12 +1,14 @@
-#include "main.h"
+
 #include "at86rf215.hpp"
 /// This is for notifying the rx task from the handle IRQ function
 #include "RF_RXTask.hpp"
 #include "RF_TXTask.hpp"
 
+
 namespace AT86RF215 {
 
     AT86RF215::At86rf215 transceiver = At86rf215(&hspi4);
+    SemaphoreHandle_t TransceiverHandler::transceiver_semaphore;
 
     void At86rf215::spi_write_8(uint16_t address, uint8_t value, Error& err) {
         uint8_t msg[3] = {static_cast<uint8_t>(0x80 | ((address >> 8) & 0x7F)), static_cast<uint8_t>(address & 0xFF), value};
