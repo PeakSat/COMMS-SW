@@ -202,9 +202,9 @@ public:
     GNSSTask() : Task("GNSS Logging Task") {}
 
     void createTask() {
-        taskHandle = xTaskCreateStatic(vClassTask<GNSSTask>, this->TaskName,
-                                       GNSSTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
-                                       this->taskStack, &(this->taskBuffer));
+        this->taskHandle = xTaskCreateStatic(vClassTask<GNSSTask>, this->TaskName,
+                                             GNSSTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             this->taskStack, &(this->taskBuffer));
         initQueuesToAcceptPointers();
     }
 

@@ -11,6 +11,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
 
@@ -54,13 +55,17 @@ add_subdirectory(Drivers/GNSS)
 add_subdirectory(Lib/FreeRTOS)
 # Add the CAN drivers
 add_subdirectory(Drivers/CAN)
-
 #
 add_subdirectory(Lib/etl-20.38.17)
 #
 add_subdirectory(Lib/logger-main-c6abda2e)
-
+#
 add_subdirectory(app/)
+#
+
+include(CheckGit.cmake)
+CheckGitSetup()
+message(STATUS "COMMS Software version: commit $GIT_HASH")
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         # Add user sources here
@@ -75,6 +80,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         stm32cubemx
         app_main
         # Add user defined libraries
+        git_version
 )
 
 

@@ -1,0 +1,104 @@
+name: Update Task Progress
+
+on:
+  issues:
+    types: [edited]
+
+jobs:
+  update-progress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Debug environment
+        run: |
+          echo "Checking GH_TOKEN environment variable..."
+          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+            echo "Error: GH_TOKEN is not set."
+            exit 1
+          else
+            echo "GH_TOKEN is set correctly."
+          fi
+
+      - name: Calculate task progress
+        id: calculate-progress
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Extract the issue body
+          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
+          echo "Issue Body: $ISSUE_BODY"
+
+          # Count tasks using stricter regex
+          TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oP '^\s*-\s*\[\s*[x ]\s*\]' | wc -l)
+          COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oP '^\s*-\s*\[\s*x\s*\]' | wc -l)
+
+          # Debug logs
+          echo "Total tasks: $TOTAL_TASKS"
+          echo "Completed tasks: $COMPLETED_TASKS"
+
+          # Handle no tasks
+          if [ "$TOTAL_TASKS" -eq 0 ]; then
+            echo "No tasks found."
+            echo "progress=0" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          # Calculate progress
+          PROGRESS=$(( COMPLETED_TASKS * 100 / TOTAL_TASKS ))
+          echo "Progress: $PROGRESS%"
+          echo "progress=$PROGRESS" >> $GITHUB_ENV
+
+      - name: Update the issue labels with progress
+        if: env.progress != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Use calculated progress
+          PROGRESS="${{ env.progress }}"
+
+          # Fetch current labels as an array of names
+          CURRENT_LABELS=$(gh api repos/${{github.repository}}/issues/${{github.event.issue.number}} --jq '[.labels[].name]')
+          echo "Current Labels: $CURRENT_LABELS"
+
+          # Identify old progress labels
+          OLD_PROGRESS_LABELS=$(echo "$CURRENT_LABELS" | jq -r '.[] | select(test("^Progress: [0-9]+%$"))')
+          echo "Old Progress Labels: $OLD_PROGRESS_LABELS"
+
+          # Define new progress label
+          ADD_LABEL="Progress: $PROGRESS%"
+
+          # Check if the label already exists in the repository
+          LABEL_EXISTS=$(gh api repos/${{github.repository}}/labels --jq ".[] | select(.name == \"$ADD_LABEL\")")
+          if [ -z "$LABEL_EXISTS" ]; then
+            echo "Label does not exist. Creating it..."
+            gh api repos/${{github.repository}}/labels --method POST --field name="$ADD_LABEL" --field color="7057ff"
+          else
+            echo "Label already exists."
+          fi
+
+          # Prepare remove labels command
+          REMOVE_LABELS_STR=""
+          if [ -n "$OLD_PROGRESS_LABELS" ]; then
+            while IFS= read -r label; do
+              REMOVE_LABELS_STR+="--remove-label \"$label\" "
+            done <<< "$OLD_PROGRESS_LABELS"
+          fi
+
+          # Debugging commands
+          echo "Remove Labels Command: $REMOVE_LABELS_STR"
+          echo "Add Label Command: $ADD_LABEL"
+
+          # Update issue labels
+          if [ -n "$REMOVE_LABELS_STR" ]; then
+            # If there are labels to remove
+            eval gh issue edit ${{github.event.issue.number}} \
+              $REMOVE_LABELS_STR \
+              --add-label "\"$ADD_LABEL\""
+          else
+            # If there are no labels to remove, skip --remove-label
+            gh issue edit ${{github.event.issue.number}} \
+              --add-label "\"$ADD_LABEL\""
+          fi
