@@ -1423,8 +1423,8 @@ namespace AT86RF215 {
         irq = spi_read_8(RegisterAddress::BBC0_IRQS, err);
         if ((irq & InterruptMask::FrameBufferLevelIndication) != 0) {
             // Frame Buffer Level Indication handling
-            //            xTaskNotifyFromISR(rf_txtask->taskHandle, FBLI, eSetBits, &xHigherPriorityTaskWoken);
-            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            xTaskNotifyFromISR(rf_txtask->taskHandle, FBLI, eSetBits, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             FrameBufferLevelIndication_flag = true;
         }
         if ((irq & InterruptMask::AGCRelease) != 0) {
@@ -1439,8 +1439,8 @@ namespace AT86RF215 {
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
-            //            xTaskNotifyFromISR(rf_txtask->taskHandle, TXFE, eSetBits, &xHigherPriorityTaskWoken);
-            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            xTaskNotifyFromISR(rf_txtask->taskHandle, TXFE, eSetBits, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
             // Receiver Extended Match handling

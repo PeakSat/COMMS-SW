@@ -19,7 +19,6 @@ void RF_TXTask::execute() {
         // In case the notification was not received, you can log or handle it
         LOG_ERROR << "RF RX Task notification error.";
     }
-    LOG_INFO << "Starting RF TX Task"; // Handle the event
     /// Check transceiver connection
     if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
         auto status = transceiver.check_transceiver_connection(error);
