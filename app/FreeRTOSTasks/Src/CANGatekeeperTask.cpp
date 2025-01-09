@@ -124,7 +124,7 @@ void CANGatekeeperTask::execute() {
                 __NOP();
 
             } else if (frameType == CAN::TPProtocol::Frame::Final) {
-                if ((CANPacketHandler->PacketSize - CANPacketHandler->TailPointer) < (CAN::MaxPayloadLength - 2) && CANPacketHandler->PacketSize != 0) {
+                if ((CANPacketHandler->PacketSize - CANPacketHandler->TailPointer) <= (CAN::MaxPayloadLength - 2) && CANPacketHandler->PacketSize != 0) {
                     for (uint32_t i = 0; (CANPacketHandler->PacketSize > CANPacketHandler->TailPointer); i++) {
                         if (sizeof(CANPacketHandler->Buffer) / sizeof(CANPacketHandler->Buffer[0]) > CANPacketHandler->TailPointer) {
                             CANPacketHandler->Buffer[CANPacketHandler->TailPointer] = in_frame_handler.pointerToData[i + 2];
@@ -140,7 +140,7 @@ void CANGatekeeperTask::execute() {
 
                     ACKmessage.appendUint8(CAN::Application::MessageIDs::ACK);
 
-                    CAN::TPProtocol::createCANTPMessage(ACKmessage, false);
+                    CAN::TPProtocol::createCANTPMessageNoRetransmit(ACKmessage, false);
                     xTaskNotifyGive(canGatekeeperTask->taskHandle);
 
                     // Parse message
