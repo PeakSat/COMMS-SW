@@ -160,20 +160,24 @@ extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t 
             } else if (newFrame.bus->Instance == FDCAN2) {
                 __NOP();
             }
-        }
-        if (xQueueIsQueueFullFromISR(canGatekeeperTask->incomingFrameQueue)) {
-            // Queue is full. Handle the error
-            // todo
-            __NOP();
+        } else if (newFrame.header.Identifier == 0x380) {
+            if (xQueueIsQueueFullFromISR(canGatekeeperTask->incomingFrameQueue)) {
+                // Queue is full. Handle the error
+                // todo
+                __NOP();
+            } else {
+                // Send the data to the gatekeeper
+                incomingFIFO.lastItemPointer++;
+                BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+                xQueueSendToBackFromISR(canGatekeeperTask->incomingFrameQueue, &newFrame, NULL);
+                xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+                portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+                __NOP();
+            }
         } else {
-            // Send the data to the gatekeeper
-            incomingFIFO.lastItemPointer++;
-            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            xQueueSendToBackFromISR(canGatekeeperTask->incomingFrameQueue, &newFrame, NULL);
-            xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             __NOP();
         }
+
 
         // Re-activate the callback
         if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
