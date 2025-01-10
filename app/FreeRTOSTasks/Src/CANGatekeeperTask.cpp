@@ -175,7 +175,7 @@ void CANGatekeeperTask::execute() {
                         xQueueSendToBack(storedPacketQueue, &PacketToBeStored, NULL);
                     } else {
                         // Message not received correctly
-                        LOG_DEBUG << "DROPPED CAN MESSAGE";
+                        LOG_ERROR << "DROPPED CAN MESSAGE";
                     }
                     __NOP();
                     CANPacketHandler->TailPointer = 0;
