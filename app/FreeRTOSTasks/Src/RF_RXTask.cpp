@@ -44,8 +44,7 @@ void RF_RXTask::execute() {
     LOG_DEBUG << "RX AMP ENABLED ";
     while (1) {
         if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, 5000)) {
-            if ((receivedEvents & RXFE) || (receivedEvents & AGC_HOLD)) {
-                LOG_DEBUG << "RECEIVE FRAME END || AGC HOLD";
+            if (receivedEvents & RXFE) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     if (result.has_value()) {
@@ -59,6 +58,9 @@ void RF_RXTask::execute() {
                     transceiver.set_state(AT86RF215::RF09, State::RF_RX, error);
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
                 }
+            }
+            if (receivedEvents & AGC_HOLD && (receivedEvents)) {
+                LOG_INFO << "RSSI [AGC HOLD]: " << transceiver.get_rssi(RF09, error);
             }
         }
     }

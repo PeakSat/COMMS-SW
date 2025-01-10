@@ -454,7 +454,10 @@ namespace AT86RF215 {
          * @param err				Pointer to raised error
          */
         uint8_t get_ed_average_detection(Transceiver transceiver, Error& err);
-        int8_t get_receiver_energy_detection(Transceiver transceiver, Error& err);
+        /*
+         * Read RSSI reg
+         */
+        int8_t get_rssi(Transceiver transceiver, Error& err);
 
         /*
          * Get transceiver battery monitor status

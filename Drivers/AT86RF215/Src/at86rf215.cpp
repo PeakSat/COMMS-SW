@@ -578,8 +578,8 @@ namespace AT86RF215 {
         return df * dtb;
     }
 
-    int8_t At86rf215::get_receiver_energy_detection(Transceiver transceiver,
-                                                    Error& err) {
+    int8_t At86rf215::get_rssi(Transceiver transceiver,
+                               Error& err) {
         RegisterAddress regrssi;
 
         if (transceiver == RF09) {
@@ -1459,6 +1459,8 @@ namespace AT86RF215 {
             }
         }
         if ((irq & InterruptMask::ReceiverFrameStart) != 0) {
+            xTaskNotifyFromISR(rf_rxtask->taskHandle, RXFS, eSetBits, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             ReceiverFrameStart_flag = true;
             rx_ongoing = true;
         }

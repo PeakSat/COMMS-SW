@@ -199,12 +199,12 @@ namespace AT86RF215 {
                 .mode_switch_en_09 = Mode_Switch_Enable::disabled,
                 .preamble_inversion_09 = Preamble_Inversion::no_inversion,
                 .fec_scheme_09 = FEC_Scheme::NRNSC,
-                .interleaving_enable_09 = Interleaving_Enable::disabled,
+                .interleaving_enable_09 = Interleaving_Enable::enabled,
                 /// BBCn_FSKC3
                 .sfdt_09 = SFD_Detection_Threshold::default_sfd_IEEE,
                 .prdt_09 = Preamble_Detection_Threshold::default_value,
                 /// BBCn_FSC4
-                .sfdQuantization_09 = SFD_Quantization::SOFT_DECISION,
+                .sfdQuantization_09 = SFD_Quantization::HARD_DECISION,
                 .sfd32_09 = SFD_32::TWO_16BIT_SFD,
                 .rawModeReversalBit_09 = Raw_Mode_Reversal_Bit::MSB_FIRST,
                 .csfd1_09 = CSFD1::CODED_IEEE_MODE,

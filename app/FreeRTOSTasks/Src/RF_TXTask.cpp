@@ -54,7 +54,7 @@ void RF_TXTask::execute() {
             if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(5000))) {
                 if (receivedEvents & TXFE) {
                     /// Give the mutex
-                    LOG_DEBUG << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;
+                    LOG_INFO << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;
                 }
                 /// Handle TRXRDY flag
                 if (receivedEvents & TRXRDY)
