@@ -16,7 +16,7 @@ void CANTestTask::execute() {
     }
     String<ECSSMaxMessageSize> testPayload1("ccccccccccccccccccccccccccccccccc");
 
-    String<ECSSMaxMessageSize> testPayload2("ddddddddddddddddddddddddddddddddddd");
+    String<ECSSMaxMessageSize> testPayload2("d");
 
     CAN::ActiveBus activeBus = CAN::ActiveBus::Redundant;
     int counter = 0;

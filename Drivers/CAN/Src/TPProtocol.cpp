@@ -2,9 +2,9 @@
 #include "TPProtocol.hpp"
 #include "CANGatekeeperTask.hpp"
 #include "Peripheral_Definitions.hpp"
-
 #include <ApplicationLayer.hpp>
-
+extern FDCAN_HandleTypeDef hfdcan1;
+extern FDCAN_HandleTypeDef hfdcan2;
 using namespace CAN;
 
 CANTransactionHandler CAN_TRANSMIT_Handler;
@@ -126,7 +126,25 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
             return 0;
         } else {
             //Packet transmit fialure
-            LOG_ERROR << "Packet transmit fialure";
+            uint32_t can1error = HAL_FDCAN_GetError(&hfdcan1);
+            uint32_t can2error = HAL_FDCAN_GetError(&hfdcan2);
+
+            FDCAN_ErrorCountersTypeDef CAN1errorCounter;
+            HAL_FDCAN_GetErrorCounters(&hfdcan1, &CAN1errorCounter);
+            FDCAN_ErrorCountersTypeDef CAN2errorCounter;
+            HAL_FDCAN_GetErrorCounters(&hfdcan2, &CAN2errorCounter);
+
+            FDCAN_ProtocolStatusTypeDef CAN1ProtocolStatus;
+            HAL_FDCAN_GetProtocolStatus(&hfdcan1, &CAN1ProtocolStatus);
+            FDCAN_ProtocolStatusTypeDef CAN2ProtocolStatus;
+            HAL_FDCAN_GetProtocolStatus(&hfdcan2, &CAN2ProtocolStatus);
+
+            LOG_ERROR << "Packet transmit fialure. CAN1 error:" << can1error << " CAN2 error:" << can2error;
+            LOG_ERROR << "CAN1 Error counter rx:" << CAN1errorCounter.RxErrorCnt << "Error counter tx:" << CAN1errorCounter.TxErrorCnt;
+            LOG_ERROR << "CAN1 Last error" << CAN1ProtocolStatus.LastErrorCode;
+
+            LOG_ERROR << "CAN2 Error counter rx:" << CAN2errorCounter.RxErrorCnt << "Error counter tx:" << CAN2errorCounter.TxErrorCnt;
+            LOG_ERROR << "CAN2 Last error" << CAN2ProtocolStatus.LastErrorCode;
             return 1;
         }
     }
