@@ -204,11 +204,12 @@ namespace AT86RF215 {
                 .sfdt_09 = SFD_Detection_Threshold::default_sfd_IEEE,
                 .prdt_09 = Preamble_Detection_Threshold::default_value,
                 /// BBCn_FSC4
-                .sfdQuantization_09 = SFD_Quantization::SOFT_DECISION,
+                .sfdQuantization_09 = SFD_Quantization::HARD_DECISION,
                 .sfd32_09 = SFD_32::TWO_16BIT_SFD,
                 .rawModeReversalBit_09 = Raw_Mode_Reversal_Bit::MSB_FIRST,
-                .csfd1_09 = CSFD1::CODED_IEEE_MODE,
-                .csfd0_09 = CSFD0::CODED_IEEE_MODE,
+                // FEC enabled: CODED IEEE MODE
+                .csfd1_09 = CSFD1::UNCODED_IEEE_MODE,
+                .csfd0_09 = CSFD0::UNCODED_IEEE_MODE,
                 /// BBCn_FSKPHRTX
                 .sfdUsed_09 = SFD_Used::sfd0_used,
                 .dataWhitening_09 = Data_Whitening::psdu_data_whitening_disabled,
@@ -352,7 +353,7 @@ namespace AT86RF215 {
         static ExternalFrontEndConfig DefaultExternalFrontEndConfig() {
             return {
                 .externalLNABypass09 = ExternalLNABypass::FALSE,
-                .automaticGainControlMAP09 = AutomaticGainControlMAP::INTERNAL_AGC,
+                .automaticGainControlMAP09 = AutomaticGainControlMAP::AGC_BACKOFF_12,
                 .analogVoltageEnable09 = AnalogVoltageEnable::ENABLED,
                 .automaticVoltageExternal09 = AutomaticVoltageExternal::DISABLED,
                 .powerAmplifierVoltageControl09 = PowerAmplifierVoltageControl::PAVC_2V4,

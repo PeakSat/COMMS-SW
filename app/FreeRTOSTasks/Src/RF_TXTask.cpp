@@ -1,19 +1,20 @@
 #include "RF_TXTask.hpp"
 #include "Logger.hpp"
 
-PacketData RF_TXTask::createRandomPacketData(uint8_t length) {
+PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
     PacketData data{};
-    for (uint8_t i = 0; i < length; i++)
-        data.packet[i] = i;
+    data.packet[0] = 0;
+    for (int i = 1; i < length; i++)
+        data.packet[i] = i % 100;
     data.length = length;
     return data;
 }
 
 void RF_TXTask::execute() {
     uint32_t receivedEvents = 0;
-    if (xTaskNotifyWait(START_TX_TASK, START_TX_TASK, &receivedEvents, portMAX_DELAY) == pdTRUE) {
+    if (xTaskNotifyWait(START_TX_TASK, START_TX_TASK, &receivedEvents, 10000) == pdTRUE) {
         if (receivedEvents & START_TX_TASK) {
-            LOG_INFO << "Starting RF TX Task NOMINALLY"; // Handle the event
+            LOG_INFO << "Starting RF TX Task"; // Handle the event
         }
     } else {
         // In case the notification was not received, you can log or handle it
@@ -42,25 +43,36 @@ void RF_TXTask::execute() {
         LOG_DEBUG << "TX AMP DISABLED";
     else
         LOG_DEBUG << "TX AMP ENABLED";
-
+    int i = 1;
+    uint8_t counter = 0;
+    PacketData packetTestData = createRandomPacketData(MaxPacketLength);
     while (1) {
-        vTaskDelay(1000);
-        /// Read the state
+        /// without delay there is an issue on the receiver. The TX stops the transmission after a while and the receives loses packets.
+        /// But why there is also the delay of the TXFE interrupt which is around [1 / (50000 / (packetLenghtInbits)) s]. It should work just fine...
+        /// Maybe there is an error either on the tx side or the rx side which is not printed.
+        /// Typically 200ms delay works.
+        /// We had the same issue on the campaign.
+        vTaskDelay(200);
         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-            PacketData packetTestData = createRandomPacketData(MaxPacketLength);
-            /// Writes to the TX buffer
-            transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-            if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(5000))) {
+            if (i) {
+                transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                i = 0;
+            }
+            if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(1000))) {
                 if (receivedEvents & TXFE) {
                     /// Give the mutex
-                    LOG_DEBUG << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;
+                    // LOG_DEBUG << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;
+                    counter += 1;
+                    packetTestData.packet[0] = counter;
+                    transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                    LOG_DEBUG << xTaskGetTickCount();
                 }
                 /// Handle TRXRDY flag
                 if (receivedEvents & TRXRDY)
-                    LOG_DEBUG << "TRANSCEIVER IS READY.";
-                /// Handle TRXRDY flag
-                if (receivedEvents & TRXERR)
-                    LOG_ERROR << "PLL UNLOCKED.";
+                    // LOG_DEBUG << "TRANSCEIVER IS READY.";
+                    /// Handle TRXRDY flag
+                    if (receivedEvents & TRXERR)
+                        LOG_ERROR << "PLL UNLOCKED.";
                 /// Handle IFSERR flag
                 if (receivedEvents & IFSERR)
                     LOG_ERROR << "SYNCHRONIZATION ERROR.";
