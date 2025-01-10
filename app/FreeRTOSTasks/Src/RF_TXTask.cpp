@@ -47,37 +47,35 @@ void RF_TXTask::execute() {
     uint8_t counter = 0;
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
     while (1) {
-        /// without delay there is an issue on the receiver. The TX stops the transmission after a while and the receives loses packets.
-        /// But why there is also the delay of the TXFE interrupt which is around [1 / (50000 / (packetLenghtInbits)) s]. It should work just fine...
-        /// Maybe there is an error either on the tx side or the rx side which is not printed.
+        /// without delay there is an issue on the receiver. The TX stops the transmission after a while and the receiver loses packets.
+        /// But why ? There is also the delay of the TXFE interrupt which is around [1 / (50000 / (packetLenghtInbits)) s]. It should work just fine...
+        /// Maybe there is an error either on the tx side or the rx side, which is not printed.
         /// Typically 200ms delay works.
         /// We had the same issue on the campaign.
-        vTaskDelay(200);
+        vTaskDelay(10000);
         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
             if (i) {
                 transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
                 i = 0;
             }
-            if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(1000))) {
-                if (receivedEvents & TXFE) {
-                    /// Give the mutex
-                    // LOG_DEBUG << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;
-                    counter += 1;
-                    packetTestData.packet[0] = counter;
-                    transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                    LOG_DEBUG << xTaskGetTickCount();
-                }
-                /// Handle TRXRDY flag
-                if (receivedEvents & TRXRDY)
-                    // LOG_DEBUG << "TRANSCEIVER IS READY.";
-                    /// Handle TRXRDY flag
-                    if (receivedEvents & TRXERR)
-                        LOG_ERROR << "PLL UNLOCKED.";
-                /// Handle IFSERR flag
-                if (receivedEvents & IFSERR)
-                    LOG_ERROR << "SYNCHRONIZATION ERROR.";
+            if (xTaskNotifyWait(0xFFFFFFFF, TXFE, &receivedEvents, pdMS_TO_TICKS(1000))) {
+                if (counter == 255)
+                    counter = 0;
+                counter += 1;
+                packetTestData.packet[0] = counter;
+                transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                LOG_INFO << "packet sent: " << counter;
             }
-            xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+            /// Handle TRXRDY flag
+            if (receivedEvents & TRXRDY)
+                /// Handle TRXRDY flag
+                if (receivedEvents & TRXERR)
+                    LOG_ERROR << "PLL UNLOCKED.";
+            /// Handle IFSERR flag
+            if (receivedEvents & IFSERR)
+                LOG_ERROR << "SYNCHRONIZATION ERROR.";
+            receivedEvents = 0;
         }
+        xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
     }
 }

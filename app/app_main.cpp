@@ -41,12 +41,12 @@ void app_main(void) {
     uartGatekeeperTask.emplace();
     rf_rxtask.emplace();
     rf_txtask.emplace();
-    //    eMMCTask.emplace();
-    //    gnssTask.emplace();
-
-
-    //    ina3221Task.emplace();
-    //    canGatekeeperTask.emplace();
+    eMMCTask.emplace();
+    //        gnssTask.emplace();
+    //
+    //
+    ina3221Task.emplace();
+    canGatekeeperTask.emplace();
     tmp117Task.emplace();
     //    canTestTask.emplace();
     uartGatekeeperTask->createTask();
@@ -55,9 +55,9 @@ void app_main(void) {
     // Ensure task handle is valid
 
 
-    //    eMMCTask->createTask();
-    //    gnssTask->createTask();
-    //    ina3221Task->createTask();
+    eMMCTask->createTask();
+    //        gnssTask->createTask();
+    ina3221Task->createTask();
     //    canGatekeeperTask->createTask();
     tmp117Task->createTask();
     //    canTestTask->createTask();
