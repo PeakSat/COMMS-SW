@@ -199,7 +199,7 @@ namespace AT86RF215 {
                 .mode_switch_en_09 = Mode_Switch_Enable::disabled,
                 .preamble_inversion_09 = Preamble_Inversion::no_inversion,
                 .fec_scheme_09 = FEC_Scheme::NRNSC,
-                .interleaving_enable_09 = Interleaving_Enable::enabled,
+                .interleaving_enable_09 = Interleaving_Enable::disabled,
                 /// BBCn_FSKC3
                 .sfdt_09 = SFD_Detection_Threshold::default_sfd_IEEE,
                 .prdt_09 = Preamble_Detection_Threshold::default_value,
