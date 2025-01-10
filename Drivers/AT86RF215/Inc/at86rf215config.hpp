@@ -207,8 +207,9 @@ namespace AT86RF215 {
                 .sfdQuantization_09 = SFD_Quantization::HARD_DECISION,
                 .sfd32_09 = SFD_32::TWO_16BIT_SFD,
                 .rawModeReversalBit_09 = Raw_Mode_Reversal_Bit::MSB_FIRST,
-                .csfd1_09 = CSFD1::CODED_IEEE_MODE,
-                .csfd0_09 = CSFD0::CODED_IEEE_MODE,
+                // FEC enabled: CODED IEEE MODE
+                .csfd1_09 = CSFD1::UNCODED_IEEE_MODE,
+                .csfd0_09 = CSFD0::UNCODED_IEEE_MODE,
                 /// BBCn_FSKPHRTX
                 .sfdUsed_09 = SFD_Used::sfd0_used,
                 .dataWhitening_09 = Data_Whitening::psdu_data_whitening_disabled,

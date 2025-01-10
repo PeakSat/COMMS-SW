@@ -50,6 +50,7 @@ void RF_RXTask::execute() {
                     if (result.has_value()) {
                         received_length = result.value();
                         LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
+                        LOG_INFO << "Counter packet: " << transceiver.spi_read_8((AT86RF215::BBC0_FBRXS), error);
                     } else {
                         Error err = result.error();
                         LOG_ERROR << "AT86RF215 ##ERROR## AT RX LENGTH RECEPTION WITH CODE: " << err;
