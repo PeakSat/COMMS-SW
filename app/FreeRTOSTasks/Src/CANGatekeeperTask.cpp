@@ -128,7 +128,10 @@ void CANGatekeeperTask::execute() {
                 } else if (frameType == CAN::TPProtocol::Frame::Final) {
                     if ((CANPacketHandler->PacketSize - CANPacketHandler->TailPointer) <= (CAN::MaxPayloadLength - 2) && CANPacketHandler->PacketSize != 0) {
                         for (uint32_t i = 0; (CANPacketHandler->PacketSize > CANPacketHandler->TailPointer); i++) {
-                            if (sizeof(CANPacketHandler->Buffer) / sizeof(CANPacketHandler->Buffer[0]) > CANPacketHandler->TailPointer) {
+                            uint8_t FrameNumber = in_frame_handler.pointerToData[1] - 1;
+                            if (i + FrameNumber == 0) {
+                                CANPacketHandler->PacketID = in_frame_handler.pointerToData[2];
+                            } else if (sizeof(CANPacketHandler->Buffer) / sizeof(CANPacketHandler->Buffer[0]) > CANPacketHandler->TailPointer) {
                                 CANPacketHandler->Buffer[CANPacketHandler->TailPointer] = in_frame_handler.pointerToData[i + 2];
                                 CANPacketHandler->TailPointer = CANPacketHandler->TailPointer + 1;
                             } else {
