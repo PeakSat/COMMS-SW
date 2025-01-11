@@ -25,10 +25,10 @@ jobs:
       - name: Calculate task progress
         id: calculate-progress
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{secrets.GH_TOKEN }}
         run: |
           # Extract the issue body
-          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
+          ISSUE_BODY=$(gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} --jq '.body')
           echo "Issue Body: $ISSUE_BODY"
 
           # Count tasks using stricter regex
@@ -70,13 +70,13 @@ jobs:
           # Define new progress label
           ADD_LABEL="Progress: $PROGRESS%"
 
-          # Check if the label already exists in the repository
-          LABEL_EXISTS=$(gh api repos/${{github.repository}}/labels --jq ".[] | select(.name == \"$ADD_LABEL\")")
-          if [ -z "$LABEL_EXISTS" ]; then
-            echo "Label does not exist. Creating it..."
-            gh api repos/${{github.repository}}/labels --method POST --field name="$ADD_LABEL" --field color="7057ff"
+          # Check if the exact label already exists in the repository
+          LABEL_EXISTS=$(gh api repos/${{github.repository}}/labels --jq ".[] | select(.name == \"$ADD_LABEL\") | .name")
+          if [ "$LABEL_EXISTS" == "$ADD_LABEL" ]; then
+            echo "Label '$ADD_LABEL' already exists in the repository."
           else
-            echo "Label already exists."
+            echo "Label '$ADD_LABEL' does not exist. Creating it..."
+            gh api repos/${{github.repository}}/labels --method POST --field name="$ADD_LABEL" --field color="7057ff" || true
           fi
 
           # Prepare remove labels command
