@@ -22,16 +22,9 @@ CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
                                        &outgoingQueueBuffer);
     vQueueAddToRegistry(outgoingQueue, "CAN Outgoing");
 
-    // incomingSFQueue = xQueueCreateStatic(PacketQueueSize, sizeof(CAN::Packet), incomingSFQueueStorageArea,
-    //                                      &incomingSFQueueBuffer);
-    // vQueueAddToRegistry(incomingSFQueue, "CAN Incoming SF");
-    //
-    // incomingMFQueue = xQueueCreateStatic(PacketQueueSize, sizeof(CAN::Packet), incomingMFQueueStorageArea,
-    //                                      &incomingMFQueueBuffer);
-    // vQueueAddToRegistry(incomingSFQueue, "CAN Incoming MF");
-    // incomingFrameQueue = xQueueCreateStatic(sizeOfIncommingFrameBuffer, sizeof(CAN::Frame), incomingFrameQueueStorageArea,
-    //                                         &incomingFrameQueueBuffer);
-    // vQueueAddToRegistry(incomingFrameQueue, "CAN Incoming Frame");
+    incomingFrameQueue = xQueueCreateStatic(sizeOfIncommingFrameBuffer, sizeof(CAN::Frame), incomingFrameQueueStorageArea,
+                                            &incomingFrameQueueBuffer);
+    vQueueAddToRegistry(incomingFrameQueue, "CAN Incoming Frame");
 
     storedPacketQueue = xQueueCreateStatic(128, sizeof(CAN::StoredPacket), storedPacketQueueStorageArea,
                                            &storedPacketQueueBuffer);
