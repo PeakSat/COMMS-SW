@@ -63,7 +63,7 @@ void TPProtocol::parseMessage(TPMessage& message) {
             String<ECSSMaxMessageSize> logSource = "Incoming Log from ";
             logSource.append(senderName);
             logSource.append(": ");
-            auto logData = String<ECSSMaxMessageSize>(message.data + 1, message.dataSize - 1);
+            auto logData = String<ECSSMaxMessageSize>(message.data.data() + 1, message.dataSize - 1);
             LOG_DEBUG << logSource.c_str() << logData.c_str();
         } break;
         default:

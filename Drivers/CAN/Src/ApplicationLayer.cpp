@@ -167,7 +167,7 @@ namespace CAN::Application {
     //
     //     CAN::TPProtocol::createCANTPMessage(message, isISR);
     // }
-    //
+
     void createPacketMessage(NodeIDs destinationAddress, bool isMulticast, const etl::string<128>& incomingMessage, Message::PacketType packetType, bool isISR) {
         TPMessage message = {{CAN::NodeID, destinationAddress, isMulticast}};
 
