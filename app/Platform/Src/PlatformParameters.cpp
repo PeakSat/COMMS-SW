@@ -8,7 +8,7 @@
 void ParameterService::initializeParameterMap() {
     parameters = {
           {COMMSParameters::COMMSUHFBandPATemperature, COMMSParameters::commsUHFBandPATemperature},
-          {COMMSParameters::COMMSSBandPATemperature, COMMSParameters::commsSBandPATemperature},
+          {COMMSParameters::COMMSGNSSTemperature, COMMSParameters::commsGNSSTemperature},
           {COMMSParameters::COMMSPCBTemperature, COMMSParameters::commsPCBTemperature},
           {COMMSParameters::COMMSAntennaDeploymentStatus, COMMSParameters::commsAntennaDeploymentStatus},
           {COMMSParameters::COMMSDataRateUHFTX, COMMSParameters::commsDataRateUHFTX},

@@ -9,7 +9,7 @@ namespace COMMSParameters {
     enum ParameterID : uint16_t {
         // TODO: Update accordingly, once Parameter Database is updated
         COMMSUHFBandPATemperature = 2000,
-        COMMSSBandPATemperature = 2001,
+        COMMSGNSSTemperature = 2001,
         COMMSPCBTemperature = 2002,
         COMMSAntennaDeploymentStatus = 2003,
         COMMSDataRateUHFTX = 2004,
@@ -74,7 +74,7 @@ namespace COMMSParameters {
     };
 
     inline Parameter<float> commsUHFBandPATemperature(0);
-    inline Parameter<float> commsSBandPATemperature(0);
+    inline Parameter<float> commsGNSSTemperature(0);
     inline Parameter<float> commsPCBTemperature(0);
 
     inline Parameter<AntennaDeploymentStatus> commsAntennaDeploymentStatus(Closed); // enum
