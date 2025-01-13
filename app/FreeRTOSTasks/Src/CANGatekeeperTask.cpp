@@ -187,6 +187,5 @@ void CANGatekeeperTask::execute() {
             xQueueReceive(outgoingQueue, &out_message, portMAX_DELAY);
             CAN::send(out_message, ActiveBus);
         }
-        // LOG_DEBUG << "{END OF" << this->TaskName << "}";
     }
 }
