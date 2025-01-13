@@ -100,7 +100,7 @@ void GNSSTask::parser(uint8_t* buf, GNSSData& compact) {
     GNSSMessageString.assign(buf, buf + GNSSPayloadSize);
     minmea_sentence_rmc frame_rmc{};
     minmea_sentence_gga frame_gga{};
-    // LOG_INFO << GNSSMessageString.c_str();
+    LOG_INFO << GNSSMessageString.c_str();
     char* line = strtok(&GNSSMessageString[0], "\n"); // Tokenize the string by newline characters
 
     while (line != nullptr) {
