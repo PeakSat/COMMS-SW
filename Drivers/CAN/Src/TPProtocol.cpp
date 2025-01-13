@@ -170,8 +170,8 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         for (uint8_t idx = 0; idx < UsableDataLength; idx++) {
             consecutiveFrame.at(idx + 2) = message.data[idx + UsableDataLength * (currentConsecutiveFrameCount - 1)];
         }
-
-        if (currentConsecutiveFrameCount % 4 == 3) { // Make sure the output buffers do not overflow
+	// Make sure the output buffers do not overflow // Added a small delay every 4 frames
+        if (currentConsecutiveFrameCount % 4 == 3) { 
             vTaskDelay(1);
         }
 
