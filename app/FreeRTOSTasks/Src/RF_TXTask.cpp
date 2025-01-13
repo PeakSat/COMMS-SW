@@ -52,7 +52,7 @@ void RF_TXTask::execute() {
         /// Maybe there is an error either on the tx side or the rx side, which is not printed.
         /// Typically 200ms delay works.
         /// We had the same issue on the campaign.
-        vTaskDelay(10000);
+        vTaskDelay(3000);
         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
             if (i) {
                 transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
