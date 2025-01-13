@@ -42,14 +42,15 @@ include_directories(
         Lib/ECSS-Services/inc/Helpers
         Lib/ECSS-Services/inc/Services
         Lib/ECSS-Services/inc/Time
+        Lib/etl-20.38.17/include
+        Lib/logger-main-c6abda2e/inc
 )
 
-file(GLOB_RECURSE ECSS_SOURCES "Lib/ECSS-Services/src/*.cpp" "Lib/ECSS-Services/src/Helpers/*.cpp" "Lib/ECSS-Services/src/Services/*.cpp" "Lib/ECSS-Services/src/Time/*.cpp")
+#file(GLOB_RECURSE ECSS_SOURCES "Lib/ECSS-Services/src/*.cpp" "Lib/ECSS-Services/src/Helpers/*.cpp" "Lib/ECSS-Services/src/Services/*.cpp" "Lib/ECSS-Services/src/Time/*.cpp")
 
 # Create an executable object type
 add_executable(
         ${CMAKE_PROJECT_NAME}
-        ${ECSS_SOURCES}
 )
 
 # Add STM32CubeMX generated sources
@@ -75,6 +76,9 @@ add_subdirectory(Lib/logger-main-c6abda2e)
 #
 add_subdirectory(app/)
 #
+add_subdirectory(app/Platform)
+
+add_subdirectory(Lib/ECSS-Services)
 
 include(CheckGit.cmake)
 CheckGitSetup()
@@ -85,9 +89,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         Core/Src/main.c
 )
 
+add_compile_definitions(COMMS_SW)
+
 target_compile_definitions(log_common PUBLIC LOGLEVEL_TRACE)
 
-file(GLOB_RECURSE ECSS_SOURCES "Lib/ECSS-Services/src/*.cpp" "Lib/ECSS-Services/src/Helpers/*.cpp" "Lib/ECSS-Services/src/Services/*.cpp" "Lib/ECSS-Services/src/Time/*.cpp")
+#file(GLOB_RECURSE ECSS_SOURCES "Lib/ECSS-Services/src/*.cpp" "Lib/ECSS-Services/src/Helpers/*.cpp" "Lib/ECSS-Services/src/Services/*.cpp" "Lib/ECSS-Services/src/Time/*.cpp")
 
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
