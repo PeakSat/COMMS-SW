@@ -49,34 +49,6 @@ public:
      * Storage area given to freeRTOS to manage the queue items.
      */
     static inline uint8_t outgoingQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
-    // /**
-    //  * A freeRTOS queue to handle incoming packetss part of a CAN-TP message, since they need to be parsed as a whole.
-    //  */
-    // QueueHandle_t incomingSFQueue;
-    // /**
-    //  * The variable used to hold the queue's data structure.
-    //  */
-    // static inline StaticQueue_t incomingSFQueueBuffer;
-    // /**
-    //  * Storage area given to freeRTOS to manage the queue items.
-    //  */
-    // static inline uint8_t incomingSFQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
-    // /**
-    //  * A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
-    //  */
-    // QueueHandle_t incomingMFQueue;
-    // /**
-    //  * The variable used to hold the queue's data structure.
-    //  */
-    // static inline StaticQueue_t incomingMFQueueBuffer;
-    //
-    // /**
-    //  * Storage area given to freeRTOS to manage the queue items.
-    //  */
-    // static inline uint8_t incomingMFQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
-
-
-    /**
  * A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
  */
     QueueHandle_t incomingFrameQueue;
