@@ -2,7 +2,7 @@ add_subdirectory(Inc)
 
 add_library(platform)
 
-target_sources(platform PRIVATE Src/PlatformParameters.cpp Src/Service.cpp Src/ErrorHandler.cpp)
+target_sources(platform PRIVATE Src/PlatformParameters.cpp Src/Service.cpp Src/ErrorHandler.cpp Src/cobs.c)
 
 target_include_directories(platform PRIVATE Inc)
 
