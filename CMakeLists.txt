@@ -36,8 +36,21 @@ enable_language(C CXX ASM)
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
+include_directories(
+        Lib/ECSS-Services/inc
+        Lib/ECSS-Services/inc/etl
+        Lib/ECSS-Services/inc/Helpers
+        Lib/ECSS-Services/inc/Services
+        Lib/ECSS-Services/inc/Time
+)
+
+file(GLOB_RECURSE ECSS_SOURCES "Lib/ECSS-Services/src/*.cpp" "Lib/ECSS-Services/src/Helpers/*.cpp" "Lib/ECSS-Services/src/Services/*.cpp" "Lib/ECSS-Services/src/Time/*.cpp")
+
 # Create an executable object type
-add_executable(${CMAKE_PROJECT_NAME})
+add_executable(
+        ${CMAKE_PROJECT_NAME}
+        ${ECSS_SOURCES}
+)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -73,6 +86,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 target_compile_definitions(log_common PUBLIC LOGLEVEL_TRACE)
+
+file(GLOB_RECURSE ECSS_SOURCES "Lib/ECSS-Services/src/*.cpp" "Lib/ECSS-Services/src/Helpers/*.cpp" "Lib/ECSS-Services/src/Services/*.cpp" "Lib/ECSS-Services/src/Time/*.cpp")
 
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}

@@ -4,6 +4,8 @@
 #include "TPProtocol.hpp"
 #include "CANGatekeeperTask.hpp"
 #include "Logger.hpp"
+#include "ServicePool.hpp"
+#include "Message.hpp"
 
 #include <eMMC.hpp>
 
@@ -83,7 +85,7 @@ namespace CAN::Application {
     }
 
     */
-    /*
+
     void createSendParametersMessage(NodeIDs destinationAddress, bool isMulticast,
                                      const etl::array<uint16_t, TPMessageMaximumArguments> &parameterIDs, bool isISR) {
         TPMessage message = {{CAN::NodeID, destinationAddress, isMulticast}};
@@ -105,7 +107,7 @@ namespace CAN::Application {
 
         CAN::TPProtocol::createCANTPMessage(message, isISR);
     }
-*/
+
     /*
     void createRequestParametersMessage(NodeIDs destinationAddress, bool isMulticast,
                                         const etl::array<uint16_t, TPMessageMaximumArguments> &parameterIDs,
@@ -154,18 +156,18 @@ namespace CAN::Application {
         CAN::TPProtocol::createCANTPMessage(message, isISR);
     }
 
-    void createEventReportMessage(NodeIDs destinationAddress, bool isMulticast, EventReportType type, uint16_t eventID,
-                                  const Message& eventData, bool isISR) {
-        TPMessage message = {{CAN::NodeID, destinationAddress, isMulticast}};
-
-        message.appendUint8(MessageIDs::EventReport);
-        message.appendEnum8(type);
-        message.appendUint16(eventID);
-        message.appendMessage(eventData, eventData.dataSize);
-
-        CAN::TPProtocol::createCANTPMessage(message, isISR);
-    }
-
+    // void createEventReportMessage(NodeIDs destinationAddress, bool isMulticast, EventReportType type, uint16_t eventID,
+    //                               const Message& eventData, bool isISR) {
+    //     TPMessage message = {{CAN::NodeID, destinationAddress, isMulticast}};
+    //
+    //     message.appendUint8(MessageIDs::EventReport);
+    //     message.appendEnum8(type);
+    //     message.appendUint16(eventID);
+    //     message.appendMessage(eventData, eventData.dataSize);
+    //
+    //     CAN::TPProtocol::createCANTPMessage(message, isISR);
+    // }
+    //
     void createPacketMessage(NodeIDs destinationAddress, bool isMulticast, const etl::string<128>& incomingMessage, Message::PacketType packetType, bool isISR) {
         TPMessage message = {{CAN::NodeID, destinationAddress, isMulticast}};
 
@@ -214,7 +216,7 @@ namespace CAN::Application {
             //            registerUTCTime();
         }
     }
-    /*
+
     void parseSendParametersMessage(TPMessage &message) {
         uint8_t messageType = message.readUint8();
 //        if (not ErrorHandler::assertInternal(messageType == SendParameters, ErrorHandler::UnknownMessageType)) {
@@ -244,7 +246,6 @@ namespace CAN::Application {
             }
         }
     }
-     */
 
     void parseRequestParametersMessage(TPMessage& message) {
         uint8_t messageType = message.readUint8();
@@ -267,7 +268,7 @@ namespace CAN::Application {
         //            return;
         //        }
 
-        String<ECSSMaxMessageSize> logString = message.data + 1;
+        String<ECSSMaxMessageSize> logString = message.data.data() + 1;
 
         LOG_DEBUG << logString.c_str();
     }
