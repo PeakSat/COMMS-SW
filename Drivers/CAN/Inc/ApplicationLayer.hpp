@@ -25,7 +25,7 @@ namespace CAN::Application {
     /**
      * CAN-TP message IDs, as specified in DDJF_OBDH.
      */
-    enum MessageIDs : uint16_t {
+    enum MessageIDs : uint8_t {
         ACK = 6,
         NACK = 21,
         SendParameters = 0x01,
