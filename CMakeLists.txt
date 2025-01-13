@@ -98,6 +98,7 @@ target_compile_definitions(log_common PUBLIC LOGLEVEL_TRACE)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
         PRIVATE
+        ecss
         stm32cubemx
         app_main
         # Add user defined libraries
