@@ -1,7 +1,7 @@
 #include "Logger.hpp"
 #include "INA3221Task.hpp"
 
-//#define NEW_EQM
+#define NEW_EQM
 
 void ina3221Task::display(const Channel channel, const bool displayShuntVoltage, const bool displayBusVoltage,
                           const bool displayCurrent, const bool displayPower) {
