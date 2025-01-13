@@ -24,44 +24,6 @@ void TPProtocol::processSingleFrame(const CAN::Packet& message) {
     //    parseMessage(tpMessage);
 }
 
-void TPProtocol::processMultipleFrames() {
-    TPMessage message;
-    uint8_t incomingMessagesCount = canGatekeeperTask->getIncomingMFMessagesCount();
-    uint16_t dataLength = 0;
-    bool receivedFirstFrame = false;
-
-    for (uint8_t messageCounter = 0; messageCounter < incomingMessagesCount; messageCounter++) {
-        CAN::Packet frame = canGatekeeperTask->getFromMFQueue();
-        auto frameType = static_cast<Frame>(frame.data[0] >> 6);
-
-        if (not receivedFirstFrame) {
-            if (frameType == First) {
-                message.decodeId(frame.id);
-                dataLength = ((frame.data[0] & 0b111111) << 8) | frame.data[1];
-                receivedFirstFrame = true;
-            }
-        } else {
-            uint8_t consecutiveFrameCount = frame.data[0] & 0b111111;
-            //            if (not ErrorHandler::assertInternal(messageCounter == consecutiveFrameCount,
-            //                                                 ErrorHandler::InternalErrorType::UnacceptablePacket)) { //TODO: Add a more appropriate enum value
-            canGatekeeperTask->emptyIncomingMFQueue();
-            return;
-        }
-
-        for (size_t idx = 1; idx < CAN::MaxPayloadLength; idx++) {
-            message.appendUint8(frame.data[idx]);
-            if (message.dataSize >= dataLength) {
-                break;
-            }
-        }
-    }
-
-    //    if (not(message.idInfo.isMulticast or message.idInfo.destinationAddress == NodeID)) {
-    //        return;
-    //    }
-
-    //    parseMessage(message);
-}
 
 void TPProtocol::parseMessage(TPMessage& message) {
     uint8_t messageType = static_cast<Application::MessageIDs>(message.data[0]);
