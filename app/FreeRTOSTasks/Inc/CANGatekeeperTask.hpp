@@ -49,7 +49,7 @@ public:
      * Storage area given to freeRTOS to manage the queue items.
      */
     static inline uint8_t outgoingQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
- * A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
+    /* A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
  */
     QueueHandle_t incomingFrameQueue;
     /**
