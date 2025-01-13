@@ -136,7 +136,6 @@ public:
     inline void addSFToIncoming(const CAN::Packet& message) {
         BaseType_t taskShouldYield = pdFALSE;
 
-        // xQueueSendToBackFromISR(incomingSFQueue, &message, &taskShouldYield);
 
         if (taskShouldYield) {
             taskYIELD();
