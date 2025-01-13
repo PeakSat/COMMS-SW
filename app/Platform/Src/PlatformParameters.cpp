@@ -1,4 +1,4 @@
-#include "ECSS_Configuration.hpp"
+#include "COMMS_ECSS_Configuration.hpp"
 
 #ifdef SERVICE_PARAMETER
 
