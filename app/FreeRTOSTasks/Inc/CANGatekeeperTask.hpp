@@ -154,7 +154,6 @@ public:
     inline void addMFToIncoming(const CAN::Packet& message) {
         BaseType_t taskShouldYield = pdFALSE;
 
-        // xQueueSendToBackFromISR(incomingMFQueue, &message, &taskShouldYield);
 
         if (taskShouldYield) {
             taskYIELD();
