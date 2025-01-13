@@ -253,7 +253,7 @@ void GNSSTask::execute() {
                         // filter the messages
                         // fix quality 1 means : valid position fix, SPS mode
                         //                        if (compact.fix_quality == 1 && compact.satellites_tracked > 3)
-                        // GNSSprint(compact);
+                        GNSSprint(compact);
                         timeoutCounter = 0;
                     }
                 } else {
