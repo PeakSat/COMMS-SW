@@ -15,7 +15,7 @@ struct CANTransactionHandler {
     SemaphoreHandle_t CAN_TRANSMIT_SEMAPHORE;
     bool ACKReceived = false;
     // bool NACKReceived = false; // todo
-    uint32_t CAN_ACK_TIMEOUT = 1000; //ms
+    uint32_t CAN_ACK_TIMEOUT = 2000; //ms
 };
 extern CANTransactionHandler CAN_TRANSMIT_Handler;
 namespace CAN::TPProtocol {

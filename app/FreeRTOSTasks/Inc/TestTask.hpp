@@ -2,10 +2,7 @@
 
 #include "Task.hpp"
 #include "main.h"
-#include "TMP117.hpp"
 #include "etl/optional.h"
-
-extern I2C_HandleTypeDef hi2c1;
 
 class TestTask : public Task {
 public:
@@ -20,8 +17,8 @@ public:
     }
 
 private:
-    const static inline uint16_t DelayMs = 1000;
-    const static inline uint16_t TaskStackDepth = 2000;
+    const static inline uint16_t DelayMs = 2000;
+    const static inline uint16_t TaskStackDepth = 5000;
     const static inline uint8_t LoggerPrecision = 2;
     const static uint8_t MaxErrorStringSize = 25;
     const static uint8_t MaxSensorNameSize = 16;

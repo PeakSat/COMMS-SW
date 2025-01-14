@@ -101,12 +101,12 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
             FDCAN_ProtocolStatusTypeDef CAN2ProtocolStatus;
             HAL_FDCAN_GetProtocolStatus(&hfdcan2, &CAN2ProtocolStatus);
 
-            LOG_ERROR << "Packet transmit fialure. CAN1 error:" << can1error << " CAN2 error:" << can2error;
-            LOG_ERROR << "CAN1 Error counter rx:" << CAN1errorCounter.RxErrorCnt << "Error counter tx:" << CAN1errorCounter.TxErrorCnt;
-            LOG_ERROR << "CAN1 Last error" << CAN1ProtocolStatus.LastErrorCode;
+            LOG_ERROR << "Packet transmit failure. CAN1 error:" << can1error << " CAN2 error: " << can2error;
+            LOG_ERROR << "CAN1 Error counter rx: " << CAN1errorCounter.RxErrorCnt << "Error counter tx: " << CAN1errorCounter.TxErrorCnt;
+            LOG_ERROR << "CAN1 Last error: " << CAN1ProtocolStatus.LastErrorCode;
 
-            LOG_ERROR << "CAN2 Error counter rx:" << CAN2errorCounter.RxErrorCnt << "Error counter tx:" << CAN2errorCounter.TxErrorCnt;
-            LOG_ERROR << "CAN2 Last error" << CAN2ProtocolStatus.LastErrorCode;
+            LOG_ERROR << "CAN2 Error counter rx: " << CAN2errorCounter.RxErrorCnt << "Error counter tx: " << CAN2errorCounter.TxErrorCnt;
+            LOG_ERROR << "CAN2 Last error: " << CAN2ProtocolStatus.LastErrorCode;
             return 1;
         }
     }
@@ -119,7 +119,7 @@ bool TPProtocol::createCANTPMessageWithRetry(const TPMessage& message, bool isIS
         }
         if (i > 0) {
             //number of retransmits ++
-            LOG_ERROR << "Retranmitted CAN packet";
+            LOG_ERROR << "Retransmitted CAN packet";
         }
     }
     return 1;

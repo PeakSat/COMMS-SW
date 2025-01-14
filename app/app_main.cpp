@@ -40,8 +40,8 @@ void app_main(void) {
     transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());
 
     uartGatekeeperTask.emplace();
-    // rf_rxtask.emplace();
-    // rf_txtask.emplace();
+    rf_rxtask.emplace();
+    rf_txtask.emplace();
     // eMMCTask.emplace();
     // gnssTask.emplace();
 
@@ -49,11 +49,11 @@ void app_main(void) {
     // ina3221Task.emplace();
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
-    canTestTask.emplace();
+    // canTestTask.emplace();
 
     uartGatekeeperTask->createTask();
-    // rf_rxtask->createTask();
-    // rf_txtask->createTask();
+    rf_rxtask->createTask();
+    rf_txtask->createTask();
     testTask.emplace();
     // Ensure task handle is valid
 
@@ -64,7 +64,7 @@ void app_main(void) {
     // ina3221Task->createTask();
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
-    canTestTask->createTask();
+    // canTestTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     TransceiverHandler::initialize_semaphore();
