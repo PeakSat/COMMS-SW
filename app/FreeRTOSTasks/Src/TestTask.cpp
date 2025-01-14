@@ -42,7 +42,7 @@ void TestTask::execute() {
         // auto cobsEncoded = COBSencode<ECSSMaxMessageSize>(generateOneShotReport.data.data(), generateOneShotReport.dataSize);
         /// parameter service
         CAN::Application::createRequestParametersMessage(CAN::OBC, false, OBCTempIDs, false);
-        LOG_DEBUG << "REQUESTING temp PARAMETERS";
+        LOG_DEBUG << "REQUESTING TEMP PARAMETERS";
         // CAN::Application::createRequestParametersMessage(CAN::OBC, false, EPSIDs, false);
         // LOG_DEBUG << "REQUESTING EPS PARAMETERS FROM OBC" ;
         // LOG_DEBUG << "Generate COBS encoded: " << &cobsEncoded;

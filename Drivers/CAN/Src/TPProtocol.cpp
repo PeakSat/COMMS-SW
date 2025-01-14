@@ -29,10 +29,10 @@ void TPProtocol::parseMessage(TPMessage& message) {
     uint8_t messageType = static_cast<Application::MessageIDs>(message.data[0]);
     switch (messageType) {
         case CAN::Application::SendParameters:
-            // CAN::Application::parseSendParametersMessage(message);
+            CAN::Application::parseSendParametersMessage(message);
             break;
         case CAN::Application::RequestParameters:
-            // CAN::Application::parseRequestParametersMessage(message);
+            CAN::Application::parseRequestParametersMessage(message);
             break;
         case CAN::Application::PerformFunction:
             break; //todo: use ST[08] to execute the perform function command
@@ -150,7 +150,7 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         uint8_t secondByte = messageSize & 0xFF;
 
         etl::array<uint8_t, CAN::MaxPayloadLength> firstFrame = {firstByte, secondByte};
-
+        LOG_DEBUG << "First Frame";
         canGatekeeperTask->send({id, firstFrame}, isISR);
         xTaskNotifyGive(canGatekeeperTask->taskHandle);
     }
@@ -162,6 +162,7 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
 
         uint8_t firstByte = (Consecutive << 6);
         if (currentConsecutiveFrameCount == totalConsecutiveFramesNeeded) {
+            LOG_DEBUG << "Final Frame";
             firstByte = (Final << 6);
         }
         etl::array<uint8_t, CAN::MaxPayloadLength> consecutiveFrame = {firstByte};
@@ -176,6 +177,7 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         }
 
         canGatekeeperTask->send({id, consecutiveFrame}, isISR);
+        LOG_DEBUG << "Sending CAN packet";
         xTaskNotifyGive(canGatekeeperTask->taskHandle);
     }
 

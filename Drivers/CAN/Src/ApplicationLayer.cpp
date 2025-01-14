@@ -211,9 +211,9 @@ namespace CAN::Application {
 
     void parseSendParametersMessage(TPMessage &message) {
         uint8_t messageType = message.readUint8();
-//        if (not ErrorHandler::assertInternal(messageType == SendParameters, ErrorHandler::UnknownMessageType)) {
-//            return;
-//        }
+        if (not ErrorHandler::assertInternal(messageType == SendParameters, ErrorHandler::UnknownMessageType)) {
+            return;
+        }
         uint16_t parameterCount = message.readUint16();
 
         for (uint16_t idx = 0; idx < parameterCount; idx++) {
@@ -241,9 +241,9 @@ namespace CAN::Application {
 
     void parseRequestParametersMessage(TPMessage& message) {
         uint8_t messageType = message.readUint8();
-        //        if (not ErrorHandler::assertInternal(messageType == RequestParameters, ErrorHandler::UnknownMessageType)) {
-        //            return;
-        //        }
+        if (not ErrorHandler::assertInternal(messageType == RequestParameters, ErrorHandler::UnknownMessageType)) {
+        return;
+        }
         uint16_t parameterCount = message.readUint16();
         etl::array<uint16_t, TPMessageMaximumArguments> parameterIDs = {};
 
