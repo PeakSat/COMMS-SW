@@ -9,6 +9,7 @@ PacketData RF_TXTask::createRandomPacketData(uint8_t length) {
     return data;
 }
 
+
 void RF_TXTask::execute() {
     uint32_t receivedEvents = 0;
     if (xTaskNotifyWait(START_TX_TASK, START_TX_TASK, &receivedEvents, portMAX_DELAY) == pdTRUE) {
@@ -40,9 +41,9 @@ void RF_TXTask::execute() {
     GPIO_PinState txamp = GPIO_PIN_SET;
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
     if (txamp)
-        LOG_DEBUG << "TX AMP DISABLED";
+        LOG_DEBUG << "##########TX AMP DISABLED##########";
     else
-        LOG_DEBUG << "TX AMP ENABLED";
+        LOG_DEBUG << "##########TX AMP ENABLED##########";
     int i = 1;
     uint8_t counter = 0;
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
@@ -52,23 +53,21 @@ void RF_TXTask::execute() {
         /// Maybe there is an error either on the tx side or the rx side, which is not printed.
         /// Typically 200ms delay works.
         /// We had the same issue on the campaign.
-        vTaskDelay(5000);
-        if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-            if (counter == 255)
-                counter = 0;
-            // Prepare and send the packet
-            packetTestData.packet[0] = counter++;
-            transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-            LOG_INFO << "[TX TASK] Transmitted packet: " << counter;
-            // Switch back to RX mode
-            // transceiver.set_state(RF09, State::RF_TRXOFF, error);
-            // vTaskDelay(10);
-            // transceiver.set_state(RF09, State::RF_TXPREP, error);
-            // vTaskDelay(10);
-            // transceiver.set_state(RF09, State::RF_RX, error);
-            // if (transceiver.get_state(RF09, error) == RF_RX)
-            //     LOG_INFO << "[TX TASK] STATE = RX";
-            xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+        if (xTaskNotifyWait(TRANSMIT, TRANSMIT, &receivedEvents, portMAX_DELAY) == pdTRUE) {
+            if (receivedEvents & TRANSMIT) {
+                if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+                    if (counter == 255)
+                        counter = 0;
+                    // Prepare and send the packet
+                    packetTestData.packet[0] = counter++;
+                    transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                    transceiver.print_error(error);
+                    LOG_INFO << "[TX TASK] Transmitted packet: " << counter;
+                    transceiver.print_state(RF09, error);
+
+                    xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                }
+            }
         }
     }
 }

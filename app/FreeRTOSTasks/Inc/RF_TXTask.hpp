@@ -19,6 +19,7 @@ struct PacketData {
 class RF_TXTask : public Task {
 public:
     RF_TXTask() : Task("RF-TX Task") {}
+    void print_state();
     void execute();
     PacketData createRandomPacketData(uint8_t length);
     void createTask() {

@@ -7,6 +7,7 @@
 #include <utility>
 #include <cstdint>
 #include <etl/expected.h>
+#include "Logger.hpp"
 
 
 const uint16_t TIMEOUT = 1000;
@@ -704,6 +705,8 @@ namespace AT86RF215 {
         etl::expected<uint16_t, Error> get_received_length(Transceiver transceiver, Error& err);
         etl::expected<void, Error> check_transceiver_connection(Error& err);
         void packetReception(Transceiver transceiver, Error& err);
+        State print_state(Transceiver transceiver, Error& err);
+        void print_error(Error& err);
         uint8_t received_packet[2047];
         /// Radio interrupts
         bool IFSynchronization_flag, TransceiverError_flag, EnergyDetectionCompletion_flag, TransceiverReady_flag, Wakeup_flag = false;

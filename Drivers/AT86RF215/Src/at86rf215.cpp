@@ -1370,6 +1370,111 @@ namespace AT86RF215 {
         return received_length;
     }
 
+    State At86rf215::print_state(Transceiver transceiver, Error& err) {
+        State rf_state = get_state(RF09, err);
+        switch (rf_state) {
+            case RF_NOP:
+                // Handle RF_NOP
+                LOG_DEBUG << "STATE: NOP";
+                break;
+            case RF_SLEEP:
+                // Handle RF_SLEEP
+                LOG_DEBUG << "STATE: SLEEP";
+                break;
+            case RF_TRXOFF:
+                // Handle RF_TRXOFF
+                LOG_DEBUG << "STATE: TRXOFF";
+                break;
+            case RF_TX:
+                //
+                LOG_DEBUG << "STATE: TX";
+                break;
+            case RF_RX:
+                //
+                LOG_DEBUG << "STATE: RX";
+                    break;
+            case RF_TRANSITION:
+                //
+                LOG_DEBUG << "STATE: TRANSITION";
+                break;
+            case RF_RESET:
+                //
+                LOG_DEBUG << "STATE: RESET";
+                break;
+            case RF_INVALID:
+                //
+                LOG_DEBUG << "STATE: INVALID";
+                break;
+            case RF_TXPREP:
+                //
+                LOG_DEBUG << "STATE: INVALID";
+                break;
+            default:
+                LOG_ERROR << "UNDEFINED";
+                break;
+        }
+    }
+
+void At86rf215::print_error(AT86RF215::Error& err) {
+    if(err == Error::NO_ERRORS)
+        return;
+    else{
+        switch (err) {
+            case Error::FAILED_WRITING_TO_REGISTER:
+                LOG_ERROR << "FAILED_WRITING_TO_REGISTER";
+                break;
+
+            case Error::FAILED_READING_FROM_REGISTER:
+                LOG_ERROR << "FAILED_READING_FROM_REGISTER";
+                break;
+
+            case Error::FAILED_CHANGING_STATE:
+                LOG_ERROR << "FAILED_CHANGING_STATE";
+                break;
+
+            case Error::UKNOWN_REQUESTED_STATE:
+                LOG_ERROR << "UNKNOWN_REQUESTED_STATE";
+                break;
+
+            case Error::UKNOWN_PART_NUMBER:
+                LOG_ERROR << "UNKNOWN_PART_NUMBER";
+                break;
+
+            case Error::INVALID_TRANSCEIVER_FREQ:
+                LOG_ERROR << "INVALID_TRANSCEIVER_FREQ";
+                break;
+
+            case Error::INVALID_STATE_FOR_OPERATION:
+                LOG_ERROR << "INVALID_STATE_FOR_OPERATION";
+                break;
+
+            case Error::INVALID_PLL_CENTER_FREQ:
+                LOG_ERROR << "INVALID_PLL_CENTER_FREQ";
+                break;
+
+            case Error::UKNOWN_DEVICE_PART_NUMBER:
+                LOG_ERROR << "UNKNOWN_DEVICE_PART_NUMBER";
+                break;
+
+            case Error::INVALID_RSSI_MEASUREMENT:
+                LOG_ERROR << "INVALID_RSSI_MEASUREMENT";
+                break;
+
+            case Error::INVALID_AGC_CONTROl_WORD:
+                LOG_ERROR << "INVALID_AGC_CONTROl_WORD";
+                break;
+
+            case Error::ONGOING_TRANSMISSION_RECEPTION:
+                LOG_ERROR << "ONGOING_TRANSMISSION_RECEPTION";
+                break;
+
+            default:
+                LOG_ERROR << "UNHANDLED_ERROR";
+                break;
+        }
+    }
+}
+
     void At86rf215::handle_irq(void) {
         Error err = Error::NO_ERRORS;
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;

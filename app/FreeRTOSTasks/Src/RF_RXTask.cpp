@@ -55,16 +55,18 @@ void RF_RXTask::execute() {
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
     LOG_DEBUG << "RX AMP ENABLED ";
     TickType_t lastTxNotifyTime = xTaskGetTickCount(); // Reference time for TX notification
+//    xTaskNotify(rf_txtask->taskHandle, START_TX_TASK, eSetBits);
     while (1) {
-        // Wait for RX events with a timeout of 50 ms
         if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(50))) {
             if (receivedEvents & RXFE) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
+                    transceiver.print_error(error);
                     if (result.has_value()) {
                         received_length = result.value();
                         LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
                         LOG_INFO << "Counter packet: " << transceiver.spi_read_8((AT86RF215::BBC0_FBRXS), error);
+                        transceiver.print_error(error);
                     } else {
                         Error err = result.error();
                         LOG_ERROR << "AT86RF215 ##ERROR## AT RX LENGTH RECEPTION WITH CODE: " << err;
@@ -74,16 +76,16 @@ void RF_RXTask::execute() {
             }
             if (receivedEvents & AGC_HOLD) {
                 LOG_INFO << "RSSI [AGC HOLD]: " << transceiver.get_rssi(RF09, error);
+                transceiver.print_error(error);
             }
         }
-
+        ensureRxMode();
         // Notify TX task every 5 seconds
         if ((xTaskGetTickCount() - lastTxNotifyTime) >= pdMS_TO_TICKS(5000)) {
-            xTaskNotify(rf_txtask->taskHandle, START_TX_TASK, eSetBits); // Notify TX task
+            xTaskNotify(rf_txtask->taskHandle, TRANSMIT, eSetBits); // Notify TX task
             lastTxNotifyTime = xTaskGetTickCount(); // Reset reference time
             LOG_INFO << "Notified TX task to start transmission.";
         }
 
-        ensureRxMode(); // Ensure transceiver remains in RX mode
     }
 }
