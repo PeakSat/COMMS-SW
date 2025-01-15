@@ -43,29 +43,31 @@ void RF_TXTask::execute() {
         LOG_DEBUG << "TX AMP DISABLED";
     else
         LOG_DEBUG << "TX AMP ENABLED";
-
+    int i = 1;
+    uint8_t counter = 0;
+    PacketData packetTestData = createRandomPacketData(MaxPacketLength);
     while (1) {
-        vTaskDelay(1000);
-        /// Read the state
+        /// without delay there is an issue on the receiver. The TX stops the transmission after a while and the receiver loses packets.
+        /// But why ? There is also the delay of the TXFE interrupt which is around [1 / (50000 / (packetLenghtInbits)) s]. It should work just fine...
+        /// Maybe there is an error either on the tx side or the rx side, which is not printed.
+        /// Typically 200ms delay works.
+        /// We had the same issue on the campaign.
+        vTaskDelay(5000);
         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-            PacketData packetTestData = createRandomPacketData(MaxPacketLength);
-            /// Writes to the TX buffer
+            if (counter == 255)
+                counter = 0;
+            // Prepare and send the packet
+            packetTestData.packet[0] = counter++;
             transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-            if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(5000))) {
-                if (receivedEvents & TXFE) {
-                    /// Give the mutex
-                    LOG_INFO << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;
-                }
-                /// Handle TRXRDY flag
-                if (receivedEvents & TRXRDY)
-                    LOG_DEBUG << "TRANSCEIVER IS READY.";
-                /// Handle TRXRDY flag
-                if (receivedEvents & TRXERR)
-                    LOG_ERROR << "PLL UNLOCKED.";
-                /// Handle IFSERR flag
-                if (receivedEvents & IFSERR)
-                    LOG_ERROR << "SYNCHRONIZATION ERROR.";
-            }
+            LOG_INFO << "[TX TASK] Transmitted packet: " << counter;
+            // Switch back to RX mode
+            // transceiver.set_state(RF09, State::RF_TRXOFF, error);
+            // vTaskDelay(10);
+            // transceiver.set_state(RF09, State::RF_TXPREP, error);
+            // vTaskDelay(10);
+            // transceiver.set_state(RF09, State::RF_RX, error);
+            // if (transceiver.get_state(RF09, error) == RF_RX)
+            //     LOG_INFO << "[TX TASK] STATE = RX";
             xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
         }
     }

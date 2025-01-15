@@ -13,6 +13,7 @@ using namespace AT86RF215;
 class RF_RXTask : public Task {
 public:
     RF_RXTask() : Task("RF RX TASK") {}
+    void ensureRxMode();
     void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,
@@ -21,7 +22,7 @@ public:
     }
 
 private:
-    constexpr static uint16_t TaskStackDepth = 5000;
+    constexpr static uint16_t TaskStackDepth = 15000;
     /// Frequency in kHz
     constexpr static uint32_t FrequencyUHFRX = 401000;
     AT86RF215::Error error;
