@@ -171,8 +171,8 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         for (uint8_t idx = 0; idx < UsableDataLength; idx++) {
             consecutiveFrame.at(idx + 2) = message.data[idx + UsableDataLength * (currentConsecutiveFrameCount - 1)];
         }
-	// Make sure the output buffers do not overflow // Added a small delay every 4 frames
-        if (currentConsecutiveFrameCount % 4 == 3) { 
+        // Make sure the output buffers do not overflow // Added a small delay every 4 frames
+        if (currentConsecutiveFrameCount % 4 == 3) {
             vTaskDelay(1);
         }
 
@@ -198,6 +198,11 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
             LOG_DEBUG << "CAN ACK timeout";
             __NOP();
             return true;
+        }
+        if (uxQueueMessagesWaiting(canGatekeeperTask->outgoingQueue)) {
+            CAN::Packet out_message = {};
+            xQueueReceive(canGatekeeperTask->outgoingQueue, &out_message, portMAX_DELAY);
+            CAN::send(out_message, canGatekeeperTask->ActiveBus);
         }
     }
 }
