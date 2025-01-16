@@ -18,10 +18,10 @@ void RF_RXTask::ensureRxMode() {
                 transceiver.set_state(RF09, RF_TXPREP, error);
                 /// the delay here is essential
                 vTaskDelay(20);
-                transceiver.set_state(RF09, State::RF_RX, error);
+                transceiver.set_state(RF09, RF_RX, error);
         break;
         case RF_TX:
-                LOG_DEBUG << "STATE: TX";
+                LOG_DEBUG << "[RX ENSURE] STATE: TX";
         break;
         case RF_RX:
         break;
@@ -36,7 +36,7 @@ void RF_RXTask::ensureRxMode() {
         break;
         case RF_TXPREP:
                 LOG_DEBUG << "[RX ENSURE] STATE: TXPREP";
-                transceiver.set_state(RF09, State::RF_RX, error);
+                transceiver.set_state(RF09, RF_RX, error);
         break;
         default:
             LOG_ERROR << "UNDEFINED";
@@ -80,37 +80,34 @@ void RF_RXTask::execute() {
     uint32_t receivedEvents = 0;
     uint16_t received_length = 0;
     while (1) {
-        /// Notify TX task
+        /// Notify TX task to transmit the packets
         if ((xTaskGetTickCount() - lastTxNotifyTime) >= pdMS_TO_TICKS(1000)) {
             xTaskNotify(rf_txtask->taskHandle, TRANSMIT, eSetBits);
             lastTxNotifyTime = xTaskGetTickCount();
         }
         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-            ensureRxMode();
+            if (transceiver.tx_ongoing == false)
+                ensureRxMode();
             xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
         }
         if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(50))) {
-            if (receivedEvents & RXFE) {
-                if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-                    auto result = transceiver.get_received_length(RF09, error);
-                    transceiver.print_error(error);
-                    if (result.has_value()) {
-                        received_length = result.value();
-                        LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
-                        LOG_INFO << "Counter packet: " << transceiver.spi_read_8((AT86RF215::BBC0_FBRXS), error);
-                        transceiver.print_error(error);
-                    } else {
-                        Error err = result.error();
-                        LOG_ERROR << "AT86RF215 ##ERROR## AT RX LENGTH RECEPTION WITH CODE: " << err;
-                    }
-                    ensureRxMode();
-                    xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-                }
-            }
             if (receivedEvents & AGC_HOLD) {
                 LOG_INFO << "RSSI [AGC HOLD]: " << transceiver.get_rssi(RF09, error);
                 transceiver.print_error(error);
             }
+            if (receivedEvents & RXFE) {
+                if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+                    auto result = transceiver.get_received_length(RF09, error);
+                    if (result.has_value()) {
+                        received_length = result.value();
+                        LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
+                        LOG_INFO << "Counter packet: " << transceiver.spi_read_8((AT86RF215::BBC0_FBRXS), error);
+                    } else
+                        transceiver.print_error(error);
+                    xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                }
+            }
+
         }
     }
 }

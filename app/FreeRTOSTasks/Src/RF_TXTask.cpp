@@ -42,7 +42,6 @@ void RF_TXTask::execute() {
         LOG_DEBUG << "##########TX AMP DISABLED##########";
     else
         LOG_DEBUG << "##########TX AMP ENABLED##########";
-    int i = 1;
     uint8_t counter = 0;
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
     while (1) {
@@ -58,9 +57,9 @@ void RF_TXTask::execute() {
                         counter = 0;
                     // Prepare and send the packet
                     if (transceiver.agc_held == false) {
-                        if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false && transceiver.get_state(RF09, error) != State::RF_TRANSITION) {
+                        if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false && transceiver.get_state(RF09, error) != RF_TRANSITION) {
                             packetTestData.packet[0] = counter++;
-                            transceiver.set_state(RF09, State::RF_TRXOFF, error);
+                            transceiver.set_state(RF09, RF_TRXOFF, error);
                             transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
                             transceiver.print_error(error);
                             transceiver.print_state(RF09, error);
