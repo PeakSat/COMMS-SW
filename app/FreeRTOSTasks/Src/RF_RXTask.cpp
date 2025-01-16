@@ -5,14 +5,45 @@
 using namespace AT86RF215;
 
 void RF_RXTask::ensureRxMode() {
-    if (transceiver.get_state(RF09, error) != State::RF_RX) {
-        transceiver.set_state(RF09, RF_TRXOFF, error);
-        vTaskDelay(10);
-        transceiver.set_state(RF09, RF_TXPREP, error);
-        vTaskDelay(20);
-        transceiver.set_state(RF09, State::RF_RX, error);
+    State rf_state = transceiver.get_state(RF09, error);
+    switch (rf_state) {
+        case RF_NOP:
+                LOG_DEBUG << "[RX ENSURE] STATE: NOP";
+        break;
+        case RF_SLEEP:
+                LOG_DEBUG << "[RX ENSURE] STATE: SLEEP";
+        break;
+        case RF_TRXOFF:
+                LOG_DEBUG << "[RX ENSURE] STATE: TRXOFF";
+                transceiver.set_state(RF09, RF_TXPREP, error);
+                /// the delay here is essential
+                vTaskDelay(20);
+                transceiver.set_state(RF09, State::RF_RX, error);
+        break;
+        case RF_TX:
+                LOG_DEBUG << "STATE: TX";
+        break;
+        case RF_RX:
+        break;
+        case RF_TRANSITION:
+                LOG_DEBUG << "[RX ENSURE] STATE: TRANSITION";
+        break;
+        case RF_RESET:
+                LOG_DEBUG << "[RX ENSURE] STATE: RESET";
+        break;
+        case RF_INVALID:
+                LOG_DEBUG << "[RX ENSURE] STATE: INVALID";
+        break;
+        case RF_TXPREP:
+                LOG_DEBUG << "[RX ENSURE] STATE: TXPREP";
+                transceiver.set_state(RF09, State::RF_RX, error);
+        break;
+        default:
+            LOG_ERROR << "UNDEFINED";
+        break;
     }
 }
+
 void RF_RXTask::execute() {
     vTaskDelay(5000);
     LOG_INFO << "[RF RX TASK]";
@@ -50,7 +81,7 @@ void RF_RXTask::execute() {
     uint16_t received_length = 0;
     while (1) {
         /// Notify TX task
-        if ((xTaskGetTickCount() - lastTxNotifyTime) >= pdMS_TO_TICKS(2000)) {
+        if ((xTaskGetTickCount() - lastTxNotifyTime) >= pdMS_TO_TICKS(500)) {
             xTaskNotify(rf_txtask->taskHandle, TRANSMIT, eSetBits);
             lastTxNotifyTime = xTaskGetTickCount();
         }
@@ -72,6 +103,7 @@ void RF_RXTask::execute() {
                         Error err = result.error();
                         LOG_ERROR << "AT86RF215 ##ERROR## AT RX LENGTH RECEPTION WITH CODE: " << err;
                     }
+                    ensureRxMode();
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
                 }
             }

@@ -1407,7 +1407,7 @@ namespace AT86RF215 {
                 break;
             case RF_TXPREP:
                 //
-                LOG_DEBUG << "STATE: INVALID";
+                LOG_DEBUG << "STATE: TXPREP";
                 break;
             default:
                 LOG_ERROR << "UNDEFINED";
