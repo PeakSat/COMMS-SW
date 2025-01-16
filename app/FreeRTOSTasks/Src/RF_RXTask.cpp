@@ -94,8 +94,7 @@ void RF_RXTask::execute() {
                 ensureRxMode();
             xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
         }
-        if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(50))) {
-
+        if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(20))) {
             if (receivedEvents & RXFE) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
