@@ -81,7 +81,7 @@ void RF_RXTask::execute() {
     uint16_t received_length = 0;
     while (1) {
         /// Notify TX task
-        if ((xTaskGetTickCount() - lastTxNotifyTime) >= pdMS_TO_TICKS(500)) {
+        if ((xTaskGetTickCount() - lastTxNotifyTime) >= pdMS_TO_TICKS(1000)) {
             xTaskNotify(rf_txtask->taskHandle, TRANSMIT, eSetBits);
             lastTxNotifyTime = xTaskGetTickCount();
         }
