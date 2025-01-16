@@ -92,21 +92,15 @@ void RF_TXTask::execute() {
         LOG_DEBUG << "##########TX AMP ENABLED##########";
     uint8_t counter = 0;
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
-    // start the transmit timer
-    TimerHandle_t xTimer = xTimerCreate(
-    "Transmit Timer",
-    pdMS_TO_TICKS(2000),
-    pdTRUE,
-    (void *)nullptr,
-    vTimerCallback);
-
+    TimerHandle_t xTimer = xTimerCreate("Transmit Timer", pdMS_TO_TICKS(2000), pdTRUE, (void *)nullptr, vTimerCallback);
     if (xTimer != NULL) {
         if (xTimerStart(xTimer, 0) != pdPASS) {
-            LOG_INFO << "[TX TASK] Failed to start the timer";
+            LOG_ERROR << "[TX TASK] Failed to start the timer";
         }
     } else {
-        LOG_INFO << "[TX TASK] Failed to create the timer";
+        LOG_INFO << "[TX TASK] START THE TX TIMER";
     }
+
     uint8_t transmit_notify_counter = 0;
     while (1) {
         /// without delay there is an issue on the receiver. The TX stops the transmission after a while and the receiver loses packets.
@@ -114,17 +108,42 @@ void RF_TXTask::execute() {
         /// Maybe there is an error either on the tx side or the rx side, which is not printed.
         /// Typically 200ms delay works.
         /// We had the same issue on the campaign.
-        if (xTaskNotifyWait(TRANSMIT, TRANSMIT, &receivedEvents, portMAX_DELAY) == pdTRUE) {
+        if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, portMAX_DELAY) == pdTRUE) {
             if (receivedEvents & TRANSMIT) {
                 transmit_notify_counter++;
                 if (transmit_notify_counter == 255) {transmit_notify_counter = 0;}
-                LOG_DEBUG << "[TX TASK] Notification counter: " << transmit_notify_counter;
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     if (counter == 255)
                         counter = 0;
                     // Prepare and send the packet
-                    if (transceiver.agc_held == false) {
-                        if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false && transceiver.get_state(RF09, error) != RF_TRANSITION) {
+                    if (transceiver.rx_ongoing){
+                        xTimerStop(xTimer, 0);
+                        if (xTaskNotifyWait(RXFE, RXFE, &receivedEvents, pdTICKS_TO_MS(500)) == pdTRUE) {
+                            if (receivedEvents & RXFE) {
+                                xTimerStart(xTimer, 0);
+                                LOG_DEBUG << "[TX TASK] RECEIVE FRAME END";
+                            }
+                        }
+                        else {
+                            xTimerStart(xTimer, 0);
+                            LOG_ERROR << "[TX TASK] RECEIVE FRAME END DID NOT RECEIVED - TIMER STARTED ANYWAY";
+                        }
+                    }
+                    else if (transceiver.tx_ongoing) {
+                        xTimerStop(xTimer, 0);
+                        if (xTaskNotifyWait(TXFE, TXFE, &receivedEvents, pdTICKS_TO_MS(500)) == pdTRUE) {
+                            if (receivedEvents & TXFE) {
+                                xTimerStart(xTimer, 0);
+                                LOG_DEBUG << "[TX TASK] TRANSMIT FRAME END";
+                            }
+                        }
+                        else {
+                            xTimerStart(xTimer, 0);
+                            LOG_ERROR << "[TX TASK] TRANSMIT FRAME END DID NOT RECEIVED - TIMER STARTED ANYWAY";
+                        }
+                    }
+                    else {
+                        if (transceiver.get_state(RF09, error) != RF_TRANSITION) {
                             packetTestData.packet[0] = counter++;
                             transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
                             LOG_INFO << "[TX TASK] Transmitted packet: " << counter;
@@ -133,6 +152,8 @@ void RF_TXTask::execute() {
                     if (transmit_notify_counter != counter) {
                         transceiver.print_error(error);
                         transceiver.print_state(RF09, error);
+                        LOG_DEBUG << "[TX TASK] Notification counter: " << transmit_notify_counter;
+                        LOG_INFO << "[TX TASK] Transmitted packet: " << counter;
                         LOG_DEBUG << "[TX ENSURE] RX_ONGOING " << transceiver.rx_ongoing;
                         LOG_DEBUG << "[TX ENSURE] TX_ONGOING " << transceiver.tx_ongoing;
                         LOG_DEBUG << "[TX ENSURE] AGC HELD " << transceiver.agc_held;

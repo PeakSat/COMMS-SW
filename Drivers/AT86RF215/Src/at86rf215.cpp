@@ -1544,6 +1544,8 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
+            xTaskNotifyFromISR(rf_txtask->taskHandle, TXFE, eSetBits, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
             // Receiver Extended Match handling
@@ -1556,7 +1558,8 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         if ((irq & InterruptMask::ReceiverFrameEnd) != 0) {
             ReceiverFrameEnd_flag = true;
             xTaskNotifyFromISR(rf_rxtask->taskHandle, RXFE, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            xTaskNotifyFromISR(rf_txtask->taskHandle, RXFE, eSetBits, &xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             if (rx_ongoing) {
                 rx_ongoing = false;
             }
@@ -1564,7 +1567,6 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         if ((irq & InterruptMask::ReceiverFrameStart) != 0) {
             xTaskNotifyFromISR(rf_rxtask->taskHandle, RXFS, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            ReceiverFrameStart_flag = true;
             rx_ongoing = true;
         }
 

@@ -32,6 +32,16 @@ void RF_RXTask::ensureRxMode() {
                 LOG_DEBUG << "[RX ENSURE] STATE: RESET";
         break;
         case RF_INVALID:
+            HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
+            vTaskDelay(20);
+            HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
+            vTaskDelay(10);
+            transceiver.set_state(RF09, RF_TRXOFF, error);
+            vTaskDelay(10);
+            transceiver.set_state(RF09, RF_TXPREP, error);
+            /// the delay here is essential
+            vTaskDelay(20);
+            transceiver.set_state(RF09, RF_RX, error);
                 LOG_DEBUG << "[RX ENSURE] STATE: INVALID";
         break;
         case RF_TXPREP:
@@ -46,8 +56,6 @@ void RF_RXTask::ensureRxMode() {
 
 void RF_RXTask::execute() {
     vTaskDelay(5000);
-
-
 
     LOG_INFO << "[RF RX TASK]";
     /// Set the Up-link frequency
@@ -93,11 +101,14 @@ void RF_RXTask::execute() {
                     auto result = transceiver.get_received_length(RF09, error);
                     if (result.has_value()) {
                         received_length = result.value();
-                        if (received_length != 1024) {
-                            transceiver.print_error(error);
+                        if (received_length == 1024) {
+                            LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
+                            LOG_INFO << "Counter packet: " << transceiver.spi_read_8((BBC0_FBRXS), error);
                         }
-                        LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
-                        LOG_INFO << "Counter packet: " << transceiver.spi_read_8((BBC0_FBRXS), error);
+                        else {
+                            transceiver.print_error(error);
+                            LOG_ERROR << "DROP RX MESSAGE";
+                        }
                     } else
                         transceiver.print_error(error);
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
