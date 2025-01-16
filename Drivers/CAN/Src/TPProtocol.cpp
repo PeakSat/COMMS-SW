@@ -75,6 +75,10 @@ void TPProtocol::parseMessage(TPMessage& message) {
 bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
     if (!createCANTPMessageWithRetry(message, isISR, 2)) {
         return 0;
+    }
+    return 1;
+    if (!createCANTPMessageWithRetry(message, isISR, 2)) {
+        return 0;
     } else {
         //Change CAN bus
         if (activeBus == CAN::ActiveBus::Redundant) {

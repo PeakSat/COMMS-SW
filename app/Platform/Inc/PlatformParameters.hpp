@@ -8,6 +8,7 @@
 namespace COMMSParameters {
     enum ParameterID : uint16_t {
         // TODO: Update accordingly, once Parameter Database is updated
+        OBCPCBTemperature1 = 5000,
         COMMSUHFBandPATemperature = 2000,
         COMMSGNSSTemperature = 2001,
         COMMSPCBTemperature = 2002,
@@ -73,6 +74,7 @@ namespace COMMSParameters {
         Reductant = 1
     };
 
+    inline Parameter<float> obcPCBTemperature1(0);
     inline Parameter<float> commsUHFBandPATemperature(0);
     inline Parameter<float> commsGNSSTemperature(0);
     inline Parameter<float> commsPCBTemperature(0);

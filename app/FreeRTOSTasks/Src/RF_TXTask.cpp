@@ -59,10 +59,10 @@ void RF_TXTask::execute() {
                 }
                 /// Handle TRXRDY flag
                 if (receivedEvents & TRXRDY)
-                    LOG_DEBUG << "TRANSCEIVER IS READY.";
-                /// Handle TRXRDY flag
-                if (receivedEvents & TRXERR)
-                    LOG_ERROR << "PLL UNLOCKED.";
+                    // LOG_DEBUG << "TRANSCEIVER IS READY.";
+                    /// Handle TRXRDY flag
+                    if (receivedEvents & TRXERR)
+                        LOG_ERROR << "PLL UNLOCKED.";
                 /// Handle IFSERR flag
                 if (receivedEvents & IFSERR)
                     LOG_ERROR << "SYNCHRONIZATION ERROR.";
