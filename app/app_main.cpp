@@ -20,6 +20,15 @@
 #include "RF_TXTask.hpp"
 #include "RF_RXTask.hpp"
 #include "git_version.h"
+#include "timers.h"
+
+#define NUM_TIMERS 1
+
+// An array to hold handles to the created timers.
+TimerHandle_t xTimers[NUM_TIMERS];
+
+// An array to hold a count of the number of times each timer expires.
+int32_t lExpireCounters[ NUM_TIMERS ] = { 0 };
 
 
 void app_main(void) {
@@ -62,6 +71,8 @@ void app_main(void) {
     tmp117Task->createTask();
     //    canTestTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     TransceiverHandler::initialize_semaphore();
     /* Start the scheduler. */
@@ -210,3 +221,11 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
         }
     }
 }
+
+void vTimerCallback( TimerHandle_t pxTimer )
+ {
+    BaseType_t xHigherPriorityTaskWoken;
+    xHigherPriorityTaskWoken = pdFALSE;
+    xTaskNotifyFromISR(rf_txtask->taskHandle, TRANSMIT, eSetBits, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+ }

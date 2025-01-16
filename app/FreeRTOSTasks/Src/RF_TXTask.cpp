@@ -1,5 +1,8 @@
 #include "RF_TXTask.hpp"
 #include "Logger.hpp"
+#include <timers.h>
+#include "main.h"
+#include "app_main.h"
 
 PacketData RF_TXTask::createRandomPacketData(uint8_t length) {
     PacketData data{};
@@ -44,6 +47,22 @@ void RF_TXTask::execute() {
         LOG_DEBUG << "##########TX AMP ENABLED##########";
     uint8_t counter = 0;
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
+    // start the transmit timer
+    TimerHandle_t xTimer = xTimerCreate(
+    "Transmit Timer",
+    pdMS_TO_TICKS(2000),
+    pdTRUE,
+    (void *)nullptr,
+    vTimerCallback
+);
+
+    if (xTimer != NULL) {
+        if (xTimerStart(xTimer, 0) != pdPASS) {
+            LOG_INFO << "[TX TASK] Failed to start the timer";
+        }
+    } else {
+        LOG_INFO << "[TX TASK] Failed to create the timer";
+    }
     while (1) {
         /// without delay there is an issue on the receiver. The TX stops the transmission after a while and the receiver loses packets.
         /// But why ? There is also the delay of the TXFE interrupt which is around [1 / (50000 / (packetLenghtInbits)) s]. It should work just fine...
@@ -57,7 +76,7 @@ void RF_TXTask::execute() {
                         counter = 0;
                     // Prepare and send the packet
                     if (transceiver.agc_held == false) {
-                        if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false && transceiver.get_state(RF09, error) != RF_TRANSITION) {
+                        if (transceiver.rx_ongoing == false && transceiver.get_state(RF09, error) != RF_TRANSITION) {
                             packetTestData.packet[0] = counter++;
                             transceiver.set_state(RF09, RF_TRXOFF, error);
                             transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);

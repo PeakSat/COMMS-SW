@@ -12,21 +12,21 @@
 using namespace AT86RF215;
 class RF_RXTask : public Task {
 public:
-    RF_RXTask() : Task("RF RX TASK") {}
+    RF_RXTask() : Task("RF RX TASK"){}
     void ensureRxMode();
     void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,
-                                             RF_RXTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
                                              this->taskStack, &(this->taskBuffer));
     }
 
 private:
-    constexpr static uint16_t TaskStackDepth = 15000;
+    constexpr static uint16_t TaskStackDepth = 5000;
     /// Frequency in kHz
     constexpr static uint32_t FrequencyUHFRX = 401000;
-    AT86RF215::Error error;
-    StackType_t taskStack[TaskStackDepth];
+    AT86RF215::Error error = NO_ERRORS;
+    StackType_t taskStack[TaskStackDepth]{};
 };
 
 inline etl::optional<RF_RXTask> rf_rxtask;

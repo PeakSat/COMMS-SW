@@ -1,6 +1,6 @@
 #include "RF_RXTask.hpp"
-#include "RF_TXTask.hpp"
 #include "Logger.hpp"
+#include <RF_TXTask.hpp>
 
 using namespace AT86RF215;
 
@@ -46,6 +46,9 @@ void RF_RXTask::ensureRxMode() {
 
 void RF_RXTask::execute() {
     vTaskDelay(5000);
+
+
+
     LOG_INFO << "[RF RX TASK]";
     /// Set the Up-link frequency
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
@@ -74,40 +77,33 @@ void RF_RXTask::execute() {
     if (transceiver.get_state(RF09, error) == RF_RX)
         LOG_INFO << "[RF RX TASK] INITIAL STATE = RX";
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
-    /// Reference time for TX notification
-    TickType_t lastTxNotifyTime = xTaskGetTickCount();
     xTaskNotify(rf_txtask->taskHandle, START_TX_TASK, eSetBits);
     uint32_t receivedEvents = 0;
     uint16_t received_length = 0;
     while (1) {
-        /// Notify TX task to transmit the packets
-        if ((xTaskGetTickCount() - lastTxNotifyTime) >= pdMS_TO_TICKS(1000)) {
-            xTaskNotify(rf_txtask->taskHandle, TRANSMIT, eSetBits);
-            lastTxNotifyTime = xTaskGetTickCount();
-        }
         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
             if (transceiver.tx_ongoing == false)
                 ensureRxMode();
             xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
         }
         if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(50))) {
-            if (receivedEvents & AGC_HOLD) {
-                LOG_INFO << "RSSI [AGC HOLD]: " << transceiver.get_rssi(RF09, error);
-                transceiver.print_error(error);
-            }
+            // if (receivedEvents & AGC_HOLD) {
+            //     LOG_INFO << "RSSI [AGC HOLD]: " << transceiver.get_rssi(RF09, error);
+            //     transceiver.print_error(error);
+            // }
             if (receivedEvents & RXFE) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     if (result.has_value()) {
                         received_length = result.value();
                         LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
-                        LOG_INFO << "Counter packet: " << transceiver.spi_read_8((AT86RF215::BBC0_FBRXS), error);
+                        LOG_INFO << "Counter packet: " << transceiver.spi_read_8((BBC0_FBRXS), error);
                     } else
                         transceiver.print_error(error);
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
                 }
             }
-
         }
     }
 }
+
