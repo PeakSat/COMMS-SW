@@ -87,15 +87,15 @@ void RF_RXTask::execute() {
             xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
         }
         if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(50))) {
-            // if (receivedEvents & AGC_HOLD) {
-            //     LOG_INFO << "RSSI [AGC HOLD]: " << transceiver.get_rssi(RF09, error);
-            //     transceiver.print_error(error);
-            // }
+
             if (receivedEvents & RXFE) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     if (result.has_value()) {
                         received_length = result.value();
+                        if (received_length != 1024) {
+                            transceiver.print_error(error);
+                        }
                         LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
                         LOG_INFO << "Counter packet: " << transceiver.spi_read_8((BBC0_FBRXS), error);
                     } else

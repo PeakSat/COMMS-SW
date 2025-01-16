@@ -4,6 +4,51 @@
 #include "main.h"
 #include "app_main.h"
 
+void RF_TXTask::ensureTxMode() {
+    State rf_state = transceiver.get_state(RF09, error);
+    switch (rf_state) {
+        case RF_NOP:
+            LOG_DEBUG << "[TX ENSURE] STATE: NOP";
+        break;
+        case RF_SLEEP:
+            LOG_DEBUG << "[TX ENSURE] STATE: SLEEP";
+        break;
+        case RF_TRXOFF:
+            LOG_DEBUG << "[TX ENSURE] STATE: TRXOFF";
+        break;
+        case RF_TX:
+            LOG_DEBUG << "[TX ENSURE] STATE: TX";
+            // transceiver.set_state(RF09, RF_TRXOFF, error);
+        break;
+        case RF_RX:
+            LOG_DEBUG << "[TX ENSURE] STATE: RX";
+            if (transceiver.rx_ongoing == false && transceiver.agc_held == false)
+                // transceiver.set_state(RF09, RF_TRXOFF, error);
+                    __NOP();
+            else {
+                LOG_DEBUG << "[TX ENSURE] RX_ONGOING " << transceiver.rx_ongoing;
+                LOG_DEBUG << "[TX ENSURE] AGC HELD " << transceiver.agc_held;
+            }
+            break;
+        case RF_TRANSITION:
+            LOG_DEBUG << "[TX ENSURE] STATE: TRANSITION";
+        break;
+        case RF_RESET:
+            LOG_DEBUG << "[TX ENSURE] STATE: RESET";
+        break;
+        case RF_INVALID:
+            LOG_DEBUG << "[TX ENSURE] STATE: INVALID";
+        break;
+        case RF_TXPREP:
+            LOG_DEBUG << "[TX ENSURE] STATE: TXPREP";
+            // transceiver.set_state(RF09, RF_TRXOFF, error);
+        break;
+        default:
+            LOG_ERROR << "UNDEFINED";
+        break;
+    }
+}
+
 PacketData RF_TXTask::createRandomPacketData(uint8_t length) {
     PacketData data{};
     for (uint8_t i = 0; i < length; i++)
@@ -53,8 +98,7 @@ void RF_TXTask::execute() {
     pdMS_TO_TICKS(2000),
     pdTRUE,
     (void *)nullptr,
-    vTimerCallback
-);
+    vTimerCallback);
 
     if (xTimer != NULL) {
         if (xTimerStart(xTimer, 0) != pdPASS) {
@@ -63,6 +107,7 @@ void RF_TXTask::execute() {
     } else {
         LOG_INFO << "[TX TASK] Failed to create the timer";
     }
+    uint8_t transmit_notify_counter = 0;
     while (1) {
         /// without delay there is an issue on the receiver. The TX stops the transmission after a while and the receiver loses packets.
         /// But why ? There is also the delay of the TXFE interrupt which is around [1 / (50000 / (packetLenghtInbits)) s]. It should work just fine...
@@ -71,19 +116,26 @@ void RF_TXTask::execute() {
         /// We had the same issue on the campaign.
         if (xTaskNotifyWait(TRANSMIT, TRANSMIT, &receivedEvents, portMAX_DELAY) == pdTRUE) {
             if (receivedEvents & TRANSMIT) {
+                transmit_notify_counter++;
+                if (transmit_notify_counter == 255) {transmit_notify_counter = 0;}
+                LOG_DEBUG << "[TX TASK] Notification counter: " << transmit_notify_counter;
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     if (counter == 255)
                         counter = 0;
                     // Prepare and send the packet
                     if (transceiver.agc_held == false) {
-                        if (transceiver.rx_ongoing == false && transceiver.get_state(RF09, error) != RF_TRANSITION) {
+                        if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false && transceiver.get_state(RF09, error) != RF_TRANSITION) {
                             packetTestData.packet[0] = counter++;
-                            transceiver.set_state(RF09, RF_TRXOFF, error);
                             transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                            transceiver.print_error(error);
-                            transceiver.print_state(RF09, error);
                             LOG_INFO << "[TX TASK] Transmitted packet: " << counter;
                         }
+                    }
+                    if (transmit_notify_counter != counter) {
+                        transceiver.print_error(error);
+                        transceiver.print_state(RF09, error);
+                        LOG_DEBUG << "[TX ENSURE] RX_ONGOING " << transceiver.rx_ongoing;
+                        LOG_DEBUG << "[TX ENSURE] TX_ONGOING " << transceiver.tx_ongoing;
+                        LOG_DEBUG << "[TX ENSURE] AGC HELD " << transceiver.agc_held;
                     }
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
                 }

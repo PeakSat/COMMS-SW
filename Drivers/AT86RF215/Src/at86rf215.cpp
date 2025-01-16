@@ -608,12 +608,12 @@ namespace AT86RF215 {
     void At86rf215::transmitBasebandPacketsTx(Transceiver transceiver,
                                               uint8_t* packet, uint16_t length, Error& err) {
         if (tx_ongoing || rx_ongoing) {
-            err = Error::ONGOING_TRANSMISSION_RECEPTION;
+            err = ONGOING_TRANSMISSION_RECEPTION;
             return;
         }
 
-        set_state(transceiver, State::RF_TRXOFF, err);
-        if (err != Error::NO_ERRORS) {
+        set_state(transceiver, RF_TRXOFF, err);
+        if (err != NO_ERRORS) {
             return;
         }
 
@@ -633,22 +633,22 @@ namespace AT86RF215 {
 
         /// write length to register
         spi_write_8(regtxfll, length & 0xFF, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         spi_write_8(regtxflh, (length >> 8) & 0x07, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
 
         /// write to tx frame buffer
 
         spi_block_write_8(regfbtxs, length, packet, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         tx_ongoing = true;
-        set_state(transceiver, State::RF_TXPREP, err);
+        set_state(transceiver, RF_TXPREP, err);
     }
 
     void At86rf215::clear_channel_assessment(Transceiver transceiver, Error& err) {
@@ -1544,8 +1544,6 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
-            //            xTaskNotifyFromISR(rf_txtask->taskHandle, TXFE, eSetBits, &xHigherPriorityTaskWoken);
-            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
             // Receiver Extended Match handling

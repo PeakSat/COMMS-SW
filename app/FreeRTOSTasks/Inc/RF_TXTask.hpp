@@ -20,6 +20,7 @@ public:
     RF_TXTask() : Task("RF-TX Task") {}
     void print_state();
     void execute();
+    void ensureTxMode();
     static PacketData createRandomPacketData(uint8_t length);
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_TXTask>, this->TaskName,
