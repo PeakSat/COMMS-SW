@@ -705,7 +705,7 @@ namespace AT86RF215 {
         etl::expected<uint16_t, Error> get_received_length(Transceiver transceiver, Error& err);
         etl::expected<void, Error> check_transceiver_connection(Error& err);
         void packetReception(Transceiver transceiver, Error& err);
-        State print_state(Transceiver transceiver, Error& err);
+        void print_state(Transceiver transceiver, Error& err);
         void print_error(Error& err);
         uint8_t received_packet[2047];
         /// Radio interrupts

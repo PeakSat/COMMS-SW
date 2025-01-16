@@ -1370,7 +1370,7 @@ namespace AT86RF215 {
         return received_length;
     }
 
-    State At86rf215::print_state(Transceiver transceiver, Error& err) {
+    void At86rf215::print_state(Transceiver transceiver, Error& err) {
         State rf_state = get_state(RF09, err);
         switch (rf_state) {
             case RF_NOP:

@@ -11,8 +11,6 @@ void RF_RXTask::ensureRxMode() {
         transceiver.set_state(RF09, RF_TXPREP, error);
         vTaskDelay(20);
         transceiver.set_state(RF09, State::RF_RX, error);
-        if (transceiver.get_state(RF09, error) == RF_RX)
-            LOG_INFO << "[RX TASK - ENSURE] STATE = RX";
     }
 }
 void RF_RXTask::execute() {
@@ -39,9 +37,9 @@ void RF_RXTask::execute() {
         transceiver.setup(error);
         xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
     }
-    transceiver.set_state(AT86RF215::RF09, State::RF_TXPREP, error);
+    transceiver.set_state(RF09, RF_TXPREP, error);
     vTaskDelay(pdMS_TO_TICKS(20));
-    transceiver.set_state(AT86RF215::RF09, State::RF_RX, error);
+    transceiver.set_state(RF09, RF_RX, error);
     if (transceiver.get_state(RF09, error) == RF_RX)
         LOG_INFO << "[RF RX TASK] INITIAL STATE = RX";
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
@@ -49,15 +47,18 @@ void RF_RXTask::execute() {
     TickType_t lastTxNotifyTime = xTaskGetTickCount();
     xTaskNotify(rf_txtask->taskHandle, START_TX_TASK, eSetBits);
     uint32_t receivedEvents = 0;
-    uint16_t received_length;
+    uint16_t received_length = 0;
     while (1) {
         /// Notify TX task
-        /// If you send TM with a period smaller than 2s you may lose packets on receive. But we are okay with that because we send housekeeping every 1 min
-        if ((xTaskGetTickCount() - lastTxNotifyTime) >= pdMS_TO_TICKS(5000)) {
+        if ((xTaskGetTickCount() - lastTxNotifyTime) >= pdMS_TO_TICKS(2000)) {
             xTaskNotify(rf_txtask->taskHandle, TRANSMIT, eSetBits);
             lastTxNotifyTime = xTaskGetTickCount();
         }
-        if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(20))) {
+        if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+            ensureRxMode();
+            xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+        }
+        if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(50))) {
             if (receivedEvents & RXFE) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
@@ -79,6 +80,5 @@ void RF_RXTask::execute() {
                 transceiver.print_error(error);
             }
         }
-        ensureRxMode();
     }
 }

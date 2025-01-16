@@ -9,7 +9,6 @@ PacketData RF_TXTask::createRandomPacketData(uint8_t length) {
     return data;
 }
 
-
 void RF_TXTask::execute() {
     uint32_t receivedEvents = 0;
     if (xTaskNotifyWait(START_TX_TASK, START_TX_TASK, &receivedEvents, portMAX_DELAY) == pdTRUE) {
@@ -36,7 +35,6 @@ void RF_TXTask::execute() {
         transceiver.setup(error);
         xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
     }
-
     /// TX AMP
     GPIO_PinState txamp = GPIO_PIN_SET;
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
@@ -59,12 +57,15 @@ void RF_TXTask::execute() {
                     if (counter == 255)
                         counter = 0;
                     // Prepare and send the packet
-                    packetTestData.packet[0] = counter++;
-                    transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                    transceiver.print_error(error);
-                    LOG_INFO << "[TX TASK] Transmitted packet: " << counter;
-                    transceiver.print_state(RF09, error);
-
+                    if (transceiver.agc_held == false) {
+                        if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false) {
+                            packetTestData.packet[0] = counter++;
+                            transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                            transceiver.print_error(error);
+                            transceiver.print_state(RF09, error);
+                            LOG_INFO << "[TX TASK] Transmitted packet: " << counter;
+                        }
+                    }
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
                 }
             }
