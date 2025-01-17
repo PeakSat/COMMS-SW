@@ -21,7 +21,7 @@ public:
     void print_state();
     void execute();
     void ensureTxMode();
-    static PacketData createRandomPacketData(uint8_t length);
+    static PacketData createRandomPacketData(uint16_t length);
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_TXTask>, this->TaskName,
                                              this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
