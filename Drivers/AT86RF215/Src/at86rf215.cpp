@@ -1534,6 +1534,7 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         }
         if ((irq & InterruptMask::AGCRelease) != 0) {
             // AGC Release handling
+            xTaskNotifyFromISR(rf_txtask->taskHandle, AGC_RELEASE, eSetBits, &xHigherPriorityTaskWoken);
             AGCRelease_flag = true;
         }
         if ((irq & InterruptMask::AGCHold) != 0) {

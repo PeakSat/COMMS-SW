@@ -2,7 +2,7 @@
 
 namespace AT86RF215 {
 
-#define MaxPacketLength 512
+#define MaxPacketLength 1024
 #define FBLI (1 << 0)
 #define RXFE (1 << 1)
 #define RXFS (1 << 2)
