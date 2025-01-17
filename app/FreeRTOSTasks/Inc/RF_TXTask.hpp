@@ -17,6 +17,7 @@ struct PacketData {
 
 class RF_TXTask : public Task {
 public:
+   uint8_t rx;
     RF_TXTask() : Task("RF-TX Task") {}
     void print_state();
     void execute();
@@ -32,7 +33,7 @@ private:
     constexpr static uint16_t TaskStackDepth = 5000;
     /// Frequency in kHz
     constexpr static uint32_t FrequencyUHFTX = 401000;
-    AT86RF215::Error error = NO_ERRORS;
+    Error error = NO_ERRORS;
     StackType_t taskStack[TaskStackDepth]{};
 };
 

@@ -25,7 +25,7 @@ private:
     constexpr static uint16_t TaskStackDepth = 5000;
     /// Frequency in kHz
     constexpr static uint32_t FrequencyUHFRX = 401000;
-    AT86RF215::Error error = NO_ERRORS;
+    Error error = NO_ERRORS;
     StackType_t taskStack[TaskStackDepth]{};
 };
 

@@ -19,11 +19,21 @@ void RF_RXTask::ensureRxMode() {
                 /// the delay here is essential
                 vTaskDelay(20);
                 transceiver.set_state(RF09, RF_RX, error);
+                transceiver.print_state(RF09, error);
         break;
         case RF_TX:
                 LOG_DEBUG << "[RX ENSURE] STATE: TX";
+                HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
+                vTaskDelay(20);
+                HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
+                transceiver.set_state(RF09, RF_TXPREP, error);
+                /// the delay here is essential
+                vTaskDelay(20);
+                transceiver.set_state(RF09, RF_RX, error);
+                transceiver.print_state(RF09, error);
         break;
         case RF_RX:
+            LOG_DEBUG << "[RX ENSURE] STATE: RX";
         break;
         case RF_TRANSITION:
                 LOG_DEBUG << "[RX ENSURE] STATE: TRANSITION";
@@ -42,11 +52,14 @@ void RF_RXTask::ensureRxMode() {
             /// the delay here is essential
             vTaskDelay(20);
             transceiver.set_state(RF09, RF_RX, error);
-                LOG_DEBUG << "[RX ENSURE] STATE: INVALID";
+            LOG_DEBUG << "[RX ENSURE] STATE: INVALID";
+            transceiver.print_state(RF09, error);
         break;
         case RF_TXPREP:
                 LOG_DEBUG << "[RX ENSURE] STATE: TXPREP";
+                vTaskDelay(10);
                 transceiver.set_state(RF09, RF_RX, error);
+                transceiver.print_state(RF09, error);
         break;
         default:
             LOG_ERROR << "UNDEFINED";
@@ -89,27 +102,27 @@ void RF_RXTask::execute() {
     uint32_t receivedEvents = 0;
     uint16_t received_length = 0;
     while (1) {
-        if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-            if (transceiver.tx_ongoing == false)
+        if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false) {
+            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                 ensureRxMode();
-            xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+            }
         }
-        if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(20))) {
-            if (receivedEvents & RXFE) {
+        if (xTaskNotifyWait(0, RXFE, &receivedEvents, pdMS_TO_TICKS(50))) {
+            if (receivedEvents & RXFE || receivedEvents & RXFS || receivedEvents & AGC_HOLD ) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
-                    if (result.has_value()) {
-                        received_length = result.value();
-                        if (received_length == 1024) {
-                            LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
-                            LOG_INFO << "Counter packet: " << transceiver.spi_read_8((BBC0_FBRXS), error);
-                        }
-                        else {
-                            transceiver.print_error(error);
-                            LOG_ERROR << "DROP RX MESSAGE";
-                        }
-                    } else
+                    received_length = result.value();
+                    if (received_length == 1024) {
+                        // LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
+                        LOG_INFO << "RX Counter packet: " << transceiver.spi_read_8((BBC0_FBRXS), error);
+                        // ensureRxMode();
+                    }
+                    else {
                         transceiver.print_error(error);
+                        LOG_ERROR << "DROP RX MESSAGE";
+                        // ensureRxMode();
+                    }
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
                 }
             }
