@@ -1507,14 +1507,16 @@ void At86rf215::print_error(AT86RF215::Error& err) {
 
             if (rx_ongoing) {
                 // Switch to TX state once the transceiver is ready to send
-                // set_state(Transceiver::RF09, State::RF_RX, err);
+                if (get_state(RF09, err) != RF_RX)
+                    set_state(Transceiver::RF09, State::RF_RX, err);
                 if (cca_ongoing) {
                     // spi_write_8(RF09_EDC, 0x1, err);
                 }
             }
             if (tx_ongoing) {
                 // Switch to TX state once the transceiver is ready to send
-                set_state(Transceiver::RF09, State::RF_TX, err);
+                if (get_state(RF09, err) != RF_TX)
+                    set_state(Transceiver::RF09, State::RF_TX, err);
             }
             //            xTaskNotifyFromISR(rf_rxtask->taskHandle, TRXRDY, eSetBits, &xHigherPriorityTaskWoken);
             //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -1544,10 +1546,11 @@ void At86rf215::print_error(AT86RF215::Error& err) {
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
+            xHigherPriorityTaskWoken = pdFALSE;
             TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
             xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, 1, TXFE, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
             // Receiver Extended Match handling
@@ -1562,6 +1565,7 @@ void At86rf215::print_error(AT86RF215::Error& err) {
             if (rx_ongoing) {
                 rx_ongoing = false;
             }
+            xHigherPriorityTaskWoken = pdFALSE;
             xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, 2, RXFE, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }

@@ -98,24 +98,27 @@ void RF_RXTask::execute() {
     vTaskDelay(20);
     transceiver.set_state(RF09, RF_RX, error);
     uint16_t received_length = 0;
+
     while (1) {
         // wait for index 0
-        if (xTaskNotifyWaitIndexed(0, 0, AGC_HOLD, &receivedEvents, pdMS_TO_TICKS(100))) {
+        if (xTaskNotifyWaitIndexed(0, 0, AGC_HOLD, &receivedEvents, pdMS_TO_TICKS(50))) {
             if (receivedEvents & AGC_HOLD) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+                    // vTaskSuspendAll();
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
                     if (received_length == 1024) {
-                        // LOG_INFO << "RX PACKET WITH RECEPTION LENGTH: " << received_length;
                         LOG_INFO << "RX Counter packet: " << transceiver.spi_read_8((BBC0_FBRXS), error);
-                        // ensureRxMode();
                     }
                     else {
                         transceiver.print_error(error);
                         LOG_ERROR << "DROP RX MESSAGE";
-                        // ensureRxMode();
                     }
+                    // xTaskResumeAll();
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                }
+                else {
+                    LOG_DEBUG << "[RX TASK] - COULD NOT ACQUIRE THE SEMAPHORE - INSIDE AGC HOLD";
                 }
             }
             else {
@@ -123,16 +126,21 @@ void RF_RXTask::execute() {
             }
         }
         else {
-                if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, pdMS_TO_TICKS(1000)) == pdTRUE) {
-                    transceiver.chip_reset(error);
-                    ensureRxMode();
-                    xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-                }
-                else {
-                    LOG_DEBUG << "[RX TASK] - COULD NOT ACQUIRE THE SEMAPHORE";
-                }
             LOG_DEBUG << "[RX TASK] - NO EVENTS - TIMEOUT";
+            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, pdMS_TO_TICKS(1000)) == pdTRUE) {
+                if (transceiver.tx_ongoing == false && transceiver.rx_ongoing == false) {
+                    transceiver.print_error(error);
+                    ensureRxMode();
+                    transceiver.print_error(error);
+                }
+                xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+            }
+            else {
+                transceiver.print_error(error);
+                LOG_DEBUG << "[RX TASK] - COULD NOT ACQUIRE THE SEMAPHORE";
+            }
         }
     }
+
 }
 

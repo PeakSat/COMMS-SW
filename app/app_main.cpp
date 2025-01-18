@@ -227,7 +227,7 @@ void vTimerCallback( TimerHandle_t pxTimer )
     BaseType_t xHigherPriorityTaskWoken;
     xHigherPriorityTaskWoken = pdFALSE;
     if (pvTimerGetTimerID(pxTimer) == (void* )1) {
-            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, 0, TRANSMIT, eSetBits, &xHigherPriorityTaskWoken);
+        xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, 0, TRANSMIT, eSetBits, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
  }
