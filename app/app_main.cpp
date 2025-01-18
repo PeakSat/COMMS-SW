@@ -22,9 +22,12 @@
 #include "RF_RXTask.hpp"
 #include "git_version.h"
 
+#include <ParameterService.hpp>
+#include <ServicePool.hpp>
+// ServicePool Services = ServicePool();
+ParameterService parameterMap;
 
 void app_main(void) {
-
     eMMC::eMMCMemoryInit();
     if (eMMC::memoryMap[eMMC::firmware].endAddress != 0) {
         __NOP();
@@ -42,14 +45,14 @@ void app_main(void) {
     uartGatekeeperTask.emplace();
     rf_rxtask.emplace();
     rf_txtask.emplace();
-    // eMMCTask.emplace();
+    eMMCTask.emplace();
     // gnssTask.emplace();
 
 
     // ina3221Task.emplace();
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
-    // canTestTask.emplace();
+    canTestTask.emplace();
 
     uartGatekeeperTask->createTask();
     rf_rxtask->createTask();
@@ -58,13 +61,13 @@ void app_main(void) {
     // Ensure task handle is valid
 
 
-    // eMMCTask->createTask();
+    eMMCTask->createTask();
     // gnssTask->createTask();
     testTask->createTask();
     // ina3221Task->createTask();
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
-    // canTestTask->createTask();
+    canTestTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     TransceiverHandler::initialize_semaphore();

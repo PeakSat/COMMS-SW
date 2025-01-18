@@ -11,7 +11,7 @@
 
 void TestTask::execute() {
     vTaskDelay(5000);
-    etl::array<uint16_t, CAN::TPMessageMaximumArguments> OBCTempIDs = {5000};
+    etl::array<uint16_t, CAN::TPMessageMaximumArguments> OBCTempIDs = {5002};
     // constexpr int start_id = 3000; // Starting ID
     // constexpr int end_id = 3614;   // Ending ID
     // constexpr int size = end_id - start_id;
@@ -23,10 +23,10 @@ void TestTask::execute() {
     // }
     LOG_INFO << "[TestTask] START ";
     while (true) {
-        LOG_DEBUG << "--------------Parameters Print----------------";
-        LOG_DEBUG << "Parameter GNSS Temperature: " << COMMSParameters::commsGNSSTemperature.getValue();
-        LOG_DEBUG << "Parameter UHF PA Temperature: " << COMMSParameters::commsUHFBandPATemperature.getValue();
-        LOG_DEBUG << "Parameter PCB Temperature: " << COMMSParameters::commsPCBTemperature.getValue();
+        // LOG_DEBUG << "--------------Parameters Print----------------";
+        // LOG_DEBUG << "Parameter GNSS Temperature: " << COMMSParameters::commsGNSSTemperature.getValue();
+        // LOG_DEBUG << "Parameter UHF PA Temperature: " << COMMSParameters::commsUHFBandPATemperature.getValue();
+        // LOG_DEBUG << "Parameter PCB Temperature: " << COMMSParameters::commsPCBTemperature.getValue();
         // Message Generation - parameter service
         /// auto &parameterManagement = Services.parameterManagement;
         // Message requestMessage;
@@ -36,13 +36,14 @@ void TestTask::execute() {
         // ParameterReportStructureId structure_ids[3] = {1, 2, 3}; // TODO: Add correct IDs @tsoupos
         // generateOneShotReport.appendUint8(numberOfStructs);
         // for (auto& id: structure_ids) {
-            // generateOneShotReport.append<ParameterReportStructureId>(id);
+        // generateOneShotReport.append<ParameterReportStructureId>(id);
         // }
         /// housekeeping
         // auto cobsEncoded = COBSencode<ECSSMaxMessageSize>(generateOneShotReport.data.data(), generateOneShotReport.dataSize);
         /// parameter service
         CAN::Application::createRequestParametersMessage(CAN::OBC, false, OBCTempIDs, false);
         LOG_DEBUG << "REQUESTING TEMP PARAMETERS";
+        LOG_DEBUG << COMMSParameters::commsUHFBandPATemperature.getValue();
         // CAN::Application::createRequestParametersMessage(CAN::OBC, false, EPSIDs, false);
         // LOG_DEBUG << "REQUESTING EPS PARAMETERS FROM OBC" ;
         // LOG_DEBUG << "Generate COBS encoded: " << &cobsEncoded;

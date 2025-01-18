@@ -74,30 +74,28 @@ namespace CAN::Application {
 
         UTCTimestamp utc = now.toUTCtimestamp();
         etl::array<uint8_t, CAN::MaxPayloadLength> data = {0, 0, static_cast<uint8_t>(ticksOfDay),
-                                                               static_cast<uint8_t>(ticksOfDay >> 8),
-                                                               static_cast<uint8_t>(ticksOfDay >> 16),
-                                                               static_cast<uint8_t>(ticksOfDay >> 24),
-                                                               static_cast<uint8_t>(utc.day),
-                                                               static_cast<uint8_t>(utc.day >> 8)};
+                                                           static_cast<uint8_t>(ticksOfDay >> 8),
+                                                           static_cast<uint8_t>(ticksOfDay >> 16),
+                                                           static_cast<uint8_t>(ticksOfDay >> 24),
+                                                           static_cast<uint8_t>(utc.day),
+                                                           static_cast<uint8_t>(utc.day >> 8)};
 
         canGatekeeperTask->send({MessageIDs::UTCTime + CAN::NodeID, data}, false);
     }
 
     void createSendParametersMessage(NodeIDs destinationAddress, bool isMulticast,
-                                     const etl::array<uint16_t, TPMessageMaximumArguments> &parameterIDs, bool isISR) {
+                                     const etl::array<uint16_t, TPMessageMaximumArguments>& parameterIDs, bool isISR) {
         TPMessage message = {{CAN::NodeID, destinationAddress, isMulticast}};
 
         message.appendUint8(MessageIDs::SendParameters);
         message.appendUint16(parameterIDs.size());
         for (auto parameterID: parameterIDs) {
-            if (Services.parameterManagement.getParameter(parameterID)) {
+            if (parameterMap.getParameter(parameterID)) {
                 message.append(parameterID);
-                Services.parameterManagement.getParameter(parameterID)->get().appendValueToMessage(message);
-            }
-            else if (parameterID == 0 ) {
+                parameterMap.getParameter(parameterID)->get().appendValueToMessage(message);
+            } else if (parameterID == 0) {
                 continue;
-            }
-            else {
+            } else {
                 LOG_ERROR << "Requested parameter that doesn't exist! ID: " << parameterID;
             }
         }
@@ -105,7 +103,7 @@ namespace CAN::Application {
         CAN::TPProtocol::createCANTPMessage(message, isISR);
     }
     void createRequestParametersMessage(NodeIDs destinationAddress, bool isMulticast,
-                                        const etl::array<uint16_t, TPMessageMaximumArguments> &parameterIDs,
+                                        const etl::array<uint16_t, TPMessageMaximumArguments>& parameterIDs,
                                         bool isISR) {
         TPMessage message = {{CAN::NodeID, destinationAddress, isMulticast}};
 
@@ -177,7 +175,7 @@ namespace CAN::Application {
         CAN::TPProtocol::createCANTPMessage(message, isISR);
     }
 
-    void createCCSDSPacketMessage(NodeIDs destinationAddress, bool isMulticast, const Message &incomingMessage, bool isISR) {
+    void createCCSDSPacketMessage(NodeIDs destinationAddress, bool isMulticast, const Message& incomingMessage, bool isISR) {
         TPMessage message = {{CAN::NodeID, destinationAddress, isMulticast}};
 
         auto ccsdsMessage = MessageParser::compose(incomingMessage);
@@ -209,7 +207,7 @@ namespace CAN::Application {
         }
     }
 
-    void parseSendParametersMessage(TPMessage &message) {
+    void parseSendParametersMessage(TPMessage& message) {
         uint8_t messageType = message.readUint8();
         if (not ErrorHandler::assertInternal(messageType == SendParameters, ErrorHandler::UnknownMessageType)) {
             return;
@@ -218,13 +216,13 @@ namespace CAN::Application {
 
         for (uint16_t idx = 0; idx < parameterCount; idx++) {
             uint16_t parameterID = message.readUint16();
-            if (Services.parameterManagement.parameterExists(parameterID)) {
+            if (parameterMap.parameterExists(parameterID)) {
                 if constexpr (Logger::isLogged(Logger::debug)) {
                     String<64> logString = "The value for parameter with ID ";
                     etl::to_string(parameterID, logString, true);
                     logString.append(" was ");
 
-                    auto parameter = Services.parameterManagement.getParameter(parameterID);
+                    auto parameter = parameterMap.getParameter(parameterID);
                     etl::to_string(parameter->get().getValueAsDouble(), logString, true);
 
                     parameter->get().setValueFromMessage(message);
@@ -233,7 +231,7 @@ namespace CAN::Application {
 
                     LOG_DEBUG << logString.c_str();
                 } else {
-                    Services.parameterManagement.getParameter(parameterID)->get().setValueFromMessage(message);
+                    parameterMap.getParameter(parameterID)->get().setValueFromMessage(message);
                 }
             }
         }
@@ -242,7 +240,7 @@ namespace CAN::Application {
     void parseRequestParametersMessage(TPMessage& message) {
         uint8_t messageType = message.readUint8();
         if (not ErrorHandler::assertInternal(messageType == RequestParameters, ErrorHandler::UnknownMessageType)) {
-        return;
+            return;
         }
         uint16_t parameterCount = message.readUint16();
         etl::array<uint16_t, TPMessageMaximumArguments> parameterIDs = {};
@@ -265,7 +263,7 @@ namespace CAN::Application {
         LOG_DEBUG << logString.c_str();
     }
 
-    void parseTCMessage(TPMessage &message) {
+    void parseTCMessage(TPMessage& message) {
         uint8_t messageType = message.readUint8();
         if (not ErrorHandler::assertInternal(messageType == TCPacket, ErrorHandler::UnknownMessageType)) {
             return;

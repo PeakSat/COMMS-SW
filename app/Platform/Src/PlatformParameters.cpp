@@ -7,7 +7,7 @@
 
 void ParameterService::initializeParameterMap() {
     parameters = {
-        {COMMSParameters::OBCPCBTemperature1, COMMSParameters::obcPCBTemperature1},
+
         {COMMSParameters::COMMSUHFBandPATemperature, COMMSParameters::commsUHFBandPATemperature},
         {COMMSParameters::COMMSGNSSTemperature, COMMSParameters::commsGNSSTemperature},
         {COMMSParameters::COMMSPCBTemperature, COMMSParameters::commsPCBTemperature},
@@ -45,7 +45,8 @@ void ParameterService::initializeParameterMap() {
         {COMMSParameters::COMMSMCUSystick, COMMSParameters::commsMCUSystick},
         {COMMSParameters::COMMSFlashInt, COMMSParameters::commsFlashInt},
         {COMMSParameters::COMMSSRAMInt, COMMSParameters::commsSRAMInt},
-    };
+        {COMMSParameters::OBCPCBTemperature1, COMMSParameters::obcPCBTemperature1},
+        {COMMSParameters::OBCMCUTemperature, COMMSParameters::obcMCUTemperature}};
 }
 
 #endif
