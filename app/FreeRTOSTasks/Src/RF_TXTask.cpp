@@ -1,8 +1,12 @@
 #include "RF_TXTask.hpp"
+#include "RF_RXTask.hpp"
+
 #include "Logger.hpp"
 #include <timers.h>
 #include "main.h"
 #include "app_main.h"
+
+#include <RF_RXTask.hpp>
 
 void RF_TXTask::ensureTxMode() {
     State rf_state = transceiver.get_state(RF09, error);
@@ -55,16 +59,17 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
 }
 
 void RF_TXTask::execute() {
-    uint32_t receivedEvents = 0;
-    if (xTaskNotifyWait(START_TX_TASK, START_TX_TASK, &receivedEvents, portMAX_DELAY) == pdTRUE) {
-        if (receivedEvents & START_TX_TASK) {
-            LOG_INFO << "Starting RF TX Task NOMINALLY"; // Handle the event
-        }
-    } else {
-        // In case the notification was not received, you can log or handle it
-        LOG_ERROR << "RF RX Task notification error.";
-    }
-    LOG_INFO << "Starting RF TX Task"; // Handle the event
+
+    vTaskDelay(8000);
+    // if (xTaskNotifyWaitIndexed(4, 0, START_TX_TASK, &receivedEvents, portMAX_DELAY) == pdTRUE) {
+    //     if (receivedEvents & START_TX_TASK) {
+    //         LOG_INFO << "Starting RF TX Task NOMINALLY"; // Handle the event
+    //     }
+    // } else {
+    //     // In case the notification was not received, you can log or handle it
+    //     LOG_ERROR << "RF RX Task notification error.";
+    // }
+    // LOG_INFO << "Starting RF TX Task"; // Handle the event
     /// Check transceiver connection
     if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
         auto status = transceiver.check_transceiver_connection(error);
@@ -90,7 +95,7 @@ void RF_TXTask::execute() {
     uint8_t counter = 0;
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
     StaticTimer_t xTimerBuffer;
-    TimerHandle_t xTimer =  xTimerCreateStatic("Transmit Timer", pdMS_TO_TICKS(500), pdTRUE, (void *)nullptr, vTimerCallback, &xTimerBuffer);
+    TimerHandle_t xTimer =  xTimerCreateStatic("Transmit Timer", pdMS_TO_TICKS(500), pdTRUE, (void *)1, vTimerCallback, &xTimerBuffer);
     if (xTimer != NULL) {
         if (xTimerStart(xTimer, 0) != pdPASS) {
             LOG_ERROR << "[TX TASK] Failed to start the timer";
@@ -98,82 +103,90 @@ void RF_TXTask::execute() {
     } else {
         LOG_INFO << "[TX TASK] START THE TX TIMER";
     }
-    uint8_t transmit_notify_counter = 0;
     while (1) {
-        if (xTaskNotifyWait(0, TRANSMIT, &receivedEvents, portMAX_DELAY) == pdTRUE) {
-            if (receivedEvents & TRANSMIT) {
-                // Prepare and send the packet
-                xTimerStop(xTimer, 0);
-                if (transceiver.rx_ongoing){
-                    if (xTaskNotifyWait(0, RXFE, &receivedEvents, pdTICKS_TO_MS(1000)) == pdTRUE) {
-                        if (receivedEvents & RXFE) {
+        // wait for index 0
+        uint32_t receivedEventsTransmit = 0;
+        if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore,  pdTICKS_TO_MS(1000))) {
+            if (xTaskNotifyWaitIndexed(0, 0, TRANSMIT, &receivedEventsTransmit, portMAX_DELAY) == pdTRUE) {
+                if (receivedEventsTransmit & TRANSMIT) {
+                    receivedEventsTransmit = 0;
+                    // Prepare and send the packet
+                    xTimerStop(xTimer, 0);
+                    if (transceiver.rx_ongoing){
+                        // wait for index 2
+                        uint32_t receivedEventsRXFE = 0;
+                        if (xTaskNotifyWaitIndexed(2, 0, RXFE, &receivedEventsRXFE, pdTICKS_TO_MS(1000)) == pdTRUE){
+                            if (receivedEventsRXFE & RXFE) {
+                                transceiver.rx_ongoing = false;
+                                receivedEventsRXFE = 0;
+                                xTimerStart(xTimer, 0);
+                                LOG_DEBUG << "[TX TASK]: " << transceiver.tx_ongoing;
+                                LOG_DEBUG << "[TX TASK]: " << transceiver.rx_ongoing;
+                                LOG_DEBUG << "[TX TASK] RECEIVE FRAME END";
+                                if (transceiver.tx_ongoing == false) {
+                                        ensureTxMode();
+                                        packetTestData.packet[0] = counter++;
+                                        transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                                }
+                            }
+                            else
+                                LOG_DEBUG << "[TX TASK] RXFE - OTHER EVENT" << receivedEventsRXFE;
+                        }
+                        else {
                             xTimerStart(xTimer, 0);
                             LOG_DEBUG << "[TX TASK]: " << transceiver.tx_ongoing;
                             LOG_DEBUG << "[TX TASK]: " << transceiver.rx_ongoing;
-                            LOG_DEBUG << "[TX TASK] RECEIVE FRAME END";
-                            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-                                if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false) {
-                                    ensureTxMode();
-                                    packetTestData.packet[0] = counter++;
-                                    transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                                    // transceiver.print_error(error);
-                                    // LOG_INFO << "[TX TASK] Transmitted packet: " << counter;
-                                }
-                                xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-                            }
+                            LOG_ERROR << "[TX TASK] RECEIVE FRAME END DID NOT RECEIVED - TIMER STARTED ANYWAY";
                         }
                     }
-                    else {
-                        xTimerStart(xTimer, 0);
-                        LOG_DEBUG << "[TX TASK]: " << transceiver.tx_ongoing;
-                        LOG_DEBUG << "[TX TASK]: " << transceiver.rx_ongoing;
-                        LOG_ERROR << "[TX TASK] RECEIVE FRAME END DID NOT RECEIVED - TIMER STARTED ANYWAY";
-                    }
-                }
-                else if (transceiver.tx_ongoing) {
-                    if (xTaskNotifyWait(0, TXFE, &receivedEvents, pdTICKS_TO_MS(1000)) == pdTRUE) {
-                        if (receivedEvents & TXFE) {
-                            xTimerStart(xTimer, 0);
-                            LOG_DEBUG << "[TX TASK] TRANSMIT FRAME END";
-                            LOG_DEBUG << "[TX TASK]: " << transceiver.tx_ongoing;
-                            LOG_DEBUG << "[TX TASK]: " << transceiver.rx_ongoing;
-                            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-                                if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false) {
-                                    ensureTxMode();
-                                    packetTestData.packet[0] = counter++;
-                                    transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                                    LOG_INFO << "[TX TASK - TXFE] Transmitted packet: " << counter;
-                                }
-                                xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                    else if (transceiver.tx_ongoing) {
+                        // wait for index 1
+                        uint32_t receivedEventsTXFE;
+                        if (xTaskNotifyWaitIndexed(1, 0, TXFE, &receivedEventsTXFE, pdTICKS_TO_MS(1000)) == pdTRUE) {
+                            if (receivedEventsTXFE & TXFE) {
+                                transceiver.tx_ongoing = false;
+                                // receivedEventsTXFE = 0;
+                                xTimerStart(xTimer, 0);
+                                LOG_DEBUG << "[TX TASK] TRANSMIT FRAME END";
+                                LOG_DEBUG << "[TX TASK]: " << transceiver.tx_ongoing;
+                                LOG_DEBUG << "[TX TASK]: " << transceiver.rx_ongoing;
+                                    if (transceiver.rx_ongoing == false) {
+                                            ensureTxMode();
+                                            packetTestData.packet[0] = counter++;
+                                            transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                                            LOG_INFO << "[TX TASK - TXFE] Transmitted packet: " << counter;
+                                    }
+                            }
+                            else {
+                                LOG_DEBUG << "[TX TASK] TXFE - OTHER EVENT";
                             }
                         }
                         else {
                             xTimerStart(xTimer, 0);
-                            LOG_ERROR << "[TX TASK - TXFE]: " << receivedEvents;
+                            LOG_ERROR << "[TX TASK - TXFE]: " << receivedEventsTXFE;
                             LOG_ERROR << "[TX TASK] TRANSMIT FRAME END DID NOT RECEIVED - TIMER STARTED ANYWAY";
                         }
                     }
                     else {
                         LOG_INFO << "[TX TASK] NOMINAL" ;
-                        xTimerStart(xTimer, 0);
-                        if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+                            auto rx = transceiver.rx_ongoing;
+                            auto tx = transceiver.tx_ongoing;
+                            xTimerStart(xTimer, 0);
                             if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false) {
-                                ensureTxMode();
-                                packetTestData.packet[0] = counter++;
-                                transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                                transceiver.print_error(error);
-                                LOG_INFO << "[TX TASK - NOMINAL] Transmitted packet: " << counter;
+                                    ensureTxMode();
+                                    packetTestData.packet[0] = counter++;transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                                    transceiver.print_error(error);
+                                    LOG_INFO << "[TX TASK - NOMINAL] Transmitted packet: " << counter;
                             }
-                            xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-                        }
                     }
-                    transmit_notify_counter++;
-                    if (transmit_notify_counter == 255)
-                        transmit_notify_counter = 0;
                     if (counter == 255)
                         counter = 0;
                 }
+                else
+                    LOG_DEBUG << "[TX TASK]: OTHER EVENTS NOT THE TIMER" ;
             }
+            rf_rxtask->ensureRxMode();
+            xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
         }
     }
 }

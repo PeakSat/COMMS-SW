@@ -69,7 +69,6 @@ void RF_RXTask::ensureRxMode() {
 
 void RF_RXTask::execute() {
     vTaskDelay(5000);
-
     LOG_INFO << "[RF RX TASK]";
     /// Set the Up-link frequency
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
@@ -92,23 +91,16 @@ void RF_RXTask::execute() {
         transceiver.setup(error);
         xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
     }
-    transceiver.set_state(RF09, RF_TXPREP, error);
-    vTaskDelay(pdMS_TO_TICKS(20));
-    transceiver.set_state(RF09, RF_RX, error);
-    if (transceiver.get_state(RF09, error) == RF_RX)
-        LOG_INFO << "[RF RX TASK] INITIAL STATE = RX";
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
-    xTaskNotify(rf_txtask->taskHandle, START_TX_TASK, eSetBits);
-    uint32_t receivedEvents = 0;
+    uint32_t receivedEvents;
+    transceiver.set_state(RF09, RF_TXPREP, error);
+    /// the delay here is essential
+    vTaskDelay(20);
+    transceiver.set_state(RF09, RF_RX, error);
     uint16_t received_length = 0;
     while (1) {
-        if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false) {
-            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-                ensureRxMode();
-                xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-            }
-        }
-        if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(50))) {
+        // wait for index 0
+        if (xTaskNotifyWaitIndexed(0, 0, AGC_HOLD, &receivedEvents, pdMS_TO_TICKS(100))) {
             if (receivedEvents & AGC_HOLD) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
@@ -126,6 +118,20 @@ void RF_RXTask::execute() {
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
                 }
             }
+            else {
+                LOG_DEBUG << "[RX TASK] - OTHER EVENTS" << receivedEvents;
+            }
+        }
+        else {
+                if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, pdMS_TO_TICKS(1000)) == pdTRUE) {
+                    transceiver.chip_reset(error);
+                    ensureRxMode();
+                    xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                }
+                else {
+                    LOG_DEBUG << "[RX TASK] - COULD NOT ACQUIRE THE SEMAPHORE";
+                }
+            LOG_DEBUG << "[RX TASK] - NO EVENTS - TIMEOUT";
         }
     }
 }

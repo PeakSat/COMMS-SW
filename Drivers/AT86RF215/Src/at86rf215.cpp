@@ -660,7 +660,7 @@ namespace AT86RF215 {
             return;
         }
 
-        rx_ongoing = true;
+        // rx_ongoing = true;
         cca_ongoing = true;
         set_state(transceiver, State::RF_TXPREP, err);
     }
@@ -1499,17 +1499,17 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         }
         if ((irq & InterruptMask::EnergyDetectionCompletion) != 0) {
             EnergyDetectionCompletion_flag = true;
-            rx_ongoing = false;
-            cca_ongoing = false;
+            // rx_ongoing = false;
+            // cca_ongoing = false;
         }
         if ((irq & InterruptMask::TransceiverReady) != 0) {
             TransceiverReady_flag = true;
 
             if (rx_ongoing) {
                 // Switch to TX state once the transceiver is ready to send
-                set_state(Transceiver::RF09, State::RF_RX, err);
+                // set_state(Transceiver::RF09, State::RF_RX, err);
                 if (cca_ongoing) {
-                    spi_write_8(RF09_EDC, 0x1, err);
+                    // spi_write_8(RF09_EDC, 0x1, err);
                 }
             }
             if (tx_ongoing) {
@@ -1534,18 +1534,19 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         }
         if ((irq & InterruptMask::AGCRelease) != 0) {
             // AGC Release handling
-            xTaskNotifyFromISR(rf_txtask->taskHandle, AGC_RELEASE, eSetBits, &xHigherPriorityTaskWoken);
+            // xTaskNotifyFromISR(rf_txtask->taskHandle, AGC_RELEASE, eSetBits, &xHigherPriorityTaskWoken);
             AGCRelease_flag = true;
         }
         if ((irq & InterruptMask::AGCHold) != 0) {
             // AGC Hold handling
-            xTaskNotifyFromISR(rf_rxtask->taskHandle, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
+            rx_ongoing = true;
+            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, 0, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
-            xTaskNotifyFromISR(rf_txtask->taskHandle, TXFE, eSetBits, &xHigherPriorityTaskWoken);
+            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, 1, TXFE, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
@@ -1558,17 +1559,16 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         }
         if ((irq & InterruptMask::ReceiverFrameEnd) != 0) {
             ReceiverFrameEnd_flag = true;
-            xTaskNotifyFromISR(rf_rxtask->taskHandle, RXFE, eSetBits, &xHigherPriorityTaskWoken);
-            xTaskNotifyFromISR(rf_txtask->taskHandle, RXFE, eSetBits, &xHigherPriorityTaskWoken);
-            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             if (rx_ongoing) {
                 rx_ongoing = false;
             }
+            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, 2, RXFE, eSetBits, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverFrameStart) != 0) {
-            xTaskNotifyFromISR(rf_rxtask->taskHandle, RXFS, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            rx_ongoing = true;
+            // xTaskNotifyFromISR(rf_rxtask->taskHandle, RXFS, eSetBits, &xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            // rx_ongoing = true;
         }
 
         /* 2.4 GHz Transceiver */
@@ -1599,7 +1599,7 @@ void At86rf215::print_error(AT86RF215::Error& err) {
             }
             if (tx_ongoing) {
                 // Switch to TX state once the transceiver is ready to send
-                set_state(Transceiver::RF24, State::RF_TX, err);
+                // set_state(Transceiver::RF24, State::RF_TX, err);
             }
         }
         if ((irq & InterruptMask::Wakeup) != 0) {
