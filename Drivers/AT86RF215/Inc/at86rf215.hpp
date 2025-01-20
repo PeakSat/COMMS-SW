@@ -19,8 +19,9 @@ namespace AT86RF215 {
     class TransceiverHandler {
     public:
         static SemaphoreHandle_t transceiver_semaphore;
+        static StaticSemaphore_t transceiver_semaphore_buffer;
         static void initialize_semaphore() {
-            transceiver_semaphore = xSemaphoreCreateMutex();
+            transceiver_semaphore = xSemaphoreCreateMutexStatic(&transceiver_semaphore_buffer);
         }
     };
 

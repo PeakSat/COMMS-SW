@@ -98,49 +98,66 @@ void RF_RXTask::execute() {
     vTaskDelay(20);
     transceiver.set_state(RF09, RF_RX, error);
     uint16_t received_length = 0;
-
+    static uint8_t previous_counter, current_counter = 0;
+    uint32_t drop_counter = 0;
     while (1) {
         // wait for index 0
         if (xTaskNotifyWaitIndexed(0, 0, AGC_HOLD, &receivedEvents, pdMS_TO_TICKS(50))) {
             if (receivedEvents & AGC_HOLD) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-                    // vTaskSuspendAll();
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
                     if (received_length == 1024) {
-                        LOG_INFO << "RX Counter packet: " << transceiver.spi_read_8((BBC0_FBRXS), error);
+                        current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
+                        LOG_DEBUG << "[RX RX] counter: " << current_counter;
+                        drop_counter = 0;
                     }
                     else {
-                        transceiver.print_error(error);
-                        LOG_ERROR << "DROP RX MESSAGE";
+                        drop_counter++;
+                        LOG_DEBUG << "[RX RX](DROP) counter: " << drop_counter;
+
                     }
-                    // xTaskResumeAll();
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+
                 }
                 else {
                     LOG_DEBUG << "[RX TASK] - COULD NOT ACQUIRE THE SEMAPHORE - INSIDE AGC HOLD";
                 }
             }
             else {
-                LOG_DEBUG << "[RX TASK] - OTHER EVENTS" << receivedEvents;
+                // LOG_DEBUG << "[RX TASK] - OTHER EVENTS" << receivedEvents;
             }
         }
         else {
-            LOG_DEBUG << "[RX TASK] - NO EVENTS - TIMEOUT";
-            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, pdMS_TO_TICKS(1000)) == pdTRUE) {
-                if (transceiver.tx_ongoing == false && transceiver.rx_ongoing == false) {
-                    transceiver.print_error(error);
-                    ensureRxMode();
-                    transceiver.print_error(error);
+            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+                switch (uint8_t state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
+                    case 0: { // rx_ongoing = false, tx_ongoing = false
+                        ensureRxMode();
+                        break;
+                    }
+                    case 1: { // rx_ongoing = false, tx_ongoing = true
+                        // Handle the case where tx_ongoing is true
+                        LOG_DEBUG << "[RX TASK] TXONG";
+                        break;
+                    }
+                    case 2: { // rx_ongoing = true, tx_ongoing = false
+                        // Handle the case where rx_ongoing is true
+                        LOG_DEBUG << "[RX TASK] RXONG";
+
+                        break;
+                    }
+                    case 3: { // rx_ongoing = true, tx_ongoing = true
+                        // Handle the case where both are true
+                        LOG_DEBUG << "[RX TASK] RXONG AND TXONG";
+                        break;
+                    }
+                    default: {
+                        // Handle any unexpected cases
+                        break;
+                    }
                 }
                 xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
             }
-            else {
-                transceiver.print_error(error);
-                LOG_DEBUG << "[RX TASK] - COULD NOT ACQUIRE THE SEMAPHORE";
-            }
         }
     }
-
 }
-

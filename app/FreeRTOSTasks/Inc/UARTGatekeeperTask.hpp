@@ -4,8 +4,8 @@
 #include "queue.h"
 #include "etl/string.h"
 #include "etl/optional.h"
-#define UARTQueueSize 10
-#define LOGGER_MAX_MESSAGE_SIZE 1024
+#define UARTQueueSize 100
+#define LOGGER_MAX_MESSAGE_SIZE 2048
 
 /**
  * Contains functionality of a Gatekeeper Task for the UART resource. It has the sole access to UART, to avoid any
@@ -22,7 +22,7 @@ private:
 
     uint8_t ucQueueStorageArea[UARTQueueSize * sizeof(etl::string<LOGGER_MAX_MESSAGE_SIZE>)];
 
-    const static uint16_t TaskStackDepth = 10000;
+    const static uint16_t TaskStackDepth = 15000;
 
     StackType_t taskStack[TaskStackDepth];
 

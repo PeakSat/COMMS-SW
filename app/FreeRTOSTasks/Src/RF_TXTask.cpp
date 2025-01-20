@@ -43,6 +43,7 @@ void RF_TXTask::ensureTxMode() {
         break;
         case RF_TXPREP:
             LOG_DEBUG << "[TX ENSURE] STATE: TXPREP";
+            transceiver.set_state(RF09, RF_TRXOFF, error);
         break;
         default:
             LOG_ERROR << "UNDEFINED";
@@ -95,7 +96,7 @@ void RF_TXTask::execute() {
     uint8_t counter = 0;
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
     StaticTimer_t xTimerBuffer;
-    TimerHandle_t xTimer =  xTimerCreateStatic("Transmit Timer", pdMS_TO_TICKS(500), pdTRUE, (void *)1, vTimerCallback, &xTimerBuffer);
+    TimerHandle_t xTimer =  xTimerCreateStatic("Transmit Timer", pdMS_TO_TICKS(200), pdTRUE, (void *)1, vTimerCallback, &xTimerBuffer);
     if (xTimer != NULL) {
         if (xTimerStart(xTimer, 0) != pdPASS) {
             LOG_ERROR << "[TX TASK] Failed to start the timer";
@@ -104,103 +105,99 @@ void RF_TXTask::execute() {
         LOG_INFO << "[TX TASK] START THE TX TIMER";
     }
     UBaseType_t uxHighWaterMark;
-    while (1) {
-        // wait for index 0
-        uint32_t receivedEventsTransmit = 0;
-        // wait for index 0
-            if (xTaskNotifyWaitIndexed(0, 0, TRANSMIT, &receivedEventsTransmit, pdMS_TO_TICKS(5000)) == pdTRUE) {
-                if (receivedEventsTransmit & TRANSMIT) {
-                    uxHighWaterMark =  uxTaskGetStackHighWaterMark(this->taskHandle);
-                    LOG_DEBUG << "[TX TASK] remaining stack: " << uxHighWaterMark;
-                    receivedEventsTransmit = 0;
-                    // Prepare and send the packet
-                    transceiver.print_error(error);
-                    if(transceiver.tx_ongoing == false && transceiver.rx_ongoing == false) {
-                        LOG_INFO << "[TX TASK] NOMINAL" ;
-                         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, pdMS_TO_TICKS(1000)) == pdTRUE) {
-                             if (transceiver.rx_ongoing == false && transceiver.tx_ongoing == false) {
-                                 // vTaskSuspendAll();
-                                 ensureTxMode();
-                                 transceiver.print_error(error);
-                                 packetTestData.packet[0] = counter++;transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                                 transceiver.print_error(error);
-                                 // xTaskResumeAll();
-                                 LOG_INFO << "[TX TASK - NOMINAL] Transmitted packet: " << counter;
-                             }
-                             xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-                         }else {
-                            LOG_DEBUG << "[TX TASK] - COULD NOT ACQUIRE THE SEMAPHORE";
-                        }
-                    }
-                    else if (transceiver.rx_ongoing){
-                        // wait for index 2
-                        uint32_t receivedEventsRXFE;
-                        if (xTaskNotifyWaitIndexed(2, 0, RXFE, &receivedEventsRXFE, pdTICKS_TO_MS(1000)) == pdTRUE){
-                            if (receivedEventsRXFE & RXFE) {
-                                LOG_DEBUG << "[TX TASK]: " << transceiver.tx_ongoing;
-                                LOG_DEBUG << "[TX TASK]: " << transceiver.rx_ongoing;
-                                LOG_DEBUG << "[TX TASK] RECEIVE FRAME END";
-                                if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, pdMS_TO_TICKS(1000)) == pdTRUE) {
-                                    if (transceiver.tx_ongoing == false && transceiver.rx_ongoing == false) {
-                                        packetTestData.packet[0] = counter++;
-                                        transceiver.print_error(error);
-                                        transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                                        transceiver.print_error(error);
-                                        LOG_INFO << "[TX TASK - RXFE] Transmitted packet: " << counter;
-                                    }
-                                    xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-                                }else {
-                                    LOG_DEBUG << "[TX TASK RXFE] - COULD NOT ACQUIRE THE SEMAPHORE";
-                                }
-                            }
-                            else {
-                                transceiver.print_error(error);
-                                LOG_DEBUG << "[TX TASK] RXFE - OTHER EVENT" << receivedEventsRXFE;
-                            }
-                        }else {
-                            transceiver.print_error(error);
-                            LOG_DEBUG << "[TX TASK]: " << transceiver.tx_ongoing;
-                            LOG_DEBUG << "[TX TASK]: " << transceiver.rx_ongoing;
 
+    while (1) {
+    uint32_t receivedEventsTransmit = 0;
+    // Wait for index 0
+    if (xTaskNotifyWaitIndexed(0, 1, TRANSMIT, &receivedEventsTransmit, portMAX_DELAY) == pdTRUE) {
+        if (receivedEventsTransmit & TRANSMIT) {
+            if (counter == 255)
+                counter = 0;
+            // Combine rx_ongoing and tx_ongoing into a single state
+            switch (uint8_t state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
+                LOG_DEBUG << "[TX TASK] STATE: " << state;
+                case 0: { // rx_ongoing = false, tx_ongoing = false
+                    LOG_INFO << "[TX TASK] NOMINAL";
+                    if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+                        if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
+                            ensureTxMode();
+                            counter++;
+                            packetTestData.packet[0] = counter;
+                            transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                            LOG_INFO << "[TX TASK - NOMINAL] Transmitted packet: " << counter;
                         }
+                        xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                    } else {
+                        LOG_DEBUG << "[TX TASK] - COULD NOT ACQUIRE THE SEMAPHORE";
                     }
-                    else if (transceiver.tx_ongoing) {
-                        // wait for index 1
-                        uint32_t receivedEventsTXFE;
-                        if (xTaskNotifyWaitIndexed(1, 0, TXFE, &receivedEventsTXFE, pdTICKS_TO_MS(1000)) == pdTRUE) {
-                            if (receivedEventsTXFE & TXFE) {
-                                LOG_DEBUG << "[TX TASK] TRANSMIT FRAME END";
-                                transceiver.print_error(error);
-                                if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, pdMS_TO_TICKS(1000)) == pdTRUE) {
-                                    if (transceiver.tx_ongoing == false && transceiver.rx_ongoing == false) {
-                                        packetTestData.packet[0] = counter++;
-                                        transceiver.print_error(error);
-                                        transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                                        transceiver.print_error(error);
-                                        LOG_INFO << "[TX TASK - RXFE] Transmitted packet: " << counter;
-                                    }
-                                    xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-                                }else {
-                                    LOG_DEBUG << "[TX TASK] - COULD NOT ACQUIRE THE SEMAPHORE";
+                    break;
+                }
+
+                case 1: { // rx_ongoing = false, tx_ongoing = true
+                    uint32_t receivedEventsTXFE = 0;
+                    if (xTaskNotifyWaitIndexed(1, 1, TXFE, &receivedEventsTXFE, portMAX_DELAY) == pdTRUE) {
+                        if (receivedEventsTXFE & TXFE) {
+                            LOG_DEBUG << "[TX TASK] TRANSMIT FRAME END";
+                            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+                                if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
+                                    ensureTxMode();
+                                    counter++;
+                                    packetTestData.packet[0] = counter;
+                                    transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                                    transceiver.print_error(error);
+                                    LOG_INFO << "[TX TASK - TXFE] Transmitted packet: " << counter;
                                 }
+                                xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                            } else {
+                                LOG_DEBUG << "[TX TASK] - COULD NOT ACQUIRE THE SEMAPHORE";
                             }
-                            else {
-                                LOG_DEBUG << "[TX TASK] TXFE - OTHER EVENT";
-                                transceiver.print_error(error);
-                            }
-                        }
-                        else {
-                            // xTimerStart(xTimer, 0);
-                            transceiver.print_error(error);
-                            LOG_ERROR << "[TX TASK - TXFE]: " << receivedEventsTXFE;
-                            LOG_ERROR << "[TX TASK] TRANSMIT FRAME END DID NOT RECEIVED - TIMER STARTED ANYWAY";
+                        } else {
+                            LOG_DEBUG << "[TX TASK] TXFE - OTHER EVENT";
                         }
                     }
-                    else {
-                        LOG_DEBUG << "[TX TASK]: " << transceiver.tx_ongoing;
-                        LOG_DEBUG << "[TX TASK]: " << transceiver.rx_ongoing;
+                    break;
+                }
+
+                case 2: { // rx_ongoing = true, tx_ongoing = false
+                    uint32_t receivedEventsRXFE;
+                    if (xTaskNotifyWaitIndexed(2, 1, RXFE, &receivedEventsRXFE, portMAX_DELAY) == pdTRUE) {
+                        if (receivedEventsRXFE & RXFE) {
+                            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+                                if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
+                                    ensureTxMode();
+                                    counter++;
+                                    packetTestData.packet[0] = counter;
+                                    transceiver.print_error(error);
+                                    transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
+                                    transceiver.print_error(error);
+                                    LOG_INFO << "[TX TASK - RXFE] Transmitted packet: " << counter;
+                                }
+                                xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                            } else {
+                                LOG_DEBUG << "[TX TASK RXFE] - COULD NOT ACQUIRE THE SEMAPHORE";
+                            }
+                        } else {
+                            LOG_DEBUG << "[TX TASK] RXFE - OTHER EVENT";
+                        }
                     }
+                    break;
+                }
+
+                case 3: { // rx_ongoing = true, tx_ongoing = true
+                    // Potential deadlock
+                    if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+                        rf_rxtask->ensureRxMode();
+                        xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                    }
+                    break;
+                }
+                default: {
+                    LOG_ERROR << "[TX TASK] Unknown state!";
+                    break;
                 }
             }
+        }
     }
+}
+
 }

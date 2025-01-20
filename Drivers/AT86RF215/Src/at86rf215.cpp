@@ -7,8 +7,10 @@
 
 namespace AT86RF215 {
 
-    AT86RF215::At86rf215 transceiver = At86rf215(&hspi4);
+    At86rf215 transceiver = At86rf215(&hspi4);
+    StaticSemaphore_t TransceiverHandler::transceiver_semaphore_buffer;
     SemaphoreHandle_t TransceiverHandler::transceiver_semaphore;
+
 
     void At86rf215::spi_write_8(uint16_t address, uint8_t value, Error& err) {
         uint8_t msg[3] = {static_cast<uint8_t>(0x80 | ((address >> 8) & 0x7F)), static_cast<uint8_t>(address & 0xFF), value};
@@ -647,8 +649,8 @@ namespace AT86RF215 {
         if (err != NO_ERRORS) {
             return;
         }
-        tx_ongoing = true;
         set_state(transceiver, RF_TXPREP, err);
+        tx_ongoing = true;
     }
 
     void At86rf215::clear_channel_assessment(Transceiver transceiver, Error& err) {
@@ -1371,7 +1373,7 @@ namespace AT86RF215 {
     }
 
     void At86rf215::print_state(Transceiver transceiver, Error& err) {
-        State rf_state = get_state(RF09, err);
+        State rf_state = get_state(transceiver, err);
         switch (rf_state) {
             case RF_NOP:
                 // Handle RF_NOP
@@ -1516,7 +1518,7 @@ void At86rf215::print_error(AT86RF215::Error& err) {
             if (tx_ongoing) {
                 // Switch to TX state once the transceiver is ready to send
                 if (get_state(RF09, err) != RF_TX)
-                    set_state(Transceiver::RF09, State::RF_TX, err);
+                    set_state(RF09, State::RF_TX, err);
             }
             //            xTaskNotifyFromISR(rf_rxtask->taskHandle, TRXRDY, eSetBits, &xHigherPriorityTaskWoken);
             //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -1541,16 +1543,16 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         }
         if ((irq & InterruptMask::AGCHold) != 0) {
             // AGC Hold handling
-            rx_ongoing = true;
-            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, 0, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            // rx_ongoing = true;
+            // xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, 0, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             xHigherPriorityTaskWoken = pdFALSE;
-            TransmitterFrameEnd_flag = true;
+            // TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
             xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, 1, TXFE, eSetBits, &xHigherPriorityTaskWoken);
-            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
             // Receiver Extended Match handling
