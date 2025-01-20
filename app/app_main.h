@@ -27,6 +27,7 @@
 #ifndef __APP_MAIN_H__
 #define __APP_MAIN_H__
 #pragma once
+#include <ParameterService.hpp>
 
 /**
  * @brief Main app entry point.
@@ -48,6 +49,8 @@ struct eMMCTransactionHandler {
     uint32_t getSemaphoreTimeout = 1000;       // ms
 };
 extern eMMCTransactionHandler eMMCTransactionHandler;
+extern ParameterService parameterMap;
+
 
 void app_main(void);
 

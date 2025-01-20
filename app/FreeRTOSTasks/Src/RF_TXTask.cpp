@@ -48,21 +48,21 @@ void RF_TXTask::execute() {
         /// Read the state
         if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
             uint8_t read_reg = transceiver.spi_read_8(RF09_STATE, error);
-            LOG_DEBUG << "Transceiver State = " << read_reg;
+            // LOG_DEBUG << "Transceiver State = " << read_reg;
             PacketData packetTestData = createRandomPacketData(MaxPacketLength);
             /// Writes to the TX buffer
             transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
             if (xTaskNotifyWait(0, 0xFFFFFFFF, &receivedEvents, pdMS_TO_TICKS(100))) {
                 if (receivedEvents & TXFE) {
                     /// Give the mutex
-                    LOG_DEBUG << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;
+                    // LOG_DEBUG << "PACKET IS SENT WITH SUCCESS, LENGTH: " << packetTestData.length;
                 }
                 /// Handle TRXRDY flag
                 if (receivedEvents & TRXRDY)
-                    LOG_DEBUG << "TRANSCEIVER IS READY.";
-                /// Handle TRXRDY flag
-                if (receivedEvents & TRXERR)
-                    LOG_ERROR << "PLL UNLOCKED.";
+                    // LOG_DEBUG << "TRANSCEIVER IS READY.";
+                    /// Handle TRXRDY flag
+                    if (receivedEvents & TRXERR)
+                        LOG_ERROR << "PLL UNLOCKED.";
                 /// Handle IFSERR flag
                 if (receivedEvents & IFSERR)
                     LOG_ERROR << "SYNCHRONIZATION ERROR.";

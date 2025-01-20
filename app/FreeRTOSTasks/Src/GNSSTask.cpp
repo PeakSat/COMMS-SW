@@ -249,11 +249,11 @@ void GNSSTask::execute() {
                 // Receive a message on the created queue.Block for 100ms if the message is not immediately available
                 if (xQueueReceive(gnssQueueHandleDefault, &rx_buf_p_from_queue, pdMS_TO_TICKS(100)) == pdTRUE) {
                     if (rx_buf_p_from_queue != nullptr) {
-                        parser(rx_buf_p_from_queue, compact);
+                        // parser(rx_buf_p_from_queue, compact);
                         // filter the messages
                         // fix quality 1 means : valid position fix, SPS mode
                         //                        if (compact.fix_quality == 1 && compact.satellites_tracked > 3)
-                        GNSSprint(compact);
+                        // GNSSprint(compact);
                         timeoutCounter = 0;
                     }
                 } else {

@@ -1,6 +1,8 @@
 #include "Logger.hpp"
 #include "TMP117Task.hpp"
 #include "eMMC.hpp"
+#include "PlatformParameters.hpp"
+#include "ParameterService.hpp"
 
 
 etl::string<TemperatureSensorsTask::MaxErrorStringSize> TemperatureSensorsTask::errorString(TMP117::Error error) {
@@ -44,13 +46,22 @@ etl::string<TemperatureSensorsTask::MaxSensorNameSize> TemperatureSensorsTask::s
 void TemperatureSensorsTask::execute() {
     // for temporarily holding a temperature and an error
     etl::pair<TMP117::Error, float> temperature;
-    vTaskDelay(1000);
+    vTaskDelay(100);
     while (true) {
         Logger::format.precision(LoggerPrecision);
         for (auto s: sensors) {
             temperature = s.sensorObject.getTemperature(true);
             if (temperature.first == TMP117::Error::NoErrors) {
-                LOG_DEBUG << "Temperature at " << s.sensorName.data() << ": " << temperature.second;
+                // LOG_DEBUG << "Temperature at " << s.sensorName.data() << ": " << temperature.second;
+                if (s.sensorName == "PCB") {
+                    COMMSParameters::commsPCBTemperature.setValue(temperature.second);
+                }
+                else if (s.sensorName == "PA") {
+                    COMMSParameters::commsUHFBandPATemperature.setValue(temperature.second);
+                }
+                else if (s.sensorName == "GNSS") {
+                    COMMSParameters::commsGNSSTemperature.setValue(temperature.second);
+                }
             } else {
                 LOG_ERROR << "Could not get temperature at " << s.sensorName.data() << ". Error: "
                           << errorString(temperature.first).data();
