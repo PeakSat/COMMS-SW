@@ -1,18 +1,12 @@
 #include "COMMS_ECSS_Configuration.hpp"
 
-
 #ifdef SERVICE_PARAMETER
 
-
 #include "Services/ParameterService.hpp"
-
 #include "PlatformParameters.hpp"
 
-
 void ParameterService::initializeParameterMap() {
-
     parameters = {
-
         {PAYParameters::xID, PAYParameters::x},
         {PAYParameters::yID, PAYParameters::y},
         {PAYParameters::zID, PAYParameters::z},
@@ -86,14 +80,40 @@ void ParameterService::initializeParameterMap() {
         {PAYParameters::fpga_faultID, PAYParameters::fpga_fault},
         {PAYParameters::v_cam_faultID, PAYParameters::v_cam_fault},
         {PAYParameters::sdd_faultID, PAYParameters::sdd_fault},
+        {OBDHParameters::OBCPCBTemperature1ID, OBDHParameters::OBCPCBTemperature1},
+        {OBDHParameters::OBCPCBTemperature2ID, OBDHParameters::OBCPCBTemperature2},
+        {OBDHParameters::OBCMCUTemperatureID, OBDHParameters::OBCMCUTemperature},
+        {OBDHParameters::OBCMCUBootCounterID, OBDHParameters::OBCMCUBootCounter},
+        {OBDHParameters::SpacecraftTimeRefID, OBDHParameters::SpacecraftTimeRef},
+        {OBDHParameters::OnBoardTimeID, OBDHParameters::OnBoardTime},
+        {OBDHParameters::CANBUSLoad1ID, OBDHParameters::CANBUSLoad1},
+        {OBDHParameters::CANBUSLoad2ID, OBDHParameters::CANBUSLoad2},
+        {OBDHParameters::CANBUSActiveID, OBDHParameters::CANBUSActive},
+        {OBDHParameters::MCUFDIRID, OBDHParameters::MCUFDIR},
+        {OBDHParameters::MCURestartSafeModeThresholdID, OBDHParameters::MCURestartSafeModeThreshold},
+        {OBDHParameters::NANDFLASHLCLThresholdID, OBDHParameters::NANDFLASHLCLThreshold},
+        {OBDHParameters::MRAMLCLThresholdID, OBDHParameters::MRAMLCLThreshold},
+        {OBDHParameters::NANDFLASHONID, OBDHParameters::NANDFLASHON},
+        {OBDHParameters::MRAMONID, OBDHParameters::MRAMON},
+        {OBDHParameters::NANDFLASHScrubbingFrequencyID, OBDHParameters::NANDFLASHScrubbingFrequency},
+        {OBDHParameters::ΜRAMScrubbingFrequencyID, OBDHParameters::ΜRAMScrubbingFrequency},
+        {OBDHParameters::ProgramFlashScrubbingFrequencyID, OBDHParameters::ProgramFlashScrubbingFrequency},
+        {OBDHParameters::CommitHashID, OBDHParameters::CommitHash},
         {OBDHParameters::CAN_ACK_timeoutID, OBDHParameters::CAN_ACK_timeout},
+        {OBDHParameters::CAN_FrameRetransimtCountID, OBDHParameters::CAN_FrameRetransimtCount},
+        {OBDHParameters::CAN_TransmitFailureCountID, OBDHParameters::CAN_TransmitFailureCount},
+        {ADCSParameters::RWL0_power_stateID, ADCSParameters::RWL0_power_state},
+        {ADCSParameters::RWL1_power_stateID, ADCSParameters::RWL1_power_state},
+        {ADCSParameters::RWL2_power_stateID, ADCSParameters::RWL2_power_state},
+        {ADCSParameters::ilia_test4ID, ADCSParameters::ilia_test4},
+        {ADCSParameters::ilia_test5ID, ADCSParameters::ilia_test5},
+        {ADCSParameters::ilia_test6ID, ADCSParameters::ilia_test6},
+        {ADCSParameters::ilia_test7ID, ADCSParameters::ilia_test7},
+        {ADCSParameters::ilia_test8ID, ADCSParameters::ilia_test8},
+        {ADCSParameters::ilia_test9ID, ADCSParameters::ilia_test9},
         {COMMSParameters::commsUHFBandPATemperatureID, COMMSParameters::commsUHFBandPATemperature},
         {COMMSParameters::commsPCBTemperatureID, COMMSParameters::commsPCBTemperature},
         {COMMSParameters::commsGNSSTemperatureID, COMMSParameters::commsGNSSTemperature},
-        {COMMSParameters::Antenna_Deployment_StatusID, COMMSParameters::Antenna_Deployment_Status}
-
-    };
+        {COMMSParameters::Antenna_Deployment_StatusID, COMMSParameters::Antenna_Deployment_Status}};
 }
-
-
 #endif

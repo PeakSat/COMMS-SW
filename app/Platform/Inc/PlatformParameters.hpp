@@ -1,38 +1,62 @@
 #pragma once
-
-
 #pragma GCC diagnostic push
-
-
 #pragma GCC diagnostic ignored "-Wpsabi" // Suppress: parameter passing for argument of type 'Time::DefaultCUC' {aka 'TimeStamp<4, 0, 1, 10>'} changed in GCC 7.1
-
-
 #include "Helpers/Parameter.hpp"
-
-
 namespace OBDHParameters {
-
     enum ParameterID : uint16_t {
-
-        CAN_ACK_timeoutID = 5340
-
+        OBCPCBTemperature1ID = 5010,
+        OBCPCBTemperature2ID = 5020,
+        OBCMCUTemperatureID = 5030,
+        OBCMCUBootCounterID = 5040,
+        SpacecraftTimeRefID = 5100,
+        OnBoardTimeID = 5120,
+        CANBUSLoad1ID = 5180,
+        CANBUSLoad2ID = 5190,
+        CANBUSActiveID = 5200,
+        MCUFDIRID = 5210,
+        MCURestartSafeModeThresholdID = 5220,
+        NANDFLASHLCLThresholdID = 5230,
+        MRAMLCLThresholdID = 5240,
+        NANDFLASHONID = 5250,
+        MRAMONID = 5260,
+        NANDFLASHScrubbingFrequencyID = 5270,
+        ΜRAMScrubbingFrequencyID = 5280,
+        ProgramFlashScrubbingFrequencyID = 5290,
+        CommitHashID = 5330,
+        CAN_ACK_timeoutID = 5340,
+        CAN_FrameRetransimtCountID = 5350,
+        CAN_TransmitFailureCountID = 5360
     };
-
+    inline Parameter<float> OBCPCBTemperature1(0);
+    inline Parameter<float> OBCPCBTemperature2(0);
+    inline Parameter<float> OBCMCUTemperature(0);
+    inline Parameter<uint16_t> OBCMCUBootCounter(0);
+    inline Parameter<uint32_t> SpacecraftTimeRef(0);
+    inline Parameter<uint32_t> OnBoardTime(0);
+    inline Parameter<float> CANBUSLoad1(0);
+    inline Parameter<float> CANBUSLoad2(0);
+    inline Parameter<bool> CANBUSActive(0);
+    inline Parameter<bool> MCUFDIR(0);
+    inline Parameter<uint8_t> MCURestartSafeModeThreshold(0);
+    inline Parameter<float> NANDFLASHLCLThreshold(0);
+    inline Parameter<float> MRAMLCLThreshold(0);
+    inline Parameter<bool> NANDFLASHON(0);
+    inline Parameter<bool> MRAMON(0);
+    inline Parameter<float> NANDFLASHScrubbingFrequency(0);
+    inline Parameter<float> ΜRAMScrubbingFrequency(0);
+    inline Parameter<float> ProgramFlashScrubbingFrequency(0);
+    inline Parameter<uint16_t> CommitHash(0);
     inline Parameter<uint32_t> CAN_ACK_timeout(0);
+    inline Parameter<uint32_t> CAN_FrameRetransimtCount(0);
+    inline Parameter<uint32_t> CAN_TransmitFailureCount(0);
 } // namespace OBDHParameters
-
-
 namespace COMMSParameters {
-
     enum ParameterID : uint16_t {
-
         commsUHFBandPATemperatureID = 10010,
         commsPCBTemperatureID = 10020,
         commsGNSSTemperatureID = 10030,
         Antenna_Deployment_StatusID = 10050
-
     };
-
     inline Parameter<float> commsUHFBandPATemperature(0);
     inline Parameter<float> commsPCBTemperature(0);
     inline Parameter<float> commsGNSSTemperature(0);
@@ -45,12 +69,8 @@ namespace COMMSParameters {
     };
     inline Parameter<Antenna_Deployment_Status_enum> Antenna_Deployment_Status(Closed);
 } // namespace COMMSParameters
-
-
 namespace PAYParameters {
-
     enum ParameterID : uint16_t {
-
         xID = 15010,
         yID = 15020,
         zID = 15030,
@@ -124,9 +144,7 @@ namespace PAYParameters {
         fpga_faultID = 15600,
         v_cam_faultID = 15620,
         sdd_faultID = 15630
-
     };
-
     inline Parameter<int32_t> x(0);
     inline Parameter<int32_t> y(0);
     inline Parameter<int32_t> z(0);
@@ -201,6 +219,34 @@ namespace PAYParameters {
     inline Parameter<int32_t> v_cam_fault(0);
     inline Parameter<int32_t> sdd_fault(0);
 } // namespace PAYParameters
-
-
+namespace ADCSParameters {
+    enum ParameterID : uint16_t {
+        RWL0_power_stateID = 20800,
+        RWL1_power_stateID = 20801,
+        RWL2_power_stateID = 20802,
+        ilia_test4ID = 20803,
+        ilia_test5ID = 20804,
+        ilia_test6ID = 20805,
+        ilia_test7ID = 20806,
+        ilia_test8ID = 20807,
+        ilia_test9ID = 20808
+    };
+    enum RWL0_power_state_enum : uint8_t {
+        PowerOff = 0,
+        PowerOn = 1,
+        PowerNoChange = 2,
+        PowerAuto = 3,
+        PowerOnPass = 4,
+        PowerOffUpgrade = 5
+    };
+    inline Parameter<RWL0_power_state_enum> RWL0_power_state(PowerOff);
+    inline Parameter<RWL0_power_state_enum> RWL1_power_state(PowerOff);
+    inline Parameter<RWL0_power_state_enum> RWL2_power_state(PowerOff);
+    inline Parameter<RWL0_power_state_enum> ilia_test4(PowerOff);
+    inline Parameter<RWL0_power_state_enum> ilia_test5(PowerOff);
+    inline Parameter<RWL0_power_state_enum> ilia_test6(PowerOff);
+    inline Parameter<RWL0_power_state_enum> ilia_test7(PowerOff);
+    inline Parameter<RWL0_power_state_enum> ilia_test8(PowerOff);
+    inline Parameter<RWL0_power_state_enum> ilia_test9(PowerOff);
+} // namespace ADCSParameters
 #pragma GCC diagnostic pop

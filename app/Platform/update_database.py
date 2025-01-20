@@ -58,18 +58,18 @@ cpp_lines = []
 hhp_lines = []
 
 # Add the header lines for the .cpp file
-cpp_lines.append('#include "COMMS_ECSS_Configuration.hpp"\n')
-cpp_lines.append("\n#ifdef SERVICE_PARAMETER\n\n")
-cpp_lines.append('#include "Services/ParameterService.hpp"\n')
-cpp_lines.append('#include "PlatformParameters.hpp"\n\n')
-cpp_lines.append("void ParameterService::initializeParameterMap() {\n")
-cpp_lines.append("    parameters = {\n")
+cpp_lines.append('#include "COMMS_ECSS_Configuration.hpp"')
+cpp_lines.append("\n#ifdef SERVICE_PARAMETER\n")
+cpp_lines.append('#include "Services/ParameterService.hpp"')
+cpp_lines.append('#include "PlatformParameters.hpp"')
+cpp_lines.append("\nvoid ParameterService::initializeParameterMap() {")
+cpp_lines.append("    parameters = {")
 
 # Add the header lines for the .hpp file
-hhp_lines.append("#pragma once\n\n")
-hhp_lines.append("#pragma GCC diagnostic push\n\n")
-hhp_lines.append('#pragma GCC diagnostic ignored "-Wpsabi" // Suppress: parameter passing for argument of type \'Time::DefaultCUC\' {aka \'TimeStamp<4, 0, 1, 10>\'} changed in GCC 7.1\n\n')
-hhp_lines.append('#include "Helpers/Parameter.hpp"\n\n')
+hhp_lines.append("#pragma once")
+hhp_lines.append("#pragma GCC diagnostic push")
+hhp_lines.append('#pragma GCC diagnostic ignored "-Wpsabi" // Suppress: parameter passing for argument of type \'Time::DefaultCUC\' {aka \'TimeStamp<4, 0, 1, 10>\'} changed in GCC 7.1')
+hhp_lines.append('#include "Helpers/Parameter.hpp"')
 
 # Process each subsystem separately
 namespace_blocks = {acronym: [] for acronym in subsystem_config.keys()}
@@ -97,6 +97,7 @@ for idx, row in enumerate(valid_rows):
     type_cell = row[2]  # Third column
     variable_cell = row[4]  # Fifth column
     enum_items_cell = row[6]  # Seventh column
+    value_cell = row[7]  # Eighth column
 
     # Identify the subsystem acronym
     for acronym, offset in subsystem_config.items():
@@ -119,6 +120,7 @@ for idx, row in enumerate(valid_rows):
             variable_name = variable_cell.value.strip()
             variable_type = type_cell.value.strip() if type_cell.value else "int"
             enum_items = enum_items_cell.value.strip() if enum_items_cell.value else ""
+            param_value = value_cell.value.strip() if value_cell.value else "0"
 
             # Add to the corresponding namespace block
             block_lines = namespace_blocks[acronym]
@@ -133,10 +135,9 @@ for idx, row in enumerate(valid_rows):
 
             # Parameter initializations
             if variable_type == "enum":
-                enum_first_word = enum_items.split("=")[0].strip() if "=" in enum_items else "0"
-                param_line = f"    inline Parameter<{variable_name}_enum> {variable_name}({enum_first_word});"
+                param_line = f"    inline Parameter<{variable_name}_enum> {variable_name}({param_value});"
             else:
-                param_line = f"    inline Parameter<{variable_type}> {variable_name}(0);"
+                param_line = f"    inline Parameter<{variable_type}> {variable_name}({param_value});"
             block_lines.append(param_line)
 
             # Add to .cpp file
@@ -153,24 +154,24 @@ for idx, row in enumerate(valid_rows):
             break
 
 # Finalize the .cpp file
-cpp_lines.append("\n    };\n")
-cpp_lines.append("}\n\n")
-cpp_lines.append("#endif\n")
+cpp_lines.append("    };")
+cpp_lines.append("}")
+cpp_lines.append("#endif")
 
 # Build the .hhp file
 for acronym, block_lines in namespace_blocks.items():
     if block_lines:
-        hhp_lines.append(f"namespace {acronym}Parameters {{\n")
-        hhp_lines.append("    enum ParameterID : uint16_t {\n")
+        hhp_lines.append(f"namespace {acronym}Parameters {{")
+        hhp_lines.append("    enum ParameterID : uint16_t {")
         hhp_lines.append(",\n".join(line for line in block_lines if "ID =" in line))
-        hhp_lines.append("\n    };\n")
+        hhp_lines.append("    };")
         hhp_lines.extend(
             line for line in block_lines if not line.startswith("        ")
         )
-        hhp_lines.append("}\n\n")
+        hhp_lines.append("}")
 
 # Add footer to the .hhp file
-hhp_lines.append("#pragma GCC diagnostic pop\n")
+hhp_lines.append("#pragma GCC diagnostic pop")
 
 # Write the .cpp file
 with open(output_cpp_file, "w") as cpp_file:
