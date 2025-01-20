@@ -80,6 +80,7 @@ void ParameterService::initializeParameterMap() {
         {PAYParameters::fpga_faultID, PAYParameters::fpga_fault},
         {PAYParameters::v_cam_faultID, PAYParameters::v_cam_fault},
         {PAYParameters::sdd_faultID, PAYParameters::sdd_fault},
+        {OBDHParameters::testID, OBDHParameters::test},
         {OBDHParameters::OBCPCBTemperature1ID, OBDHParameters::OBCPCBTemperature1},
         {OBDHParameters::OBCPCBTemperature2ID, OBDHParameters::OBCPCBTemperature2},
         {OBDHParameters::OBCMCUTemperatureID, OBDHParameters::OBCMCUTemperature},

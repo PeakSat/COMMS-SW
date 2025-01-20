@@ -6,8 +6,9 @@
 #include "Logger.hpp"
 #include "ServicePool.hpp"
 #include "Message.hpp"
-
 #include <eMMC.hpp>
+
+ParameterService parameterMap;
 
 namespace CAN::Application {
 

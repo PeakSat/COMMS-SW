@@ -4,6 +4,7 @@
 #include "Helpers/Parameter.hpp"
 namespace OBDHParameters {
     enum ParameterID : uint16_t {
+        testID = 2000,
         OBCPCBTemperature1ID = 5010,
         OBCPCBTemperature2ID = 5020,
         OBCMCUTemperatureID = 5030,
@@ -27,6 +28,7 @@ namespace OBDHParameters {
         CAN_FrameRetransimtCountID = 5350,
         CAN_TransmitFailureCountID = 5360
     };
+    inline Parameter<float> test(0);
     inline Parameter<float> OBCPCBTemperature1(0);
     inline Parameter<float> OBCPCBTemperature2(0);
     inline Parameter<float> OBCMCUTemperature(0);

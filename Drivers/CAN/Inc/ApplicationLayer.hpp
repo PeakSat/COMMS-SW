@@ -9,6 +9,7 @@
 #include "Message.hpp"
 #include "Peripheral_Definitions.hpp"
 #include "TPMessage.hpp"
+#include "app_main.h"
 
 
 namespace CAN::Application {

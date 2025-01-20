@@ -25,7 +25,6 @@
 #include <ParameterService.hpp>
 #include <ServicePool.hpp>
 // ServicePool Services = ServicePool();
-ParameterService parameterMap;
 
 void app_main(void) {
     eMMC::eMMCMemoryInit();
