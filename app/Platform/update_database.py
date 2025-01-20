@@ -120,7 +120,14 @@ for idx, row in enumerate(valid_rows):
             variable_name = variable_cell.value.strip()
             variable_type = type_cell.value.strip() if type_cell.value else "int"
             enum_items = enum_items_cell.value.strip() if enum_items_cell.value else ""
-            param_value = value_cell.value.strip() if value_cell.value else "0"
+            # Handle float values to remove .0 for whole numbers
+            if value_cell.value:
+                if isinstance(value_cell.value, float) and value_cell.value.is_integer():
+                    param_value = str(int(value_cell.value))  # Convert to int if it's a whole number
+                else:
+                    param_value = str(value_cell.value).strip()  # Convert to string for other cases
+            else:
+                param_value = "0"
 
             # Add to the corresponding namespace block
             block_lines = namespace_blocks[acronym]
