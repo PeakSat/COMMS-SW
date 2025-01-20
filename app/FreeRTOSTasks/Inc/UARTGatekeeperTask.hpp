@@ -4,8 +4,8 @@
 #include "queue.h"
 #include "etl/string.h"
 #include "etl/optional.h"
-#define UARTQueueSize 100
-#define LOGGER_MAX_MESSAGE_SIZE 2048
+#define UARTQueueSize 20
+#define LOGGER_MAX_MESSAGE_SIZE 1024
 
 /**
  * Contains functionality of a Gatekeeper Task for the UART resource. It has the sole access to UART, to avoid any

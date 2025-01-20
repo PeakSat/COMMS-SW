@@ -33,7 +33,7 @@ void RF_RXTask::ensureRxMode() {
                 transceiver.print_state(RF09, error);
         break;
         case RF_RX:
-            LOG_DEBUG << "[RX ENSURE] STATE: RX";
+            // LOG_DEBUG << "[RX ENSURE] STATE: RX";
         break;
         case RF_TRANSITION:
                 LOG_DEBUG << "[RX ENSURE] STATE: TRANSITION";
@@ -56,10 +56,10 @@ void RF_RXTask::ensureRxMode() {
             transceiver.print_state(RF09, error);
         break;
         case RF_TXPREP:
-                LOG_DEBUG << "[RX ENSURE] STATE: TXPREP";
+                // LOG_DEBUG << "[RX ENSURE] STATE: TXPREP";
                 vTaskDelay(10);
                 transceiver.set_state(RF09, RF_RX, error);
-                transceiver.print_state(RF09, error);
+                // transceiver.print_state(RF09, error);
         break;
         default:
             LOG_ERROR << "UNDEFINED";
@@ -98,23 +98,24 @@ void RF_RXTask::execute() {
     vTaskDelay(20);
     transceiver.set_state(RF09, RF_RX, error);
     uint16_t received_length = 0;
-    static uint8_t previous_counter, current_counter = 0;
+    static uint8_t current_counter = 0;
     uint32_t drop_counter = 0;
+    uint32_t print_tx_ong = 0, state_counter = 0;
     while (1) {
         // wait for index 0
-        if (xTaskNotifyWaitIndexed(0, 0, AGC_HOLD, &receivedEvents, pdMS_TO_TICKS(50))) {
-            if (receivedEvents & AGC_HOLD) {
+        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(50))) {
+            if (receivedEvents & RXFE_RX) {
                 if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
                     if (received_length == 1024) {
                         current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
-                        LOG_DEBUG << "[RX RX] counter: " << current_counter;
+                        LOG_DEBUG << "[RF RX] c: " << current_counter;
                         drop_counter = 0;
                     }
                     else {
                         drop_counter++;
-                        LOG_DEBUG << "[RX RX](DROP) counter: " << drop_counter;
+                        LOG_DEBUG << "[RF RX](DROP) c: " << drop_counter;
 
                     }
                     xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
@@ -137,13 +138,25 @@ void RF_RXTask::execute() {
                     }
                     case 1: { // rx_ongoing = false, tx_ongoing = true
                         // Handle the case where tx_ongoing is true
-                        LOG_DEBUG << "[RX TASK] TXONG";
+                        print_tx_ong++;
+                        if (print_tx_ong == 10) {
+                            print_tx_ong = 0;
+                            LOG_DEBUG << "[RX TASK] TXONG";
+                            // vTaskSuspend(rf_txtask->taskHandle);
+                            // ensureRxMode();
+                            // vTaskResume(rf_txtask->taskHandle);
+                        }
                         break;
                     }
                     case 2: { // rx_ongoing = true, tx_ongoing = false
                         // Handle the case where rx_ongoing is true
-                        LOG_DEBUG << "[RX TASK] RXONG";
-
+                        // LOG_DEBUG << "[RX TASK] RXONG";
+                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(100))) {
+                            if (receivedEvents & RXFE_RX) {
+                                ensureRxMode();
+                            }
+                        }
+                        ensureRxMode();
                         break;
                     }
                     case 3: { // rx_ongoing = true, tx_ongoing = true

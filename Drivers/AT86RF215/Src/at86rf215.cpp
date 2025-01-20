@@ -1543,15 +1543,17 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         }
         if ((irq & InterruptMask::AGCHold) != 0) {
             // AGC Hold handling
-            // rx_ongoing = true;
-            // xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, 0, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
-            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            xHigherPriorityTaskWoken = pdFALSE;
+
+            rx_ongoing = true;
+            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_AGC, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             xHigherPriorityTaskWoken = pdFALSE;
             // TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
-            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, 1, TXFE, eSetBits, &xHigherPriorityTaskWoken);
+            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_TXFE, TXFE, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
@@ -1568,13 +1570,15 @@ void At86rf215::print_error(AT86RF215::Error& err) {
                 rx_ongoing = false;
             }
             xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, 2, RXFE, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_RXFE_RX, RXFE_RX, eSetBits, &xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            xHigherPriorityTaskWoken = pdFALSE;
+            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_RXFE_TX, RXFE_TX, eSetBits, &xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverFrameStart) != 0) {
             // xTaskNotifyFromISR(rf_rxtask->taskHandle, RXFS, eSetBits, &xHigherPriorityTaskWoken);
             // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            // rx_ongoing = true;
+            rx_ongoing = true;
         }
 
         /* 2.4 GHz Transceiver */

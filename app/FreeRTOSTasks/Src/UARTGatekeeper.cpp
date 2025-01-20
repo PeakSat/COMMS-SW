@@ -11,6 +11,6 @@ void UARTGatekeeperTask::execute() {
     etl::string<LOGGER_MAX_MESSAGE_SIZE> output;
     while (true) {
         xQueueReceive(this->xUartQueue, &output, portMAX_DELAY);
-        HAL_UART_Transmit(&huart4, reinterpret_cast<const uint8_t*>(output.data()), output.size(), 500);
+        auto status = HAL_UART_Transmit(&huart4, reinterpret_cast<const uint8_t*>(output.data()), output.size(), 5000);
     }
 }

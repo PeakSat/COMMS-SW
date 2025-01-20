@@ -2,21 +2,31 @@
 
 namespace AT86RF215 {
 
-#define MaxPacketLength 1024
-#define FBLI (1 << 0)
-#define RXFE (1 << 1)
-#define RXFS (1 << 2)
-#define AGC_HOLD (1 << 3)
-#define AGC_RELEASE (1 << 4)
-#define TXFE (1 << 5)
-/// RADIO
-#define IFSERR (1 << 6)
-#define BATL (1 << 7)
-#define TRXRDY (1 << 8)
-#define TRXERR (1 << 9)
-#define WAKEUP (1 << 10)
-#define START_TX_TASK (1 << 11)
-#define TRANSMIT (1 << 12)
+    #define MaxPacketLength 256
+    #define FBLI (1 << 0)
+    #define RXFE_RX (1 << 1)
+    #define RXFE_TX (1 << 2)
+    #define RXFS (1 << 3)
+    #define AGC_HOLD (1 << 4)
+    #define AGC_RELEASE (1 << 5)
+    #define TXFE (1 << 6)
+    /// RADIO
+    #define IFSERR (1 << 7)
+    #define BATL (1 << 8)
+    #define TRXRDY (1 << 9)
+    #define TRXERR (1 << 10)
+    #define WAKEUP (1 << 11)
+    #define START_TX_TASK (1 << 12)
+    #define TRANSMIT (1 << 13)
+    #define RXFE_TX (1 << 14)
+
+    #define NOTIFY_INDEX_TRANSMIT 0
+    #define NOTIFY_INDEX_RXFE_RX 1
+    #define NOTIFY_INDEX_RXFE_TX 2
+    #define NOTIFY_INDEX_TXFE 3
+    #define NOTIFY_INDEX_AGC 4
+
+
 
 
 
