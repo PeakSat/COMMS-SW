@@ -10,12 +10,12 @@
 /**
  *
  */
+
+#define CAN_ACK 1 << 0
+
 struct CANTransactionHandler {
     SemaphoreHandle_t CAN_TRANSMIT_SEMAPHORE;
     StaticSemaphore_t CAN_TRANSMIT_SEMAPHOREBUFFER;
-    bool ACKReceived = false;
-    // bool NACKReceived = false; // todo
-    uint32_t CAN_ACK_TIMEOUT = 2000;
     void initialize_semaphore() {
         CAN_TRANSMIT_SEMAPHORE = xSemaphoreCreateMutexStatic(&CAN_TRANSMIT_SEMAPHOREBUFFER);
     }
@@ -23,9 +23,12 @@ struct CANTransactionHandler {
 
 struct CAN_ACK_HANDLER {
     SemaphoreHandle_t CAN_ACK_SEMAPHORE;
-    StaticSemaphore_t can_ack_semaphore_buffer;
+    uint32_t TIMEOUT = 1000;
     void initialize_semaphore() {
-        CAN_ACK_SEMAPHORE = xSemaphoreCreateMutexStatic(&can_ack_semaphore_buffer);
+        CAN_ACK_SEMAPHORE = xSemaphoreCreateBinary();
+        if (CAN_ACK_SEMAPHORE == nullptr) {
+            LOG_ERROR << "Failed to create semaphore!";
+        }
     }
 };
 

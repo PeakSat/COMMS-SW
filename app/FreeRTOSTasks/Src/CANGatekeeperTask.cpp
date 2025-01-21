@@ -7,6 +7,7 @@
 #include "queue.h"
 #include "eMMC.hpp"
 #include <ApplicationLayer.hpp>
+#include <TestTask.hpp>
 
 struct incomingFIFO incomingFIFO __attribute__((section(".dtcmram_data")));
 uint8_t incomingBuffer[CANMessageSize * sizeOfIncommingFrameBuffer] __attribute__((section(".dtcmram_data")));
@@ -67,7 +68,7 @@ void CANGatekeeperTask::execute() {
         // LOG_DEBUG << "{START OF" << this->TaskName << "}";
         xTaskNotifyWait(0, 0, &ulNotifiedValue, pdMS_TO_TICKS(1000));
         //
-        xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, portMAX_DELAY);
+        // xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, portMAX_DELAY);
 
         while (uxQueueMessagesWaiting(incomingFrameQueue)) {
             if (eMMCPacketTailPointer + 2 > eMMC::memoryMap[eMMC::CANMessages].size / 512) {
@@ -91,21 +92,15 @@ void CANGatekeeperTask::execute() {
                 uint8_t payloadLength = metadata & 0x3F;
                 if (frameType == CAN::TPProtocol::Frame::Single) {
                     if (in_frame_handler.pointerToData[1] == CAN::Application::ACK) {
-                        if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(500)) == pdTRUE) {
-                            xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
-                            CAN_TRANSMIT_Handler.ACKReceived = true;
-                        }
-                        else {
-                            LOG_ERROR << "Failed to take the CAN_ACK_SEMAPHORE - GATEKEEPER";
-                        }
+                        xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
                     }
                     __NOP();
                 } else if (frameType == CAN::TPProtocol::Frame::First) {
-                    // debugCounter=0;
+                    // debugCounter = 0;
                     CANPacketHandler->PacketSize = payloadLength << 8;
                     CANPacketHandler->PacketSize = CANPacketHandler->PacketSize | in_frame_handler.pointerToData[1];
                     CANPacketHandler->PacketSize -= 1; //compensate for ID byte
-                    // currenConsecutiveFrameCounter=0;
+                    // currenConsecutiveFrameCounter = 0;
                     CANPacketHandler->TailPointer = 0;
                     __NOP();
                 } else if (frameType == CAN::TPProtocol::Frame::Consecutive) {
@@ -113,7 +108,6 @@ void CANGatekeeperTask::execute() {
                     uint8_t FrameNumber = in_frame_handler.pointerToData[1] - 1;
                     // Add frame to local buffer
                     __NOP();
-
                     for (uint32_t i = 0; i < (CAN::MaxPayloadLength - 2); i++) {
                         __NOP();
                         if (i + FrameNumber == 0) {

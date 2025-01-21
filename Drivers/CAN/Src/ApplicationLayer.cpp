@@ -8,7 +8,6 @@
 #include "Message.hpp"
 #include <eMMC.hpp>
 
-ParameterService parameterMap;
 
 namespace CAN::Application {
 
@@ -126,13 +125,14 @@ namespace CAN::Application {
                 message.append(parameterID);
             }
         }
-        if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(500)) == pdTRUE) {
-            TPProtocol::createCANTPMessage(message, isISR);
-            xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
-        }
-        else {
-            LOG_ERROR << "Failed to take the CAN_ACK_SEMAPHORE";
-        }
+        TPProtocol::createCANTPMessage(message, isISR);
+        // if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(500)) == pdTRUE) {
+        //     TPProtocol::createCANTPMessage(message, isISR);
+        //     xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
+        // }
+        // else {
+        //     LOG_ERROR << "Failed to take the CAN_ACK_SEMAPHORE";
+        // }
     }
 
     void createPerformFunctionMessage(NodeIDs destinationAddress, bool isMulticast,
