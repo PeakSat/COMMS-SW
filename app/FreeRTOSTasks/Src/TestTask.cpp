@@ -12,8 +12,8 @@
 void TestTask::execute() {
     LOG_DEBUG << "TestTask::execute()";
     vTaskDelay(5000);
-    etl::array<uint16_t, CAN::TPMessageMaximumArguments> OBCTempIDs = {5002};
-    constexpr int start_id = 3000; // Starting ID
+    // etl::array<uint16_t, CAN::TPMessageMaximumArguments> OBCTempIDs = {5002};
+    constexpr int start_id = 3012; // Starting ID
     constexpr int end_id = 3017;   // Ending ID
     constexpr int size = end_id - start_id;
     etl::array<uint16_t, CAN::TPMessageMaximumArguments> EPSIDs{};
@@ -23,13 +23,11 @@ void TestTask::execute() {
     }
 
     while (true) {
-        LOG_DEBUG << COMMSParameters::commsUHFBandPATemperature.getValue();
+        // LOG_DEBUG << COMMSParameters::commsUHFBandPATemperature.getValue();
         LOG_DEBUG << "REQUESTING TEMP PARAMETERS FROM OBC" ;
-        CAN::Application::createRequestParametersMessage(CAN::OBC, false, OBCTempIDs, false);
+        // CAN::Application::createRequestParametersMessage(CAN::OBC, false, OBCTempIDs, false);
         vTaskDelay(1000);
-        LOG_DEBUG << "REQUESTING EPS PARAMETERS FROM OBC" ;
-        CAN::Application::createRequestParametersMessage(CAN::OBC, false, EPSIDs, false);
-        LOG_DEBUG << "REQUESTING EPS PARAMETERS FROM OBC" ;
+        // LOG_DEBUG << "REQUESTING EPS PARAMETERS FROM OBC" ;
         CAN::Application::createRequestParametersMessage(CAN::OBC, false, EPSIDs, false);
         vTaskDelay(pdMS_TO_TICKS(DelayMs));
     }

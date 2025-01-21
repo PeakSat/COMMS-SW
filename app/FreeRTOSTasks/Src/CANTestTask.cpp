@@ -45,18 +45,14 @@ void CANTestTask::execute() {
             }
             message.idInfo.sourceAddress = CAN::OBC;
             uint32_t start = xTaskGetTickCount();
-            LOG_DEBUG << "parse time elapsed 1:" << xTaskGetTickCount() - start;
             CAN::TPProtocol::parseMessage(message);
 
-
-            //Send ACK
+            // Send ACK
             CAN::TPMessage ACKmessage = {{CAN::NodeID, CAN::NodeIDs::OBC, false}};
             ACKmessage.appendUint8(CAN::Application::MessageIDs::ACK);
             CAN::TPProtocol::createCANTPMessageNoRetransmit(ACKmessage, false);
-            LOG_DEBUG << "parse time elapsed 2:" << xTaskGetTickCount() - start;
             xTaskNotifyGive(canGatekeeperTask->taskHandle);
         }
-
 
         // if (counter == 0) {
         //     counter = 1;
@@ -79,5 +75,7 @@ void CANTestTask::execute() {
         //     LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << StoredPacket.size;
         // }
         // vTaskDelay(3000);
+
+
     }
 }
