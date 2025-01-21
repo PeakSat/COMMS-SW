@@ -80,10 +80,10 @@ void ParameterService::initializeParameterMap() {
         {PAYParameters::fpga_faultID, PAYParameters::fpga_fault},
         {PAYParameters::v_cam_faultID, PAYParameters::v_cam_fault},
         {PAYParameters::sdd_faultID, PAYParameters::sdd_fault},
-        {OBDHParameters::OBCPCBTemperature1ID, OBDHParameters::OBCPCBTemperature1},
-        {OBDHParameters::OBCPCBTemperature2ID, OBDHParameters::OBCPCBTemperature2},
-        {OBDHParameters::OBCMCUTemperatureID, OBDHParameters::OBCMCUTemperature},
-        {OBDHParameters::OBCMCUBootCounterID, OBDHParameters::OBCMCUBootCounter},
+        {OBDHParameters::PCBTemperature1ID, OBDHParameters::PCBTemperature1},
+        {OBDHParameters::PCBTemperature2ID, OBDHParameters::PCBTemperature2},
+        {OBDHParameters::MCUTemperatureID, OBDHParameters::MCUTemperature},
+        {OBDHParameters::MCUBootCounterID, OBDHParameters::MCUBootCounter},
         {OBDHParameters::SpacecraftTimeRefID, OBDHParameters::SpacecraftTimeRef},
         {OBDHParameters::OnBoardTimeID, OBDHParameters::OnBoardTime},
         {OBDHParameters::CANBUSLoad1ID, OBDHParameters::CANBUSLoad1},
@@ -102,6 +102,8 @@ void ParameterService::initializeParameterMap() {
         {OBDHParameters::CAN_ACK_timeoutID, OBDHParameters::CAN_ACK_timeout},
         {OBDHParameters::CAN_FrameRetransimtCountID, OBDHParameters::CAN_FrameRetransimtCount},
         {OBDHParameters::CAN_TransmitFailureCountID, OBDHParameters::CAN_TransmitFailureCount},
+        {ADCSParameters::ConModeSelectID, ADCSParameters::ConModeSelect},
+        {ADCSParameters::ConModeDefaultID, ADCSParameters::ConModeDefault},
         {ADCSParameters::RWL0_power_stateID, ADCSParameters::RWL0_power_state},
         {ADCSParameters::RWL1_power_stateID, ADCSParameters::RWL1_power_state},
         {ADCSParameters::RWL2_power_stateID, ADCSParameters::RWL2_power_state},
@@ -114,6 +116,8 @@ void ParameterService::initializeParameterMap() {
         {COMMSParameters::commsUHFBandPATemperatureID, COMMSParameters::commsUHFBandPATemperature},
         {COMMSParameters::commsPCBTemperatureID, COMMSParameters::commsPCBTemperature},
         {COMMSParameters::commsGNSSTemperatureID, COMMSParameters::commsGNSSTemperature},
-        {COMMSParameters::Antenna_Deployment_StatusID, COMMSParameters::Antenna_Deployment_Status}};
+        {COMMSParameters::Antenna_Deployment_StatusID, COMMSParameters::Antenna_Deployment_Status},
+        {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}
+    };
 }
 #endif

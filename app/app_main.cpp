@@ -9,7 +9,6 @@
 #include "eMMCTask.hpp"
 #include "GNSSTask.hpp"
 #include "TestTask.hpp"
-
 #include "INA3221Task.hpp"
 #include "CANGatekeeperTask.hpp"
 #include "TPProtocol.hpp"
@@ -21,10 +20,8 @@
 #include "RF_TXTask.hpp"
 #include "RF_RXTask.hpp"
 #include "git_version.h"
-
-#include <ParameterService.hpp>
 #include <ServicePool.hpp>
-// ServicePool Services = ServicePool();
+
 ParameterService parameterMap;
 
 void app_main(void) {

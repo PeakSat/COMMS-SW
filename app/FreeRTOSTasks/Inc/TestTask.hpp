@@ -1,18 +1,17 @@
 #pragma once
 
 #include "Task.hpp"
-#include "main.h"
 #include "etl/optional.h"
 
 class TestTask : public Task {
 public:
     void execute();
 
-    TestTask() : Task("External Temperature Sensors") {}
+    TestTask() : Task("ECSS TEST") {}
 
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<TestTask>, this->TaskName,
-                                             TestTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
                                              this->taskStack, &(this->taskBuffer));
     }
 
