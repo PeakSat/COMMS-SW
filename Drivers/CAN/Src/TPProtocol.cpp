@@ -131,7 +131,6 @@ bool TPProtocol::createCANTPMessageWithRetry(const TPMessage& message, bool isIS
 }
 
 bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool isISR) {
-
     size_t messageSize = message.dataSize;
     uint32_t id = message.encodeId();
 
@@ -164,7 +163,6 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
     uint8_t totalConsecutiveFramesNeeded = ceil(static_cast<float>(messageSize) / UsableDataLength);
     for (uint8_t currentConsecutiveFrameCount = 1;
          currentConsecutiveFrameCount <= totalConsecutiveFramesNeeded; currentConsecutiveFrameCount++) {
-
         uint8_t firstByte = (Consecutive << 6);
         if (currentConsecutiveFrameCount == totalConsecutiveFramesNeeded) {
             LOG_DEBUG << "Final Frame";
@@ -183,39 +181,15 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         canGatekeeperTask->send({id, consecutiveFrame}, isISR);
         LOG_DEBUG << "Sending CAN packet";
         xTaskNotifyGive(canGatekeeperTask->taskHandle);
-
-        if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT) == pdTRUE)) {
-            LOG_DEBUG << "Received CAN ACK";
-            xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
-        }
-        else {
-            LOG_ERROR << "Failed to receive CAN ACK";
-        }
-        xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
     }
-
-    // uint32_t startTime = xTaskGetTickCount();
-    // while (true) {
-    //     vTaskDelay(1);
-    //     // ACK received
-    //     if (CAN_TRANSMIT_Handler.ACKReceived == true) {
-    //         xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
-    //         LOG_DEBUG << "CAN ACK received";
-    //         __NOP();
-    //         return false;
-    //     }
-    //
-    //     // Transaction timed out
-    //     if (xTaskGetTickCount() > (CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT + startTime)) {
-    //         xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
-    //         LOG_DEBUG << "CAN ACK timeout";
-    //         __NOP();
-    //         return true;
-    //     }
-        // if (uxQueueMessagesWaiting(canGatekeeperTask->outgoingQueue)) {
-        //     CAN::Packet out_message = {};
-        //     xQueueReceive(canGatekeeperTask->outgoingQueue, &out_message, portMAX_DELAY);
-        //     CAN::send(out_message, canGatekeeperTask->ActiveBus);
-        // }
+    if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT)) == pdTRUE) {
+        LOG_DEBUG << "Received CAN ACK";
+        xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
     }
+    else {
+        LOG_ERROR << "Failed to receive CAN ACK";
+    }
+    xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
+}
+
 

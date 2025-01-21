@@ -62,8 +62,6 @@ void CANGatekeeperTask::execute() {
     uint32_t eMMCPacketTailPointer = 0;
     int j = 0;
 
-    can_ack_handler.initialize_semaphore();
-
 
     while (true) {
         // LOG_DEBUG << "{START OF" << this->TaskName << "}";
@@ -93,8 +91,13 @@ void CANGatekeeperTask::execute() {
                 uint8_t payloadLength = metadata & 0x3F;
                 if (frameType == CAN::TPProtocol::Frame::Single) {
                     if (in_frame_handler.pointerToData[1] == CAN::Application::ACK) {
-                        xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
-                        CAN_TRANSMIT_Handler.ACKReceived = true;
+                        if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(500)) == pdTRUE) {
+                            xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
+                            CAN_TRANSMIT_Handler.ACKReceived = true;
+                        }
+                        else {
+                            LOG_ERROR << "Failed to take the CAN_ACK_SEMAPHORE - GATEKEEPER";
+                        }
                     }
                     __NOP();
                 } else if (frameType == CAN::TPProtocol::Frame::First) {

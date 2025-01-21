@@ -99,8 +99,8 @@ namespace CAN::Application {
                 LOG_ERROR << "Requested parameter that doesn't exist! ID: " << parameterID;
             }
         }
-        xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(10));
-        CAN::TPProtocol::createCANTPMessage(message, false);
+
+        CAN::TPProtocol::createCANTPMessage(message, isISR);
     }
     void createRequestParametersMessage(NodeIDs destinationAddress, bool isMulticast,
                                         const etl::array<uint16_t, TPMessageMaximumArguments>& parameterIDs,
@@ -125,8 +125,13 @@ namespace CAN::Application {
                 message.append(parameterID);
             }
         }
-
-        CAN::TPProtocol::createCANTPMessage(message, isISR);
+        if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(500)) == pdTRUE) {
+            TPProtocol::createCANTPMessage(message, isISR);
+            xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
+        }
+        else {
+            LOG_ERROR << "Failed to take the CAN_ACK_SEMAPHORE";
+        }
     }
 
     void createPerformFunctionMessage(NodeIDs destinationAddress, bool isMulticast,
