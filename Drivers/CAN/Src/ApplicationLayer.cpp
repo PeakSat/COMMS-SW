@@ -99,8 +99,8 @@ namespace CAN::Application {
                 LOG_ERROR << "Requested parameter that doesn't exist! ID: " << parameterID;
             }
         }
-
-        CAN::TPProtocol::createCANTPMessage(message, isISR);
+        xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(10));
+        CAN::TPProtocol::createCANTPMessage(message, false);
     }
     void createRequestParametersMessage(NodeIDs destinationAddress, bool isMulticast,
                                         const etl::array<uint16_t, TPMessageMaximumArguments>& parameterIDs,

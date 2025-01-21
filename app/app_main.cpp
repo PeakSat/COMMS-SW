@@ -68,6 +68,10 @@ void app_main(void) {
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     TransceiverHandler::initialize_semaphore();
+
+    can_ack_handler.initialize_semaphore();
+    CAN_TRANSMIT_Handler.initialize_semaphore();
+
     /* Start the scheduler. */
 
     vTaskStartScheduler();

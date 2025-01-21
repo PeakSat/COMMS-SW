@@ -8,6 +8,7 @@ extern FDCAN_HandleTypeDef hfdcan2;
 using namespace CAN;
 
 CANTransactionHandler CAN_TRANSMIT_Handler;
+CAN_ACK_HANDLER can_ack_handler;
 
 void TPProtocol::processSingleFrame(const CAN::Packet& message) {
     TPMessage tpMessage;
@@ -179,34 +180,42 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         if (currentConsecutiveFrameCount % 4 == 3) {
             vTaskDelay(1);
         }
-
         canGatekeeperTask->send({id, consecutiveFrame}, isISR);
         LOG_DEBUG << "Sending CAN packet";
         xTaskNotifyGive(canGatekeeperTask->taskHandle);
+
+        if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT) == pdTRUE)) {
+            LOG_DEBUG << "Received CAN ACK";
+            xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
+        }
+        else {
+            LOG_ERROR << "Failed to receive CAN ACK";
+        }
+        xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
     }
 
-    uint32_t startTime = xTaskGetTickCount();
-    while (true) {
-        vTaskDelay(1);
-        // ACK received
-        if (CAN_TRANSMIT_Handler.ACKReceived == true) {
-            xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
-            LOG_DEBUG << "CAN ACK received";
-            __NOP();
-            return false;
-        }
-
-        // Transaction timed out
-        if (xTaskGetTickCount() > (CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT + startTime)) {
-            xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
-            LOG_DEBUG << "CAN ACK timeout";
-            __NOP();
-            return true;
-        }
-        if (uxQueueMessagesWaiting(canGatekeeperTask->outgoingQueue)) {
-            CAN::Packet out_message = {};
-            xQueueReceive(canGatekeeperTask->outgoingQueue, &out_message, portMAX_DELAY);
-            CAN::send(out_message, canGatekeeperTask->ActiveBus);
-        }
+    // uint32_t startTime = xTaskGetTickCount();
+    // while (true) {
+    //     vTaskDelay(1);
+    //     // ACK received
+    //     if (CAN_TRANSMIT_Handler.ACKReceived == true) {
+    //         xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
+    //         LOG_DEBUG << "CAN ACK received";
+    //         __NOP();
+    //         return false;
+    //     }
+    //
+    //     // Transaction timed out
+    //     if (xTaskGetTickCount() > (CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT + startTime)) {
+    //         xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
+    //         LOG_DEBUG << "CAN ACK timeout";
+    //         __NOP();
+    //         return true;
+    //     }
+        // if (uxQueueMessagesWaiting(canGatekeeperTask->outgoingQueue)) {
+        //     CAN::Packet out_message = {};
+        //     xQueueReceive(canGatekeeperTask->outgoingQueue, &out_message, portMAX_DELAY);
+        //     CAN::send(out_message, canGatekeeperTask->ActiveBus);
+        // }
     }
-}
+

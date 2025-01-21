@@ -7,11 +7,13 @@
 #include "queue.h"
 #include "eMMC.hpp"
 #include <ApplicationLayer.hpp>
-// #include "CANDriver.cpp"
+
 struct incomingFIFO incomingFIFO __attribute__((section(".dtcmram_data")));
 uint8_t incomingBuffer[CANMessageSize * sizeOfIncommingFrameBuffer] __attribute__((section(".dtcmram_data")));
 struct localPacketHandler CAN1PacketHandler __attribute__((section(".dtcmram_data")));
 struct localPacketHandler CAN2PacketHandler __attribute__((section(".dtcmram_data")));
+
+
 
 CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
     CAN::initialize(0);
@@ -59,9 +61,15 @@ void CANGatekeeperTask::execute() {
     uint8_t currentMFPacketID = 0;
     uint32_t eMMCPacketTailPointer = 0;
     int j = 0;
+
+    can_ack_handler.initialize_semaphore();
+
+
     while (true) {
         // LOG_DEBUG << "{START OF" << this->TaskName << "}";
         xTaskNotifyWait(0, 0, &ulNotifiedValue, pdMS_TO_TICKS(1000));
+        //
+        xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, portMAX_DELAY);
 
         while (uxQueueMessagesWaiting(incomingFrameQueue)) {
             if (eMMCPacketTailPointer + 2 > eMMC::memoryMap[eMMC::CANMessages].size / 512) {
@@ -85,6 +93,7 @@ void CANGatekeeperTask::execute() {
                 uint8_t payloadLength = metadata & 0x3F;
                 if (frameType == CAN::TPProtocol::Frame::Single) {
                     if (in_frame_handler.pointerToData[1] == CAN::Application::ACK) {
+                        xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
                         CAN_TRANSMIT_Handler.ACKReceived = true;
                     }
                     __NOP();
