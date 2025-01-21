@@ -4,7 +4,6 @@
 #include "TPMessage.hpp"
 #include <cstdint>
 #include "FreeRTOS.h"
-
 #include <CANDriver.hpp>
 #include <semphr.h>
 
@@ -13,11 +12,26 @@
  */
 struct CANTransactionHandler {
     SemaphoreHandle_t CAN_TRANSMIT_SEMAPHORE;
+    StaticSemaphore_t CAN_TRANSMIT_SEMAPHOREBUFFER;
     bool ACKReceived = false;
     // bool NACKReceived = false; // todo
-    uint32_t CAN_ACK_TIMEOUT = 2000; //ms
+    uint32_t CAN_ACK_TIMEOUT = 2000;
+    void initialize_semaphore() {
+        CAN_TRANSMIT_SEMAPHORE = xSemaphoreCreateMutexStatic(&CAN_TRANSMIT_SEMAPHOREBUFFER);
+    }
 };
+
+struct CAN_ACK_HANDLER {
+    SemaphoreHandle_t CAN_ACK_SEMAPHORE;
+    StaticSemaphore_t can_ack_semaphore_buffer;
+    void initialize_semaphore() {
+        CAN_ACK_SEMAPHORE = xSemaphoreCreateMutexStatic(&can_ack_semaphore_buffer);
+    }
+};
+
 extern CANTransactionHandler CAN_TRANSMIT_Handler;
+extern CAN_ACK_HANDLER can_ack_handler;
+
 namespace CAN::TPProtocol {
     inline CAN::ActiveBus activeBus = CAN::ActiveBus::Redundant;
     /**

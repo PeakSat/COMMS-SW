@@ -5,11 +5,12 @@
 #include "etl/array.h"
 #include "etl/String.hpp"
 #include "Frame.hpp"
-#include "Logger_Definitions.hpp"
 #include "Message.hpp"
 #include "Peripheral_Definitions.hpp"
 #include "TPMessage.hpp"
-#include "app_main.h"
+#include <ParameterService.hpp>
+
+extern ParameterService parameterMap;
 
 
 namespace CAN::Application {

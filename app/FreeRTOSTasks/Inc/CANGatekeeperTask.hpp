@@ -22,6 +22,7 @@ struct incomingFIFO {
     incomingFIFO() : buffer(nullptr), NOfItems(0), lastItemPointer(0) {}
     incomingFIFO(uint8_t* externalBuffer, uint32_t NOfItems) : buffer(externalBuffer), NOfItems(NOfItems), lastItemPointer(0) {}
 };
+
 extern incomingFIFO incomingFIFO;
 static inline uint8_t storedPacketQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)] __attribute__((section(".dtcmram_data")));
 static inline uint8_t incomingFrameQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)] __attribute__((section(".dtcmram_data")));
