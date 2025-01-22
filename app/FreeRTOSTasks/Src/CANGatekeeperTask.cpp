@@ -15,7 +15,6 @@ struct localPacketHandler CAN1PacketHandler __attribute__((section(".dtcmram_dat
 struct localPacketHandler CAN2PacketHandler __attribute__((section(".dtcmram_data")));
 
 
-
 CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
     CAN::initialize(0);
 
@@ -156,6 +155,7 @@ void CANGatekeeperTask::execute() {
                         }
 
                         xQueueSendToBack(storedPacketQueue, &PacketToBeStored, NULL);
+                        xTaskNotifyGive(canTestTask->taskHandle);
                     } else {
                         // Message not received correctly
                         LOG_ERROR << "DROPPED CAN MESSAGE";
