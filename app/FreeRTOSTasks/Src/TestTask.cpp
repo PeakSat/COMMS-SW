@@ -12,7 +12,7 @@
 void TestTask::execute() {
     LOG_DEBUG << "TestTask::execute()";
     vTaskDelay(5000);
-    etl::array<uint16_t, CAN::TPMessageMaximumArguments> OBCTempIDs = {5002};
+    etl::array<uint16_t, CAN::TPMessageMaximumArguments> OBCTempIDs = {OBDHParameters::MCUTemperatureID};
     constexpr int start_id = 3000; // Starting ID
     constexpr int end_id = 3017;   // Ending ID
     constexpr int size = end_id - start_id;
@@ -24,7 +24,7 @@ void TestTask::execute() {
 
     while (true) {
         LOG_DEBUG << COMMSParameters::commsUHFBandPATemperature.getValue();
-        LOG_DEBUG << "REQUESTING TEMP PARAMETERS FROM OBC" ;
+        LOG_DEBUG << "REQUESTING TEMP PARAMETERS FROM OBC";
         CAN::Application::createRequestParametersMessage(CAN::OBC, false, OBCTempIDs, false);
         // LOG_DEBUG << "REQUESTING EPS PARAMETERS FROM OBC" ;
         // CAN::Application::createRequestParametersMessage(CAN::OBC, false, EPSIDs, false);

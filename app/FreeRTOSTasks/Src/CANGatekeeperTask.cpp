@@ -1,7 +1,7 @@
 // #pragma once
 #include "CANDriver.hpp"
 #include "CANGatekeeperTask.hpp"
-#include "CANTestTask.hpp"
+#include "CANParserTask.hpp"
 #include "TPProtocol.hpp"
 #include "Logger.hpp"
 #include "queue.h"
@@ -155,7 +155,7 @@ void CANGatekeeperTask::execute() {
                         }
 
                         xQueueSendToBack(storedPacketQueue, &PacketToBeStored, NULL);
-                        xTaskNotifyGive(canTestTask->taskHandle);
+                        xTaskNotifyGive(canParserTask->taskHandle);
                     } else {
                         // Message not received correctly
                         LOG_ERROR << "DROPPED CAN MESSAGE";

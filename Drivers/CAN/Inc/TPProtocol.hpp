@@ -11,8 +11,6 @@
  *
  */
 
-#define CAN_ACK 1 << 0
-
 struct CANTransactionHandler {
     SemaphoreHandle_t CAN_TRANSMIT_SEMAPHORE;
     StaticSemaphore_t CAN_TRANSMIT_SEMAPHOREBUFFER;

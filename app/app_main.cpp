@@ -12,7 +12,7 @@
 #include "INA3221Task.hpp"
 #include "CANGatekeeperTask.hpp"
 #include "TPProtocol.hpp"
-#include "CANTestTask.hpp"
+#include "CANParserTask.hpp"
 #include <optional>
 #include "TMP117Task.hpp"
 #include "CANDriver.hpp"
@@ -49,7 +49,7 @@ void app_main(void) {
     // ina3221Task.emplace();
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
-    canTestTask.emplace();
+    canParserTask.emplace();
 
     uartGatekeeperTask->createTask();
     rf_rxtask->createTask();
@@ -64,7 +64,7 @@ void app_main(void) {
     // ina3221Task->createTask();
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
-    canTestTask->createTask();
+    canParserTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     TransceiverHandler::initialize_semaphore();
