@@ -14,14 +14,17 @@ const uint16_t TIMEOUT = 1000;
 typedef struct __SPI_HandleTypeDef SPI_HandleTypeDef;
 extern SPI_HandleTypeDef hspi4;
 
+extern uint8_t transmit;
 namespace AT86RF215 {
-
     class TransceiverHandler {
     public:
-        static SemaphoreHandle_t transceiver_semaphore;
-        static StaticSemaphore_t transceiver_semaphore_buffer;
-        static void initialize_semaphore() {
-            transceiver_semaphore = xSemaphoreCreateMutexStatic(&transceiver_semaphore_buffer);
+        SemaphoreHandle_t resources_mtx = nullptr;
+        StaticSemaphore_t mtx_buf = {};
+        void initialize_semaphore() {
+            resources_mtx = xSemaphoreCreateMutexStatic(&mtx_buf);
+            if (resources_mtx == nullptr) {
+                LOG_ERROR << "Failed to create semaphore";
+            }
         }
     };
 
@@ -723,6 +726,8 @@ namespace AT86RF215 {
     };
 
     extern At86rf215 transceiver;
+    extern TransceiverHandler transceiver_handler;
+
 
 
 } // namespace AT86RF215

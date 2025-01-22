@@ -1,6 +1,4 @@
-
 #include "at86rf215.hpp"
-/// This is for notifying the rx task from the handle IRQ function
 #include "RF_RXTask.hpp"
 #include "RF_TXTask.hpp"
 
@@ -8,9 +6,7 @@
 namespace AT86RF215 {
 
     At86rf215 transceiver = At86rf215(&hspi4);
-    StaticSemaphore_t TransceiverHandler::transceiver_semaphore_buffer;
-    SemaphoreHandle_t TransceiverHandler::transceiver_semaphore;
-
+    TransceiverHandler transceiver_handler;
 
     void At86rf215::spi_write_8(uint16_t address, uint8_t value, Error& err) {
         uint8_t msg[3] = {static_cast<uint8_t>(0x80 | ((address >> 8) & 0x7F)), static_cast<uint8_t>(address & 0xFF), value};
@@ -1501,7 +1497,7 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         }
         if ((irq & InterruptMask::EnergyDetectionCompletion) != 0) {
             EnergyDetectionCompletion_flag = true;
-            // rx_ongoing = false;
+            rx_ongoing = false;
             // cca_ongoing = false;
         }
         if ((irq & InterruptMask::TransceiverReady) != 0) {
@@ -1511,17 +1507,15 @@ void At86rf215::print_error(AT86RF215::Error& err) {
                 // Switch to TX state once the transceiver is ready to send
                 if (get_state(RF09, err) != RF_RX)
                     set_state(Transceiver::RF09, State::RF_RX, err);
-                if (cca_ongoing) {
-                    // spi_write_8(RF09_EDC, 0x1, err);
-                }
+                // if (cca_ongoing) {
+                //     spi_write_8(RF09_EDC, 0x1, err);
+                // }
             }
             if (tx_ongoing) {
                 // Switch to TX state once the transceiver is ready to send
                 if (get_state(RF09, err) != RF_TX)
                     set_state(RF09, State::RF_TX, err);
             }
-            //            xTaskNotifyFromISR(rf_rxtask->taskHandle, TRXRDY, eSetBits, &xHigherPriorityTaskWoken);
-            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::Wakeup) != 0) {
             Wakeup_flag = true;
@@ -1531,27 +1525,23 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         /// Baseband IRQ
         irq = spi_read_8(RegisterAddress::BBC0_IRQS, err);
         if ((irq & InterruptMask::FrameBufferLevelIndication) != 0) {
-            // Frame Buffer Level Indication handling
-            //            xTaskNotifyFromISR(rf_txtask->taskHandle, FBLI, eSetBits, &xHigherPriorityTaskWoken);
-            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             FrameBufferLevelIndication_flag = true;
         }
         if ((irq & InterruptMask::AGCRelease) != 0) {
             // AGC Release handling
-            // xTaskNotifyFromISR(rf_txtask->taskHandle, AGC_RELEASE, eSetBits, &xHigherPriorityTaskWoken);
             AGCRelease_flag = true;
+            xHigherPriorityTaskWoken = pdFALSE;
+            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_AGC_RELEASE, AGC_RELEASE, eSetBits, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::AGCHold) != 0) {
             // AGC Hold handling
             xHigherPriorityTaskWoken = pdFALSE;
-
-            rx_ongoing = true;
             xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_AGC, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             xHigherPriorityTaskWoken = pdFALSE;
-            // TransmitterFrameEnd_flag = true;
             tx_ongoing = false;
             xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_TXFE, TXFE, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -1566,84 +1556,14 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         }
         if ((irq & InterruptMask::ReceiverFrameEnd) != 0) {
             ReceiverFrameEnd_flag = true;
-            if (rx_ongoing) {
+            if (rx_ongoing)
                 rx_ongoing = false;
-            }
             xHigherPriorityTaskWoken = pdFALSE;
             xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_RXFE_RX, RXFE_RX, eSetBits, &xHigherPriorityTaskWoken);
-            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_RXFE_TX, RXFE_TX, eSetBits, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverFrameStart) != 0) {
-            // xTaskNotifyFromISR(rf_rxtask->taskHandle, RXFS, eSetBits, &xHigherPriorityTaskWoken);
-            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            rx_ongoing = true;
-        }
 
-        /* 2.4 GHz Transceiver */
-
-        // Radio IRQ
-        irq = spi_read_8(RegisterAddress::RF24_IRQS, err);
-
-        if ((irq & InterruptMask::IFSynchronization) != 0) {
-            // I/Q IF Synchronization Failure handling
-        }
-        if ((irq & InterruptMask::TransceiverError) != 0) {
-            // Transceiver Error handling
-        }
-        if ((irq & InterruptMask::BatteryLow) != 0) {
-            // Battery Low handling
-        }
-        if ((irq & InterruptMask::EnergyDetectionCompletion) != 0) {
-            rx_ongoing = false;
-            cca_ongoing = false;
-        }
-        if ((irq & InterruptMask::TransceiverReady) != 0) {
-            if (rx_ongoing) {
-                // Switch to TX state once the transceiver is ready to send
-                set_state(Transceiver::RF24, State::RF_RX, err);
-                if (cca_ongoing) {
-                    spi_write_8(RF24_EDC, 0x1, err);
-                }
-            }
-            if (tx_ongoing) {
-                // Switch to TX state once the transceiver is ready to send
-                // set_state(Transceiver::RF24, State::RF_TX, err);
-            }
-        }
-        if ((irq & InterruptMask::Wakeup) != 0) {
-            /// Wakeup handling
-        }
-
-        /// Baseband IRQ
-        irq = spi_read_8(RegisterAddress::BBC0_IRQS, err);
-        if ((irq & InterruptMask::FrameBufferLevelIndication) != 0) {
-            // Frame Buffer Level Indication handling
-        }
-        if ((irq & InterruptMask::AGCRelease) != 0) {
-            // AGC Release handling
-        }
-        if ((irq & InterruptMask::AGCHold) != 0) {
-            agc_held = true;
-        }
-        if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
-            tx_ongoing = false;
-        }
-        if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
-            // Receiver Extended Match handling
-        }
-        if ((irq & InterruptMask::ReceiverAddressMatch) != 0) {
-            // Receiver Address Match handling
-        }
-        if ((irq & InterruptMask::ReceiverFrameEnd) != 0) {
-            if (rx_ongoing) {
-                packetReception(Transceiver::RF24, err);
-                rx_ongoing = false;
-            }
-        }
-        if ((irq & InterruptMask::ReceiverFrameStart) != 0) {
-            // Receiver Frame Start handling
             rx_ongoing = true;
         }
     }

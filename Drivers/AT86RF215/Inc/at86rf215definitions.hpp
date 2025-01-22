@@ -2,7 +2,7 @@
 
 namespace AT86RF215 {
 
-    #define MaxPacketLength 256
+
     #define FBLI (1 << 0)
     #define RXFE_RX (1 << 1)
     #define RXFE_TX (1 << 2)
@@ -18,13 +18,15 @@ namespace AT86RF215 {
     #define WAKEUP (1 << 11)
     #define START_TX_TASK (1 << 12)
     #define TRANSMIT (1 << 13)
-    #define RXFE_TX (1 << 14)
-
-    #define NOTIFY_INDEX_TRANSMIT 0
-    #define NOTIFY_INDEX_RXFE_RX 1
-    #define NOTIFY_INDEX_RXFE_TX 2
-    #define NOTIFY_INDEX_TXFE 3
-    #define NOTIFY_INDEX_AGC 4
+    #define RXFE_STATE (1 << 14)
+    // the default is 0
+    #define NOTIFY_INDEX_TRANSMIT 1
+    #define NOTIFY_INDEX_RXFE_RX 2
+    #define NOTIFY_INDEX_RXFE_RX_STATE 3
+    #define NOTIFY_INDEX_AGC_RELEASE 4
+    #define NOTIFY_INDEX_RXFE_TX 5
+    #define NOTIFY_INDEX_TXFE 6
+    #define NOTIFY_INDEX_AGC 7
 
 
 

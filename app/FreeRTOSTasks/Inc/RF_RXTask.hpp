@@ -8,6 +8,7 @@
 #include <etl/expected.h>
 #include "main.h"
 
+#define RX_REFRESH_PERIOD_MS 50
 
 using namespace AT86RF215;
 class RF_RXTask : public Task {
@@ -22,7 +23,7 @@ public:
     }
 
 private:
-    constexpr static uint16_t TaskStackDepth = 5000;
+    constexpr static uint16_t TaskStackDepth = 10000;
     /// Frequency in kHz
     constexpr static uint32_t FrequencyUHFRX = 401000;
     Error error = NO_ERRORS;

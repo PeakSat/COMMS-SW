@@ -5,8 +5,8 @@
 using namespace AT86RF215;
 
 void RF_RXTask::ensureRxMode() {
-    State rf_state = transceiver.get_state(RF09, error);
-    switch (rf_state) {
+    State trx_state = transceiver.get_state(RF09, error);
+    switch (trx_state) {
         case RF_NOP:
                 LOG_DEBUG << "[RX ENSURE] STATE: NOP";
         break;
@@ -19,7 +19,6 @@ void RF_RXTask::ensureRxMode() {
                 /// the delay here is essential
                 vTaskDelay(20);
                 transceiver.set_state(RF09, RF_RX, error);
-                transceiver.print_state(RF09, error);
         break;
         case RF_TX:
                 LOG_DEBUG << "[RX ENSURE] STATE: TX";
@@ -33,7 +32,7 @@ void RF_RXTask::ensureRxMode() {
                 transceiver.print_state(RF09, error);
         break;
         case RF_RX:
-            // LOG_DEBUG << "[RX ENSURE] STATE: RX";
+            LOG_DEBUG << "[RX ENSURE] STATE: RX";
         break;
         case RF_TRANSITION:
                 LOG_DEBUG << "[RX ENSURE] STATE: TRANSITION";
@@ -56,10 +55,8 @@ void RF_RXTask::ensureRxMode() {
             transceiver.print_state(RF09, error);
         break;
         case RF_TXPREP:
-                // LOG_DEBUG << "[RX ENSURE] STATE: TXPREP";
-                vTaskDelay(10);
+                LOG_DEBUG << "[RX ENSURE] STATE: TXPREP";
                 transceiver.set_state(RF09, RF_RX, error);
-                // transceiver.print_state(RF09, error);
         break;
         default:
             LOG_ERROR << "UNDEFINED";
@@ -82,30 +79,30 @@ void RF_RXTask::execute() {
     HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
     transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
     /// Check transceiver connection
-    if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+    if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
         auto status = transceiver.check_transceiver_connection(error);
         if (status.has_value()) {
         } else
             LOG_ERROR << "CONNECTION ##ERROR## WITH CODE: " << status.error();
-        transceiver.configure_pll(AT86RF215::RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
+        transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
         transceiver.setup(error);
-        xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+        xSemaphoreGive(transceiver_handler.resources_mtx);
     }
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
-    uint32_t receivedEvents;
-    transceiver.set_state(RF09, RF_TXPREP, error);
-    /// the delay here is essential
-    vTaskDelay(20);
-    transceiver.set_state(RF09, RF_RX, error);
     uint16_t received_length = 0;
-    static uint8_t current_counter = 0;
+    uint8_t current_counter = 0;
     uint32_t drop_counter = 0;
-    uint32_t print_tx_ong = 0, state_counter = 0;
+    uint32_t print_tx_ong = 0;
+    uint32_t receivedEvents;
+    uint8_t rf_state;
+    State trx_state;
+    LOG_DEBUG << "tx_ong" << transceiver.tx_ongoing;
+    LOG_DEBUG << "rx_ong" << transceiver.rx_ongoing;
+
     while (1) {
-        // wait for index 0
-        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(50))) {
-            if (receivedEvents & RXFE_RX) {
-                if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
+        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(RX_REFRESH_PERIOD_MS)) == pdTRUE) {
+            if (receivedEvents & AGC_HOLD) {
+                if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
                     if (received_length == 1024) {
@@ -116,47 +113,38 @@ void RF_RXTask::execute() {
                     else {
                         drop_counter++;
                         LOG_DEBUG << "[RF RX](DROP) c: " << drop_counter;
-
                     }
-                    xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
-
+                    xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
-                else {
-                    LOG_DEBUG << "[RX TASK] - COULD NOT ACQUIRE THE SEMAPHORE - INSIDE AGC HOLD";
-                }
-            }
-            else {
-                // LOG_DEBUG << "[RX TASK] - OTHER EVENTS" << receivedEvents;
             }
         }
         else {
-            if (xSemaphoreTake(TransceiverHandler::transceiver_semaphore, portMAX_DELAY) == pdTRUE) {
-                switch (uint8_t state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
+            if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
+                switch (rf_state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
                     case 0: { // rx_ongoing = false, tx_ongoing = false
-                        ensureRxMode();
+                         trx_state = transceiver.get_state(RF09, error);
+                        if (trx_state != RF_RX)
+                            ensureRxMode();
                         break;
                     }
                     case 1: { // rx_ongoing = false, tx_ongoing = true
                         // Handle the case where tx_ongoing is true
-                        print_tx_ong++;
-                        if (print_tx_ong == 10) {
-                            print_tx_ong = 0;
-                            LOG_DEBUG << "[RX TASK] TXONG";
-                            // vTaskSuspend(rf_txtask->taskHandle);
-                            // ensureRxMode();
-                            // vTaskResume(rf_txtask->taskHandle);
-                        }
+                        // xTaskNotifyGive(rf_txtask->taskHandle);
+                        // LOG_DEBUG << "[RX TASK] TXONG";
                         break;
                     }
                     case 2: { // rx_ongoing = true, tx_ongoing = false
                         // Handle the case where rx_ongoing is true
-                        // LOG_DEBUG << "[RX TASK] RXONG";
-                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(100))) {
-                            if (receivedEvents & RXFE_RX) {
-                                ensureRxMode();
+                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(500))) {
+                            if (receivedEvents &  RXFE_RX) {
+                                trx_state = transceiver.get_state(RF09, error);
+                                if (trx_state != RF_RX)
+                                    ensureRxMode();
                             }
                         }
-                        ensureRxMode();
+                        trx_state = transceiver.get_state(RF09, error);
+                        if (trx_state != RF_RX)
+                            ensureRxMode();
                         break;
                     }
                     case 3: { // rx_ongoing = true, tx_ongoing = true
@@ -169,8 +157,9 @@ void RF_RXTask::execute() {
                         break;
                     }
                 }
-                xSemaphoreGive(TransceiverHandler::transceiver_semaphore);
+                xSemaphoreGive(transceiver_handler.resources_mtx);
             }
         }
+
     }
 }

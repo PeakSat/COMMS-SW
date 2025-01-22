@@ -21,6 +21,7 @@
 #include "RF_RXTask.hpp"
 #include "git_version.h"
 #include "timers.h"
+#include "at86rf215.hpp"
 
 #define NUM_TIMERS 1
 
@@ -74,7 +75,8 @@ void app_main(void) {
 
 
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
-    TransceiverHandler::initialize_semaphore();
+
+    transceiver_handler.initialize_semaphore();
     /* Start the scheduler. */
 
     vTaskStartScheduler();
@@ -221,13 +223,3 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
         }
     }
 }
-
-void vTimerCallback( TimerHandle_t pxTimer )
- {
-    BaseType_t xHigherPriorityTaskWoken;
-    xHigherPriorityTaskWoken = pdFALSE;
-    // if (pvTimerGetTimerID(pxTimer) == (void* )1) {
-    xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TRANSMIT, eSetBits, &xHigherPriorityTaskWoken);
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-    // }
- }
