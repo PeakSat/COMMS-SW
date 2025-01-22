@@ -154,8 +154,7 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
 
         etl::array<uint8_t, CAN::MaxPayloadLength> firstFrame = {firstByte, secondByte};
         LOG_DEBUG << "First Frame";
-        canGatekeeperTask->send({id, firstFrame}, isISR);
-        xTaskNotifyGive(canGatekeeperTask->taskHandle);
+        canGatekeeperTask->send({id, firstFrame}, false);
     }
 
     // Consecutive Frames
@@ -190,5 +189,3 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
     xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
     return true;
 }
-
-
