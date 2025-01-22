@@ -27,7 +27,6 @@ void CANParserTask::execute() {
     while (true) {
 
         xTaskNotifyWait(0, 0, &ulNotifiedValue, pdMS_TO_TICKS(1000));
-        vTaskDelay(10);
         while (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue)) {
 
             // Get packet from eMMC

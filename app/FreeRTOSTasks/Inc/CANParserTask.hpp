@@ -6,7 +6,6 @@
 #include <optional>
 
 class CANParserTask : public Task {
-private:
 public:
     const static inline uint16_t TaskStackDepth = 7000;
 
