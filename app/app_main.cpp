@@ -155,6 +155,7 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
             // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
             // Size = 9 have the messages with main ID and Size = 10 have the messages with Sub ID
             if (gnssTask->control && (Size == 9 || Size == 10)) {
+                gnssTask->control = false;
                 if (huart5.pRxBuffPtr[4] == 131)
                     xSemaphoreGiveFromISR(gnssTask->gnss_ack_handler.GNSS_ACK_SEMAPHORE, &xHigherPriorityTaskWoken);
             } else {

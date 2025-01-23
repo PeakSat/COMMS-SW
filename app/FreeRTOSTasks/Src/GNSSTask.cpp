@@ -3,7 +3,6 @@
 #include "main.h"
 #include "Logger.hpp"
 
-
 void GNSSTask::printing(uint8_t* buf) {
     printing_counter++;
     etl::string<1024> GNSSMessageString = "";
@@ -178,18 +177,15 @@ etl::expected<void, ErrorFromGNSS> GNSSTask::controlGNSSwithACK(GNSSMessage gnss
     for (uint8_t attempt = 0; attempt < maxRetries; attempt++) {
         if (HAL_UART_Transmit(&huart5, gnssMessageToSend.messageBody.data(), gnssMessageToSend.messageBody.size(), 1000) != HAL_OK) {
             LOG_ERROR << "Transmission failed";
-            control = 0;
             return etl::unexpected(ErrorFromGNSS::TransmissionFailed); // Return TransmissionFailed error
         }
         if (xSemaphoreTake(gnss_ack_handler.GNSS_ACK_SEMAPHORE, pdMS_TO_TICKS(gnss_ack_handler.TIMEOUT)) == pdTRUE) {
             LOG_DEBUG << "GNSS ACK received!";
             xSemaphoreGive(gnss_ack_handler.GNSS_ACK_SEMAPHORE);
-            control = 0;
             return {};
         }
     }
     LOG_ERROR << "Timeout waiting for CAN ACK after maximum tries";
-    control = 0;
     return etl::unexpected(ErrorFromGNSS::Timeout);
 }
 
