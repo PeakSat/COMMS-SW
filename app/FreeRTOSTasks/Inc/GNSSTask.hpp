@@ -11,6 +11,8 @@
 #include "minmea.h"
 #include "Logger.hpp"
 
+#include <semphr.h>
+
 #define printing_frequency 1
 
 extern UART_HandleTypeDef huart5;
@@ -31,7 +33,7 @@ public:
     * Array representing the stack memory for the task.
     * This array is statically allocated with `TaskStackDepth` elements.
     */
-    StackType_t taskStack[TaskStackDepth];
+    StackType_t taskStack[TaskStackDepth]{};
 
     /**
     * Buffer for storing raw GNSS data received via UART.
@@ -54,7 +56,7 @@ public:
     * `size_response` holds the size of the GNSS response, while `size_message`
     * refers to the size of the message being processed.
     */
-    uint16_t size_response, size_message = 0;
+    uint16_t size_message = 0;
 
     /**
      * Counter to control the frequency of GNSS data printing.
@@ -77,25 +79,13 @@ public:
     * Handle for the default GNSS queue, which separates its operations from other queues.
     * Used to send and receive general GNSS-related messages.
     */
-    QueueHandle_t gnssQueueHandleDefault;
-
-    /**
-    * Handle for the GNSS response queue, dedicated to processing responses such as ACK or NACK.
-    * Used for task communication specific to GNSS command handling.
-    */
-    QueueHandle_t gnssQueueHandleGNSSResponse;
+    QueueHandle_t gnssQueueHandle{};
 
     /**
     * Pointer to data being sent to the default GNSS queue.
     * This is a staging area for preparing data before pushing it into the queue.
     */
-    uint8_t* sendToQueue;
-
-    /**
-    * Pointer to data being sent to the GNSS response queue.
-    * Holds response-specific data to be processed by tasks that wait for ACK/NACK.
-    */
-    uint8_t* sendToQueueResponse;
+    uint8_t* sendToQueue{};
 
     /**
     * Control flag used for task synchronization or GNSS state management.
@@ -103,10 +93,22 @@ public:
     */
     uint8_t control = 0;
 
+   struct GNSS_ACK_HANDLER {
+     SemaphoreHandle_t GNSS_ACK_SEMAPHORE;
+     uint32_t TIMEOUT = 500;
+     void initialize_semaphore() {
+       GNSS_ACK_SEMAPHORE = xSemaphoreCreateBinary();
+       if (GNSS_ACK_SEMAPHORE == nullptr) {
+         LOG_ERROR << "Failed to create semaphore!";
+       }
+     }
+   };
+   GNSS_ACK_HANDLER gnss_ack_handler;
+
     /**
     * Executes the main logic of the GNSS task.
     */
-    void execute();
+    [[noreturn]] void execute();
 
     /**
     * Prints the GNSS data with a configurable frequency. The data to be printed
@@ -158,7 +160,7 @@ public:
     * @return An `etl::expected` containing `void` on success (ACK received), or an `ErrorFromGNSS` enumeration value (`TransmissionFailed`, `Timeout`, or `NACKReceived`) on failure.
     *
     */
-    etl::expected<void, ErrorFromGNSS> controlGNSSwithNotify(GNSSMessage gnssMessageToSend);
+    etl::expected<void, ErrorFromGNSS> controlGNSSwithACK(GNSSMessage gnssMessageToSend);
 
     /**
     * Toggles between fast mode and slow mode for testing the GNSS module's functionality
@@ -199,16 +201,13 @@ public:
         return dd;
     }
 
-    GNSSTask() : Task("GNSS Logging Task") {}
-
+    GNSSTask() : Task("GNSS Task") {}
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<GNSSTask>, this->TaskName,
                                              GNSSTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
                                              this->taskStack, &(this->taskBuffer));
         initQueuesToAcceptPointers();
     }
-
-private:
 };
 
 inline etl::optional<GNSSTask> gnssTask;
