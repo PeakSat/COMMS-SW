@@ -16,22 +16,22 @@
 
 class UARTGatekeeperTask : public Task {
 private:
-	QueueHandle_t xUartQueue;
+    QueueHandle_t xUartQueue;
 
-	StaticQueue_t xStaticQueue;
+    StaticQueue_t xStaticQueue;
 
-	uint8_t ucQueueStorageArea[UARTQueueSize * sizeof(etl::string<LOGGER_MAX_MESSAGE_SIZE>)];
+    uint8_t ucQueueStorageArea[UARTQueueSize * sizeof(etl::string<LOGGER_MAX_MESSAGE_SIZE>)];
 
-	const static uint16_t TaskStackDepth = 2000;
+    const static uint16_t TaskStackDepth = 2000;
 
-	StackType_t taskStack[TaskStackDepth];
+    StackType_t taskStack[TaskStackDepth];
 
 public:
-	void execute();
+    void execute();
 
-	UARTGatekeeperTask();
+    UARTGatekeeperTask();
 
-	/**
+    /**
      * Adds an etl::string to the UART Gatekeeper's queue.
      *
      * This function was added as an extra abstraction layer to house the `xQueueSendToBack` function.
@@ -41,14 +41,14 @@ public:
      * If the queue is full, the string is not added to the queue and is lost.
      * @param message the etl::string to be added in the queue of the UART Gatekeeper task.
      */
-	void addToQueue(const etl::string<LOGGER_MAX_MESSAGE_SIZE>& message) {
-		xQueueSendToBack(xUartQueue, &message, 0);
-	}
+    void addToQueue(const etl::string<LOGGER_MAX_MESSAGE_SIZE>& message) {
+        xQueueSendToBack(xUartQueue, &message, 0);
+    }
 
-	void createTask() {
-		xTaskCreateStatic(vClassTask<UARTGatekeeperTask>, this->TaskName, UARTGatekeeperTask::TaskStackDepth, this,
-		                  tskIDLE_PRIORITY + 2, this->taskStack, &(this->taskBuffer));
-	}
+    void createTask() {
+        this->taskHandle = xTaskCreateStatic(vClassTask<UARTGatekeeperTask>, this->TaskName, UARTGatekeeperTask::TaskStackDepth, this,
+                                             tskIDLE_PRIORITY + 3, this->taskStack, &(this->taskBuffer));
+    }
 };
 
 inline etl::optional<UARTGatekeeperTask> uartGatekeeperTask;

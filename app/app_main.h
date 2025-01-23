@@ -45,7 +45,7 @@ struct eMMCTransactionHandler {
     bool transactionAborted = false;
     MMC_HandleTypeDef hmmcSnapshot;
     uint32_t transactionTimeoutPerBlock = 100; // ms
-    uint32_t getSemaphoreTimeout = 1000;       //ms
+    uint32_t getSemaphoreTimeout = 1000;       // ms
 };
 extern eMMCTransactionHandler eMMCTransactionHandler;
 

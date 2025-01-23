@@ -1,8 +1,4 @@
-
 #include "eMMC.hpp"
-#include "app_main.h"
-#include "FreeRTOS.h"
-#include <semphr.h>
 
 using namespace eMMC;
 extern MMC_HandleTypeDef hmmc1;
@@ -10,7 +6,7 @@ extern MMC_HandleTypeDef hmmc1;
 namespace eMMC {
     // Define the global variables
     uint32_t memoryCapacity = 0xE90E80;
-    uint32_t memoryPageSize = 512; // bytes
+    const uint32_t memoryPageSize = 512; // bytes
     std::array<memoryItemHandler, memoryItemCount> memoryMap;
     struct eMMCTransactionHandler eMMCTransactionHandler;
 } // namespace eMMC
@@ -74,21 +70,20 @@ etl::expected<void, Error> eMMC::writeBlockEMMC(uint8_t* write_data, uint32_t bl
     uint32_t startTime = xTaskGetTickCount();
     while (true) {
         vTaskDelay(1);
-        if (eMMCTransactionHandler.WriteComplete == true) {
+        if (eMMCTransactionHandler.WriteComplete) {
             xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
             return {};
         }
 
-        // Transaction timed out
+        // Transaction timeout
         if (xTaskGetTickCount() > ((eMMCTransactionHandler.transactionTimeoutPerBlock * numberOfBlocks) + startTime)) {
             xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
             return etl::unexpected<Error>(Error::EMMC_TRANSACTION_TIMED_OUT);
         }
 
-        // Error calback was called
-        if (eMMCTransactionHandler.ErrorOccured == true) {
-            // Handle the error. Check eMMCTransactionHandler.hmmcSnapshot for error messages.
-
+        // Error callback was called
+        if (eMMCTransactionHandler.ErrorOccured) {
+            /// TODO: handle the error, check eMMCTransactionHandler.hmmcSnapshot for error messages.
             xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
             return etl::unexpected<Error>(Error::EMMC_WRITE_FAILURE);
         }
@@ -119,21 +114,20 @@ etl::expected<void, Error> eMMC::readBlockEMMC(uint8_t* read_data, uint32_t bloc
     uint32_t startTime = xTaskGetTickCount();
     while (true) {
         vTaskDelay(1);
-        if (eMMCTransactionHandler.ReadComplete == true) {
+        if (eMMCTransactionHandler.ReadComplete) {
             xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
             return {};
         }
 
-        // Transaction timed out
+        // Transaction timeout
         if (xTaskGetTickCount() > ((eMMCTransactionHandler.transactionTimeoutPerBlock * numberOfBlocks) + startTime)) {
             xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
             return etl::unexpected<Error>(Error::EMMC_TRANSACTION_TIMED_OUT);
         }
 
-        // Error calback was called
-        if (eMMCTransactionHandler.ErrorOccured == true) {
-            // Handle the error. Check eMMCTransactionHandler.hmmcSnapshot for error messages.
-
+        // Error callback was called
+        if (eMMCTransactionHandler.ErrorOccured) {
+            /// TODO: handle the error, check eMMCTransactionHandler.hmmcSnapshot for error messages.
             xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
             return etl::unexpected<Error>(Error::EMMC_READ_FAILURE);
         }
@@ -160,21 +154,21 @@ etl::expected<void, Error> eMMC::getItem(memoryItemHandler itemHandler, uint8_t*
     }
     if ((startBlock * memoryPageSize) + (numOfBlocks * memoryPageSize) > itemHandler.size) {
         if (numOfBlocks > 1) {
-            for (int i = 0; i < numOfBlocks - 1; i++) {
+            for (uint32_t i = 0; i < numOfBlocks - 1; i++) {
                 auto status = eMMC::readBlockEMMC(dataBuffer + (i * memoryPageSize), itemHandler.startAddress + ((i + startBlock) * memoryPageSize), 1);
-                // handle errors
+                /// TODO: handle errors
                 if (!status.has_value()) {
                     return status;
                 }
             }
         }
-        //compensate for item sizes not multiple of page size
+        // compensate for item sizes not multiple of page size
         uint8_t numberOfLastBytes = itemHandler.size % memoryPageSize;
         if (numberOfLastBytes > 0) {
             uint8_t lastPage[memoryPageSize];
             uint32_t lastPageAdress = itemHandler.startAddress + ((itemHandler.size / memoryPageSize) * memoryPageSize);
             auto status = eMMC::readBlockEMMC(lastPage, lastPageAdress, 1);
-            // handle errors
+            /// TODO: handle errors
             if (!status.has_value()) {
                 return status;
             }
@@ -184,9 +178,9 @@ etl::expected<void, Error> eMMC::getItem(memoryItemHandler itemHandler, uint8_t*
         }
     } else {
         if (numOfBlocks > 0) {
-            for (int i = 0; i < numOfBlocks; i++) {
+            for (uint32_t i = 0; i < numOfBlocks; i++) {
                 auto status = eMMC::readBlockEMMC(dataBuffer + (i * memoryPageSize), itemHandler.startAddress + ((i + startBlock) * memoryPageSize), 1);
-                // handle errors
+                /// TODO: handle errors
                 if (!status.has_value()) {
                     return status;
                 }
@@ -211,21 +205,21 @@ etl::expected<void, Error> eMMC::getItem(memoryItemHandler itemHandler, uint8_t*
     }
     uint32_t continuousPages = itemHandler.size / memoryPageSize;
     if (continuousPages > 0) {
-        for (int i = 0; i < continuousPages; i++) {
+        for (uint32_t i = 0; i < continuousPages; i++) {
             auto status = eMMC::readBlockEMMC(dataBuffer + (i * memoryPageSize), itemHandler.startAddress + (i * memoryPageSize), 1);
-            // handle errors
+            /// TODO: handle errors
             if (!status.has_value()) {
                 return status;
             }
         }
     }
 
-    //compensate for item sizes not multiple of page size
+    // compensate for item sizes not multiple of page size
     uint8_t numberOfLastBytes = itemHandler.size % memoryPageSize;
     if (numberOfLastBytes > 0) {
         uint8_t lastPage[memoryPageSize];
         auto status = eMMC::readBlockEMMC(lastPage, itemHandler.startAddress + continuousPages, 1);
-        // handle errors
+        /// TODO: handle errors
         if (!status.has_value()) {
             return status;
         }
@@ -256,7 +250,7 @@ etl::expected<void, Error> eMMC::storeItem(memoryItemHandler itemHandler, uint8_
     }
     if ((startBlock * memoryPageSize) + (numOfBlocks * memoryPageSize) > itemHandler.size) {
         if (numOfBlocks > 1) {
-            for (int i = 0; i < numOfBlocks - 1; i++) {
+            for (uint32_t i = 0; i < numOfBlocks - 1; i++) {
                 auto status = eMMC::writeBlockEMMC(dataBuffer + (i * memoryPageSize), itemHandler.startAddress + ((i + startBlock) * memoryPageSize), 1);
                 // handle errors
                 if (!status.has_value()) {
@@ -285,7 +279,7 @@ etl::expected<void, Error> eMMC::storeItem(memoryItemHandler itemHandler, uint8_
             // if (!status.has_value()) {
             //     return status;
             // }
-            for (int i = 0; i < numOfBlocks; i++) {
+            for (uint32_t i = 0; i < numOfBlocks; i++) {
                 auto status = eMMC::writeBlockEMMC(dataBuffer + (i * memoryPageSize), itemHandler.startAddress + ((i + startBlock) * memoryPageSize), 1);
                 // handle errors
                 if (!status.has_value()) {
@@ -313,7 +307,7 @@ etl::expected<void, Error> eMMC::storeItem(memoryItemHandler itemHandler, uint8_
     uint32_t continuousPages = itemHandler.size / memoryPageSize;
 
     if (continuousPages > 0) {
-        for (int i = 0; i < continuousPages; i++) {
+        for (uint32_t i = 0; i < continuousPages; i++) {
             auto status = eMMC::writeBlockEMMC(dataBuffer + (i * memoryPageSize), itemHandler.startAddress + (i * memoryPageSize), 1);
             // handle errors
             if (!status.has_value()) {

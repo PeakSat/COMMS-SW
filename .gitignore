@@ -7,3 +7,7 @@ cmake-build-debug/
 STM32H743VITx_FLASH.ld
 
 build/
+
+app/Platform/prameter_database.xlsx
+
+app/Platform/myenv/*

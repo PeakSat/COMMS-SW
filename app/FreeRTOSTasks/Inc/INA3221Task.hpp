@@ -1,7 +1,7 @@
 #pragma once
 #include <etl/optional.h>
 #include "Task.hpp"
-#include "ina3221.hpp"
+#include "INA3221.hpp"
 
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c4;

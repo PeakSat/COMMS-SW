@@ -1,17 +1,25 @@
+#pragma once
 #include "FreeRTOS.h"
 #include "task.h"
 #include "main.h"
 
 /* App includes. */
 #include "app_main.h"
-#include "TransceiverTask.hpp"
 #include "UARTGatekeeperTask.hpp"
 #include "eMMCTask.hpp"
 #include "GNSSTask.hpp"
 
 #include "INA3221Task.hpp"
+#include "CANGatekeeperTask.hpp"
+#include "TPProtocol.hpp"
+#include "CANTestTask.hpp"
+#include <optional>
 #include "TMP117Task.hpp"
+#include "CANDriver.hpp"
 #include "eMMC.hpp"
+#include "RF_TXTask.hpp"
+#include "RF_RXTask.hpp"
+#include "git_version.h"
 
 
 void app_main(void) {
@@ -20,23 +28,44 @@ void app_main(void) {
     if (eMMC::memoryMap[eMMC::firmware].endAddress != 0) {
         __NOP();
     }
+    transceiver.setGeneralConfig(GeneralConfiguration::DefaultGeneralConfig());
+    transceiver.setRXConfig(RXConfig::DefaultRXConfig());
+    transceiver.setTXConfig(TXConfig::DefaultTXConfig());
+    transceiver.setBaseBandCoreConfig(BasebandCoreConfig::DefaultBasebandCoreConfig());
+    transceiver.setFrequencySynthesizerConfig(FrequencySynthesizer::DefaultFrequencySynthesizerConfig());
+    transceiver.setExternalFrontEndControlConfig(ExternalFrontEndConfig::DefaultExternalFrontEndConfig());
+    transceiver.setInterruptConfig(InterruptsConfig::DefaultInterruptsConfig());
+    transceiver.setRadioInterruptConfig(RadioInterruptsConfig::DefaultRadioInterruptsConfig());
+    transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());
 
-    transceiverTask.emplace();
     uartGatekeeperTask.emplace();
+    rf_rxtask.emplace();
+    rf_txtask.emplace();
     eMMCTask.emplace();
     gnssTask.emplace();
 
-    ina3221Task.emplace();
-    tmp117Task.emplace();
 
-    transceiverTask->createTask();
+    ina3221Task.emplace();
+    canGatekeeperTask.emplace();
+    tmp117Task.emplace();
+    canTestTask.emplace();
     uartGatekeeperTask->createTask();
+    rf_rxtask->createTask();
+    rf_txtask->createTask();
+    // Ensure task handle is valid
+
+
     eMMCTask->createTask();
     gnssTask->createTask();
     ina3221Task->createTask();
+    canGatekeeperTask->createTask();
     tmp117Task->createTask();
-
+    canTestTask->createTask();
+    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+    LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
+    TransceiverHandler::initialize_semaphore();
     /* Start the scheduler. */
+
     vTaskStartScheduler();
 
     /* Should not get here. */
@@ -47,7 +76,7 @@ void app_main(void) {
 
 extern "C" [[maybe_unused]] void EXTI1_IRQHandler(void) {
     HAL_GPIO_EXTI_IRQHandler(RF_IRQ_Pin);
-    transceiverTask->transceiver.handle_irq();
+    transceiver.handle_irq();
 }
 
 /* Callback in non blocking modes (DMA) */
@@ -68,6 +97,56 @@ extern "C" [[maybe_unused]] void HAL_MMC_ErrorCallback(MMC_HandleTypeDef* hmmc) 
 extern "C" [[maybe_unused]] void HAL_MMC_AbortCallback(MMC_HandleTypeDef* hmmc) {
     eMMC::eMMCTransactionHandler.transactionAborted = true;
     // __NOP();
+}
+
+extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
+
+    if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
+
+        /* Retrieve Rx messages from RX FIFO0 */
+        CAN::Frame newFrame;
+        if (incomingFIFO.lastItemPointer >= sizeOfIncommingFrameBuffer) {
+            incomingFIFO.lastItemPointer = 0;
+        }
+        newFrame.pointerToData = &incomingFIFO.buffer[CANMessageSize * (incomingFIFO.lastItemPointer)];
+        if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &newFrame.header, newFrame.pointerToData) != HAL_OK) {
+            /* Reception Error */
+            Error_Handler();
+        }
+        newFrame.bus = hfdcan;
+
+        if (newFrame.pointerToData[0] == 0 && newFrame.pointerToData[1] == 0) {
+            __NOP();
+            if (newFrame.bus->Instance == FDCAN1) {
+                __NOP();
+            } else if (newFrame.bus->Instance == FDCAN2) {
+                __NOP();
+            }
+        } else if (newFrame.header.Identifier == 0x380) {
+            if (xQueueIsQueueFullFromISR(canGatekeeperTask->incomingFrameQueue)) {
+                // Queue is full. Handle the error
+                // todo
+                __NOP();
+            } else {
+                // Send the data to the gatekeeper
+                incomingFIFO.lastItemPointer++;
+                BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+                xQueueSendToBackFromISR(canGatekeeperTask->incomingFrameQueue, &newFrame, NULL);
+                xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+                portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+                __NOP();
+            }
+        } else {
+            __NOP();
+        }
+
+
+        // Re-activate the callback
+        if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+            /* Notification Error */
+            Error_Handler();
+        }
+    }
 }
 extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t Size) {
     // Declare a variable to track if a higher priority task is woken up

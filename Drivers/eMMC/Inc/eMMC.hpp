@@ -23,7 +23,7 @@ namespace eMMC {
 
     // Declare constants
     extern uint32_t memoryCapacity;
-    extern uint32_t memoryPageSize; // bytes
+    extern const uint32_t memoryPageSize; // bytes
 
     // Define the enum using the MEMORY_ITEM macro from the definition file
 #define MEMORY_ITEM(name, size) name,
