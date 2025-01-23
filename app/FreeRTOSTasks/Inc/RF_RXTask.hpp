@@ -10,22 +10,23 @@
 
 #define RX_REFRESH_PERIOD_MS 50
 
+
 using namespace AT86RF215;
 class RF_RXTask : public Task {
 public:
     RF_RXTask() : Task("RF RX TASK"){}
     void ensureRxMode();
-    void execute();
+    [[noreturn]] void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,
-                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 2,
                                              this->taskStack, &(this->taskBuffer));
     }
 
 private:
     constexpr static uint16_t TaskStackDepth = 10000;
     /// Frequency in kHz
-    constexpr static uint32_t FrequencyUHFRX = 401000;
+    constexpr static uint32_t FrequencyUHFRX = 401500;
     Error error = NO_ERRORS;
     StackType_t taskStack[TaskStackDepth]{};
 };

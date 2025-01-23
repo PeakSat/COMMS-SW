@@ -28,6 +28,18 @@ namespace AT86RF215 {
         }
     };
 
+    // rf_state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing)
+    enum RF_STATE {
+        // rx_ongoing = false, tx_ongoing = false
+        READY = 0,
+        // rx_ongoing = false, tx_ongoing = true
+        TX_ONG = 1,
+        // rx_ongoing = true, tx_ongoing = false
+        RX_ONG = 2,
+        // rx_ongoing = true, tx_ongoing = true
+        RX_TX_ONG = 3,
+    };
+
 
     enum Error {
         NO_ERRORS,
@@ -713,7 +725,7 @@ namespace AT86RF215 {
         void print_error(Error& err);
         uint8_t received_packet[2047];
         /// Radio interrupts
-        bool IFSynchronization_flag, TransceiverError_flag, EnergyDetectionCompletion_flag, TransceiverReady_flag, Wakeup_flag = false;
+        bool IFSynchronization_flag, TransceiverError_flag, EnergyDetectionCompletion_flag, TransceiverReady_flag, Wakeup_flag, Voltage_Drop = false;
 
         /// Baseband Core Interrupts
         bool FrameBufferLevelIndication_flag, AGCRelease_flag, AGCHold_flag, TransmitterFrameEnd_flag, ReceiverExtendMatch_flag, ReceiverAddressMatch_flag, ReceiverFrameEnd_flag, ReceiverFrameStart_flag = false;

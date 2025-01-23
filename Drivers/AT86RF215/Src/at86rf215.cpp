@@ -847,7 +847,7 @@ namespace AT86RF215 {
         }
         /// Read the current register value
         reg_value = spi_read_8(regedc, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
 
@@ -856,7 +856,7 @@ namespace AT86RF215 {
         reg_value &= ~0x03;                                    // Clear bits [1:0] (0x03 = 0000 0011)
         reg_value |= static_cast<uint8_t>(energy_mode) & 0x03; // Write new value to bits [1:0]
         spi_write_8(regedc, static_cast<uint8_t>(energy_mode), err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// Set RFn_EDD
@@ -872,7 +872,7 @@ namespace AT86RF215 {
                                       AverageTimeNumberSamples agc_avg_sample, AGCReset agc_reset, AGCFreezeControl agc_freeze_control, AGCEnable agc_enable,
                                       AutomaticGainTarget agc_target, uint8_t gain_control_word, Error& err) {
         if (gain_control_word > 0x23) {
-            err = Error::INVALID_AGC_CONTROl_WORD;
+            err = INVALID_AGC_CONTROl_WORD;
             return;
         }
 
@@ -908,7 +908,7 @@ namespace AT86RF215 {
         reg = spi_read_8(regrxdfe, err);
         reg = (reg & 0x10) | (static_cast<uint8_t>(rx_rel_cutoff) << 5) | static_cast<uint8_t>(rx_sample_rate);
         spi_write_8(regrxdfe, reg, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
 
@@ -934,7 +934,7 @@ namespace AT86RF215 {
                                   PadDriverStrength padDriverStrength, Error& err) {
         RegisterAddress regcfg = RF_CFG;
         uint8_t reg_value = spi_read_8(regcfg, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         reg_value &= ~(0xF);
@@ -984,22 +984,22 @@ namespace AT86RF215 {
 
     void At86rf215::setup(Error& err) {
         /// Check state of RF09 core
-        State state = get_state(Transceiver::RF09, err);
-        if (err != Error::NO_ERRORS) {
+        State state = get_state(RF09, err);
+        if (err != NO_ERRORS) {
             return;
         }
         /// We have access to all registers only if we are in the state TRXOFF
-        if (state != State::RF_TRXOFF) {
-            err = Error::INVALID_STATE_FOR_OPERATION;
+        if (state != RF_TRXOFF) {
+            err = INVALID_STATE_FOR_OPERATION;
             return;
         }
         /// Check state of RF24 core - we only proceed with the set-up if both cores are in the TRXOFF state to avoid setting half the registers
-        state = get_state(Transceiver::RF24, err);
-        if (err != Error::NO_ERRORS) {
+        state = get_state(RF24, err);
+        if (err != NO_ERRORS) {
             return;
         }
-        if (state != State::RF_TRXOFF) {
-            err = Error::INVALID_STATE_FOR_OPERATION;
+        if (state != RF_TRXOFF) {
+            err = INVALID_STATE_FOR_OPERATION;
             return;
         }
 
@@ -1024,7 +1024,7 @@ namespace AT86RF215 {
         configure_pll(Transceiver::RF09, freqSynthesizerConfig.channelCenterFrequency09,
                       freqSynthesizerConfig.channelNumber09, freqSynthesizerConfig.channelMode09,
                       freqSynthesizerConfig.loopBandwidth09, freqSynthesizerConfig.channelSpacing09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
 
@@ -1033,49 +1033,49 @@ namespace AT86RF215 {
                            basebandCoreConfig.frameCheckSequenceFilterEn09, basebandCoreConfig.transmitterAutoFrameCheckSequence09,
                            basebandCoreConfig.frameCheckSequenceType09, basebandCoreConfig.baseBandEnable09,
                            basebandCoreConfig.physicalLayerType09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         setup_phy_baseband(Transceiver::RF24, basebandCoreConfig.continuousTransmit24,
                            basebandCoreConfig.frameCheckSequenceFilterEn24, basebandCoreConfig.transmitterAutoFrameCheckSequence24,
                            basebandCoreConfig.frameCheckSequenceType24, basebandCoreConfig.baseBandEnable24,
                            basebandCoreConfig.physicalLayerType24, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// BBCn_FSKC0
         set_bbc_fskc0_config(RF09, basebandCoreConfig.bandwidth_time_09, basebandCoreConfig.midxs_09, basebandCoreConfig.midx_09, basebandCoreConfig.mord_09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// BBCn_FSKC1
         set_bbc_fskc1_config(RF09, basebandCoreConfig.freq_inv_09, basebandCoreConfig.sr_09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// BBCn_FSKC2
         set_bbc_fskc2_config(RF09, basebandCoreConfig.preamble_detection_09, basebandCoreConfig.receiver_override_09, basebandCoreConfig.receiver_preamble_timeout_09, basebandCoreConfig.mode_switch_en_09, basebandCoreConfig.preamble_inversion_09, basebandCoreConfig.fec_scheme_09, basebandCoreConfig.interleaving_enable_09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// BBCn_FSKC3
         set_bbc_fskc3_config(RF09, basebandCoreConfig.sfdt_09, basebandCoreConfig.prdt_09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// BBC_FSKC4
         set_bbc_fskc4_config(RF09, basebandCoreConfig.sfdQuantization_09, basebandCoreConfig.sfd32_09, basebandCoreConfig.rawModeReversalBit_09, basebandCoreConfig.csfd1_09, basebandCoreConfig.csfd0_09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// BBCn_FSKPHRTX
         set_bbc_fskphrtx(RF09, basebandCoreConfig.sfdUsed_09, basebandCoreConfig.dataWhitening_09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// BBCn_FSKDM
         set_bbc_fskdm(RF09, basebandCoreConfig.fskPreamphasisEnable_09, basebandCoreConfig.directModEnableFskdm_09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// Set TX front-end
@@ -1087,7 +1087,7 @@ namespace AT86RF215 {
                           externalFrontEndConfig.externalLNABypass09, externalFrontEndConfig.automaticGainControlMAP09,
                           externalFrontEndConfig.automaticVoltageExternal09, externalFrontEndConfig.analogVoltageEnable09,
                           externalFrontEndConfig.powerAmplifierVoltageControl09, externalFrontEndConfig.externalFrontEnd_09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// Set up RX front-end
@@ -1096,7 +1096,7 @@ namespace AT86RF215 {
                           rxConfig.receiverSampleRate09, rxConfig.agcInput09,
                           rxConfig.averageTimeNumberSamples09, rxConfig.agcReset_09, rxConfig.agcFreezeControl_09, rxConfig.agcEnabled09,
                           rxConfig.automaticGainTarget09, rxConfig.gainControlWord09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// Set up IQ interface
@@ -1104,7 +1104,7 @@ namespace AT86RF215 {
                  iqInterfaceConfig.iqmodeVoltage, iqInterfaceConfig.iqmodeVoltageIEE,
                  iqInterfaceConfig.embeddedControlTX, iqInterfaceConfig.chipMode, iqInterfaceConfig.skewAlignment,
                  err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
 
@@ -1112,14 +1112,14 @@ namespace AT86RF215 {
         /// RFn_EDC, RFn_EDD
         setup_rx_energy_detection(Transceiver::RF09, rxConfig.energyDetectionMode09,
                                   rxConfig.energyDetectDurationFactor09, rxConfig.energyDetectionBasis09, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
 
         /// Set up battery
         /// RF_BMDVC
         set_battery_monitor_control(generalConfig.batteryMonitorHighRange, generalConfig.batteryMonitorVoltage, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
 
@@ -1139,7 +1139,7 @@ namespace AT86RF215 {
 
     etl::expected<void, Error> At86rf215::check_transceiver_connection(Error& err) {
         DevicePartNumber dpn = transceiver.get_part_number(err);
-        if (err == AT86RF215::Error::NO_ERRORS && dpn == DevicePartNumber::AT86RF215) {
+        if (err == NO_ERRORS && dpn == DevicePartNumber::AT86RF215) {
             return {}; /// success
         } else
             return etl::unexpected<Error>(err);
@@ -1160,7 +1160,7 @@ namespace AT86RF215 {
 
         /// Read the current register value and mask out the fields to preserve other bits
         uint8_t reg_value = spi_read_8(reg_address, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return; // Return early if SPI read fails
         }
         reg_value &= 0x00; // Clear the bits that will be set explicitly
@@ -1188,7 +1188,7 @@ namespace AT86RF215 {
         }
         /// Read the current register value and mask out the fields to preserve other bits
         uint8_t reg_value = spi_read_8(reg_address, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return; // Return early if SPI read fails
         }
         // clear all bits except bit 4 (counting from 4)
@@ -1216,7 +1216,7 @@ namespace AT86RF215 {
         }
         /// Read the current register value and mask out the fields to preserve other bits
         uint8_t reg_value = spi_read_8(reg_address, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return; // Return early if SPI read fails
         }
         /// Update the register value with provided configurations
@@ -1251,7 +1251,7 @@ namespace AT86RF215 {
         }
         /// Read the current register value and mask out the fields to preserve other bits
         uint8_t reg_value = spi_read_8(reg_address, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return; // Return early if SPI read fails
         }
         /// Update the register value with provided configurations
@@ -1281,7 +1281,7 @@ namespace AT86RF215 {
 
         /// Read the current register value and mask out the fields to preserve other bits
         uint8_t reg_value = spi_read_8(reg_address, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return; // Return early if SPI read fails
         }
         /// clear all bits except bit 7
@@ -1307,7 +1307,7 @@ namespace AT86RF215 {
 
         /// Read the current register value and mask out the fields to preserve other bits
         uint8_t reg_value = spi_read_8(reg_address, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return; // Return early if SPI read fails
         }
         /// clear the bits to be updated
@@ -1331,7 +1331,7 @@ namespace AT86RF215 {
 
         /// Read the current register value and mask out the fields to preserve other bits
         uint8_t reg_value = spi_read_8(reg_address, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return;
         }
         /// clear bits [1:0]
@@ -1354,13 +1354,13 @@ namespace AT86RF215 {
             reg_address_high = BBC1_RXFLH;
         }
         uint8_t low_length_byte = spi_read_8(reg_address_low, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return etl::unexpected<Error>(err);
         }
 
         /// Read the high-length byte
         uint8_t high_length_byte = spi_read_8(reg_address_high, err);
-        if (err != Error::NO_ERRORS) {
+        if (err != NO_ERRORS) {
             return etl::unexpected<Error>(err); // Return the error
         }
         /// Combine the bytes to form the received length
@@ -1372,39 +1372,30 @@ namespace AT86RF215 {
         State rf_state = get_state(transceiver, err);
         switch (rf_state) {
             case RF_NOP:
-                // Handle RF_NOP
                 LOG_DEBUG << "STATE: NOP";
                 break;
             case RF_SLEEP:
-                // Handle RF_SLEEP
                 LOG_DEBUG << "STATE: SLEEP";
                 break;
             case RF_TRXOFF:
-                // Handle RF_TRXOFF
                 LOG_DEBUG << "STATE: TRXOFF";
                 break;
             case RF_TX:
-                //
                 LOG_DEBUG << "STATE: TX";
                 break;
             case RF_RX:
-                //
                 LOG_DEBUG << "STATE: RX";
-                    break;
+                break;
             case RF_TRANSITION:
-                //
                 LOG_DEBUG << "STATE: TRANSITION";
                 break;
             case RF_RESET:
-                //
                 LOG_DEBUG << "STATE: RESET";
                 break;
             case RF_INVALID:
-                //
                 LOG_DEBUG << "STATE: INVALID";
                 break;
             case RF_TXPREP:
-                //
                 LOG_DEBUG << "STATE: TXPREP";
                 break;
             default:
@@ -1413,87 +1404,80 @@ namespace AT86RF215 {
         }
     }
 
-void At86rf215::print_error(AT86RF215::Error& err) {
-    if(err == Error::NO_ERRORS)
+void At86rf215::print_error(Error& err) {
+    if (err == NO_ERRORS)
         return;
-    else{
-        switch (err) {
-            case Error::FAILED_WRITING_TO_REGISTER:
-                LOG_ERROR << "FAILED_WRITING_TO_REGISTER";
-                break;
+    switch (err) {
+        case FAILED_WRITING_TO_REGISTER:
+            LOG_ERROR << "FAILED_WRITING_TO_REGISTER";
+            break;
 
-            case Error::FAILED_READING_FROM_REGISTER:
-                LOG_ERROR << "FAILED_READING_FROM_REGISTER";
-                break;
+        case FAILED_READING_FROM_REGISTER:
+            LOG_ERROR << "FAILED_READING_FROM_REGISTER";
+            break;
 
-            case Error::FAILED_CHANGING_STATE:
-                LOG_ERROR << "FAILED_CHANGING_STATE";
-                break;
+        case FAILED_CHANGING_STATE:
+            LOG_ERROR << "FAILED_CHANGING_STATE";
+            break;
 
-            case Error::UKNOWN_REQUESTED_STATE:
-                LOG_ERROR << "UNKNOWN_REQUESTED_STATE";
-                break;
+        case UKNOWN_REQUESTED_STATE:
+            LOG_ERROR << "UNKNOWN_REQUESTED_STATE";
+            break;
 
-            case Error::UKNOWN_PART_NUMBER:
-                LOG_ERROR << "UNKNOWN_PART_NUMBER";
-                break;
+        case UKNOWN_PART_NUMBER:
+            LOG_ERROR << "UNKNOWN_PART_NUMBER";
+            break;
 
-            case Error::INVALID_TRANSCEIVER_FREQ:
-                LOG_ERROR << "INVALID_TRANSCEIVER_FREQ";
-                break;
+        case INVALID_TRANSCEIVER_FREQ:
+            LOG_ERROR << "INVALID_TRANSCEIVER_FREQ";
+            break;
 
-            case Error::INVALID_STATE_FOR_OPERATION:
-                LOG_ERROR << "INVALID_STATE_FOR_OPERATION";
-                break;
+        case INVALID_STATE_FOR_OPERATION:
+            LOG_ERROR << "INVALID_STATE_FOR_OPERATION";
+            break;
 
-            case Error::INVALID_PLL_CENTER_FREQ:
-                LOG_ERROR << "INVALID_PLL_CENTER_FREQ";
-                break;
+        case INVALID_PLL_CENTER_FREQ:
+            LOG_ERROR << "INVALID_PLL_CENTER_FREQ";
+            break;
 
-            case Error::UKNOWN_DEVICE_PART_NUMBER:
-                LOG_ERROR << "UNKNOWN_DEVICE_PART_NUMBER";
-                break;
+        case UKNOWN_DEVICE_PART_NUMBER:
+            LOG_ERROR << "UNKNOWN_DEVICE_PART_NUMBER";
+            break;
 
-            case Error::INVALID_RSSI_MEASUREMENT:
-                LOG_ERROR << "INVALID_RSSI_MEASUREMENT";
-                break;
+        case INVALID_RSSI_MEASUREMENT:
+            LOG_ERROR << "INVALID_RSSI_MEASUREMENT";
+            break;
 
-            case Error::INVALID_AGC_CONTROl_WORD:
-                LOG_ERROR << "INVALID_AGC_CONTROl_WORD";
-                break;
+        case INVALID_AGC_CONTROl_WORD:
+            LOG_ERROR << "INVALID_AGC_CONTROl_WORD";
+            break;
 
-            case Error::ONGOING_TRANSMISSION_RECEPTION:
-                LOG_ERROR << "ONGOING_TRANSMISSION_RECEPTION";
-                break;
+        case ONGOING_TRANSMISSION_RECEPTION:
+            LOG_ERROR << "ONGOING_TRANSMISSION_RECEPTION";
+            break;
 
-            default:
-                LOG_ERROR << "UNHANDLED_ERROR";
-                break;
-        }
+        default:
+            LOG_ERROR << "UNHANDLED_ERROR";
+            break;
     }
 }
 
     void At86rf215::handle_irq(void) {
-        Error err = Error::NO_ERRORS;
+        Error err = NO_ERRORS;
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         /* Sub 1-GHz Transceiver */
-
         /// Radio IRQ
         volatile uint8_t irq = spi_read_8(RegisterAddress::RF09_IRQS, err);
         if ((irq & InterruptMask::IFSynchronization) != 0) {
-            //            xTaskNotifyFromISR(rf_txtask->taskHandle, IFSERR, eSetBits, &xHigherPriorityTaskWoken);
-            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            // I/Q IF Synchronization Failure handling
             IFSynchronization_flag = true;
         }
         if ((irq & InterruptMask::TransceiverError) != 0) {
             // Transceiver Error handling
-            //            xTaskNotifyFromISR(rf_txtask->taskHandle, TRXERR, eSetBits, &xHigherPriorityTaskWoken);
-            //            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             TransceiverError_flag = true;
         }
         if ((irq & InterruptMask::BatteryLow) != 0) {
-            // Battery Low handling
+            // Low Voltage
+            Voltage_Drop = true;
         }
         if ((irq & InterruptMask::EnergyDetectionCompletion) != 0) {
             EnergyDetectionCompletion_flag = true;
@@ -1506,7 +1490,7 @@ void At86rf215::print_error(AT86RF215::Error& err) {
             if (rx_ongoing) {
                 // Switch to TX state once the transceiver is ready to send
                 if (get_state(RF09, err) != RF_RX)
-                    set_state(Transceiver::RF09, State::RF_RX, err);
+                    set_state(RF09, RF_RX, err);
                 // if (cca_ongoing) {
                 //     spi_write_8(RF09_EDC, 0x1, err);
                 // }
@@ -1514,14 +1498,13 @@ void At86rf215::print_error(AT86RF215::Error& err) {
             if (tx_ongoing) {
                 // Switch to TX state once the transceiver is ready to send
                 if (get_state(RF09, err) != RF_TX)
-                    set_state(RF09, State::RF_TX, err);
+                    set_state(RF09, RF_TX, err);
             }
         }
         if ((irq & InterruptMask::Wakeup) != 0) {
             Wakeup_flag = true;
             // Wakeup handling
         }
-
         /// Baseband IRQ
         irq = spi_read_8(RegisterAddress::BBC0_IRQS, err);
         if ((irq & InterruptMask::FrameBufferLevelIndication) != 0) {
@@ -1529,7 +1512,6 @@ void At86rf215::print_error(AT86RF215::Error& err) {
         }
         if ((irq & InterruptMask::AGCRelease) != 0) {
             // AGC Release handling
-            AGCRelease_flag = true;
             xHigherPriorityTaskWoken = pdFALSE;
             xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_AGC_RELEASE, AGC_RELEASE, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -1563,8 +1545,7 @@ void At86rf215::print_error(AT86RF215::Error& err) {
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverFrameStart) != 0) {
-
             rx_ongoing = true;
         }
     }
-} // namespace AT86RF215
+}

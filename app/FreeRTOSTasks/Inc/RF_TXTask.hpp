@@ -5,10 +5,9 @@
 #include "etl/array.h"
 #include "etl/optional.h"
 
-#define TX_TRANSMIT 500
+#define TX_TRANSMIT 1000
 #define MaxPacketLength 1024
 
-extern uint8_t transmit;
 
 using namespace AT86RF215;
 
@@ -23,7 +22,7 @@ class RF_TXTask : public Task {
 public:
     RF_TXTask() : Task("RF-TX Task") {}
     void print_state();
-    void execute();
+    [[noreturn]]void execute();
     void ensureTxMode();
     static PacketData createRandomPacketData(uint16_t length);
     void createTask() {
@@ -34,7 +33,7 @@ public:
 private:
     constexpr static uint16_t TaskStackDepth = 15000;
     /// Frequency in kHz
-    constexpr static uint32_t FrequencyUHFTX = 401000;
+    constexpr static uint32_t FrequencyUHFTX = 400500;
     Error error = NO_ERRORS;
     StackType_t taskStack[TaskStackDepth]{};
 };

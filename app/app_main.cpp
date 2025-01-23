@@ -20,16 +20,7 @@
 #include "RF_TXTask.hpp"
 #include "RF_RXTask.hpp"
 #include "git_version.h"
-#include "timers.h"
 #include "at86rf215.hpp"
-
-#define NUM_TIMERS 1
-
-// An array to hold handles to the created timers.
-TimerHandle_t xTimers[NUM_TIMERS];
-
-// An array to hold a count of the number of times each timer expires.
-int32_t lExpireCounters[ NUM_TIMERS ] = { 0 };
 
 
 void app_main(void) {
