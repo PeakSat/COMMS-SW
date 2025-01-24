@@ -111,49 +111,49 @@ extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t 
 
     if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
 
-        /* Retrieve Rx messages from RX FIFO0 */
-        CAN::Frame newFrame;
-        if (incomingFIFO.lastItemPointer >= sizeOfIncommingFrameBuffer) {
-            incomingFIFO.lastItemPointer = 0;
-        }
-        newFrame.pointerToData = &incomingFIFO.buffer[CANMessageSize * (incomingFIFO.lastItemPointer)];
-        if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &newFrame.header, newFrame.pointerToData) != HAL_OK) {
-            /* Reception Error */
-            Error_Handler();
-        }
-        newFrame.bus = hfdcan;
-
-        if (newFrame.pointerToData[0] == 0 && newFrame.pointerToData[1] == 0) {
-            __NOP();
-            if (newFrame.bus->Instance == FDCAN1) {
-                __NOP();
-            } else if (newFrame.bus->Instance == FDCAN2) {
-                __NOP();
+        while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0) > 0) {
+            /* Retrieve Rx messages from RX FIFO0 */
+            CAN::Frame newFrame;
+            if (incomingFIFO.lastItemPointer >= sizeOfIncommingFrameBuffer) {
+                incomingFIFO.lastItemPointer = 0;
             }
-        } else if (newFrame.header.Identifier == 0x380) {
-            if (xQueueIsQueueFullFromISR(canGatekeeperTask->incomingFrameQueue)) {
-                // Queue is full. Handle the error
-                // todo
+            newFrame.pointerToData = &incomingFIFO.buffer[CANMessageSize * (incomingFIFO.lastItemPointer)];
+            if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &newFrame.header, newFrame.pointerToData) != HAL_OK) {
+                /* Reception Error */
+                Error_Handler();
+            }
+            newFrame.bus = hfdcan;
+
+            if (newFrame.pointerToData[0] == 0 && newFrame.pointerToData[1] == 0) {
                 __NOP();
+                if (newFrame.bus->Instance == FDCAN1) {
+                    __NOP();
+                } else if (newFrame.bus->Instance == FDCAN2) {
+                    __NOP();
+                }
+            } else if (newFrame.header.Identifier == 0x380) {
+                if (xQueueIsQueueFullFromISR(canGatekeeperTask->incomingFrameQueue)) {
+                    // Queue is full. Handle the error
+                    // todo
+                    __NOP();
+                } else {
+                    // Send the data to the gatekeeper
+                    incomingFIFO.lastItemPointer++;
+                    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+                    xQueueSendToBackFromISR(canGatekeeperTask->incomingFrameQueue, &newFrame, NULL);
+                    xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+                    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+                    __NOP();
+                }
             } else {
-                // Send the data to the gatekeeper
-                incomingFIFO.lastItemPointer++;
-                BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-                xQueueSendToBackFromISR(canGatekeeperTask->incomingFrameQueue, &newFrame, NULL);
-                xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
-                portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
                 __NOP();
             }
-        } else {
-            __NOP();
         }
-
-
-        // Re-activate the callback
-        if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
-            /* Notification Error */
-            Error_Handler();
-        }
+    }
+    // Re-activate the callback
+    if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+        /* Notification Error */
+        Error_Handler();
     }
 }
 extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t Size) {

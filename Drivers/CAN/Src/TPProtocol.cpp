@@ -3,6 +3,7 @@
 #include "CANGatekeeperTask.hpp"
 #include "Peripheral_Definitions.hpp"
 #include <ApplicationLayer.hpp>
+#include <PlatformParameters.hpp>
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
 using namespace CAN;
@@ -30,9 +31,11 @@ void TPProtocol::parseMessage(TPMessage& message) {
     uint8_t messageType = static_cast<Application::MessageIDs>(message.data[0]);
     switch (messageType) {
         case CAN::Application::SendParameters:
+
             CAN::Application::parseSendParametersMessage(message);
             break;
         case CAN::Application::RequestParameters:
+            OBDHParameters::debugCounter.setValue(OBDHParameters::debugCounter.getValue() + 1);
             CAN::Application::parseRequestParametersMessage(message);
             break;
         case CAN::Application::PerformFunction:
@@ -141,6 +144,7 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
             data.at(idx + 1) = message.data[idx];
         }
         canGatekeeperTask->send({id, data}, isISR);
+        xTaskNotifyGive(canGatekeeperTask->taskHandle);
         return false;
     }
 

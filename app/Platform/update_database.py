@@ -29,7 +29,7 @@ except Exception as e:
 
 # Subsystem acronyms and their corresponding number offsets
 subsystem_config = {
-    "OBDH": 5000,
+    "OBDH": 0,
     "COMMS": 10000,
     "PAY": 15000,
     "ADCS": 20000,

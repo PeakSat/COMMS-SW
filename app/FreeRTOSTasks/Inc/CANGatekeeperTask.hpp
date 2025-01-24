@@ -59,10 +59,6 @@ public:
      * Storage area given to freeRTOS to manage the queue items.
      */
 
-    QueueHandle_t incomingPacketQueue;
-    static inline StaticQueue_t incomingPacketBuffer;
-    static inline uint8_t incomingPacketStorageArea[1 * sizeof(localPacketHandler*)];
-
     /* A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
  */
     QueueHandle_t incomingFrameQueue;
@@ -179,7 +175,7 @@ public:
 
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<CANGatekeeperTask>, this->TaskName, this->TaskStackDepth, this,
-                                             tskIDLE_PRIORITY + 2, this->taskStack, &(this->taskBuffer));
+                                             tskIDLE_PRIORITY + 3, this->taskStack, &(this->taskBuffer));
     }
 };
 

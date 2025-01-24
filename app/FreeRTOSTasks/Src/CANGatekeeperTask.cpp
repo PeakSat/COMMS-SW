@@ -31,10 +31,6 @@ CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
                                             &incomingFrameQueueBuffer);
     vQueueAddToRegistry(incomingFrameQueue, "CAN Incoming Frame");
 
-    incomingPacketQueue = xQueueCreateStatic(1, sizeof(localPacketHandler*), incomingPacketStorageArea,
-                                             &incomingPacketBuffer);
-    vQueueAddToRegistry(incomingPacketQueue, "CAN Outgoing");
-    configASSERT(incomingPacketQueue);
 
     storedPacketQueue = xQueueCreateStatic(128, sizeof(CAN::StoredPacket), storedPacketQueueStorageArea,
                                            &storedPacketQueueBuffer);
@@ -156,6 +152,7 @@ void CANGatekeeperTask::execute() {
 
                         xQueueSendToBack(storedPacketQueue, &PacketToBeStored, NULL);
                         xTaskNotifyGive(canParserTask->taskHandle);
+                        LOG_DEBUG << "message came at : " << xTaskGetTickCount();
                     } else {
                         // Message not received correctly
                         LOG_ERROR << "DROPPED CAN MESSAGE";

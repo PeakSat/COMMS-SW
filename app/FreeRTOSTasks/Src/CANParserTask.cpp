@@ -32,26 +32,34 @@ void CANParserTask::execute() {
             // Get packet from eMMC
             CAN::StoredPacket StoredPacket;
             xQueueReceive(canGatekeeperTask->storedPacketQueue, &StoredPacket, portMAX_DELAY);
-            uint8_t messageBuff[1024];
-            CAN::Application::getStoredMessage(&StoredPacket, messageBuff, StoredPacket.size, sizeof(messageBuff) / sizeof(messageBuff[0]));
-            LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << StoredPacket.size;
 
-            // parse
-            CAN::TPMessage message;
-            message.appendUint8(StoredPacket.Identifier);
-            for (int i = 0; i < StoredPacket.size; i++) {
-                message.appendUint8(messageBuff[i]);
+
+            if (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue) == 0) {
+
+                // Get packet from eMMC
+                uint8_t messageBuff[1024];
+                CAN::Application::getStoredMessage(&StoredPacket, messageBuff, StoredPacket.size, sizeof(messageBuff) / sizeof(messageBuff[0]));
+                LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << StoredPacket.size;
+
+                // parse
+                CAN::TPMessage message;
+                message.appendUint8(StoredPacket.Identifier);
+                for (int i = 0; i < StoredPacket.size; i++) {
+                    message.appendUint8(messageBuff[i]);
+                }
+                message.idInfo.sourceAddress = CAN::OBC;
+                uint32_t start = xTaskGetTickCount();
+                CAN::TPProtocol::parseMessage(message);
+
+
+                //Send ACK
+                CAN::TPMessage ACKmessage = {{CAN::NodeID, CAN::NodeIDs::OBC, false}};
+                ACKmessage.appendUint8(CAN::Application::MessageIDs::ACK);
+                CAN::TPProtocol::createCANTPMessageNoRetransmit(ACKmessage, false);
+                xTaskNotifyGive(canGatekeeperTask->taskHandle);
+            } else {
+                LOG_DEBUG << "Old message discarded";
             }
-            message.idInfo.sourceAddress = CAN::OBC;
-            uint32_t start = xTaskGetTickCount();
-            CAN::TPProtocol::parseMessage(message);
-
-
-            //Send ACK
-            CAN::TPMessage ACKmessage = {{CAN::NodeID, CAN::NodeIDs::OBC, false}};
-            ACKmessage.appendUint8(CAN::Application::MessageIDs::ACK);
-            CAN::TPProtocol::createCANTPMessageNoRetransmit(ACKmessage, false);
-            xTaskNotifyGive(canGatekeeperTask->taskHandle);
         }
 
 
