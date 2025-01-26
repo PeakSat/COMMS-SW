@@ -92,11 +92,11 @@ public:
     * Its value can be modified dynamically to track or adjust GNSS-related operations.
     */
     uint8_t control = 0;
-
+    uint8_t ACK = 131;
    struct GNSS_HANDLER {
      SemaphoreHandle_t mutex = nullptr;
-     StaticSemaphore_t mutex_buffer;
-     bool previous_ack;
+     StaticSemaphore_t mutex_buffer{};
+     bool previous_ack{};
      void initialize_mutex() {
        mutex = xSemaphoreCreateBinaryStatic(&mutex_buffer);
        if (mutex == nullptr) {

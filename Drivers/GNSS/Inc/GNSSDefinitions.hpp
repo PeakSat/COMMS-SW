@@ -11,6 +11,10 @@
 #define GNSS_MESSAGE_READY (1 << 1)
 // 5 SECONDS
 #define MAXIMUM_INTERVAL 5000
+#define MAXIMUM_INTERVAL_ACK 1000
+#define DELAY_BTW_COMMANDS 200
+#define MAX_RETRIES 3
+
 
 namespace GNSSDefinitions {
 
@@ -25,7 +29,6 @@ namespace GNSSDefinitions {
         OK,
         ERROR
     };
-
 
 
     struct GNSSData {
@@ -59,7 +62,7 @@ namespace GNSSDefinitions {
     };
 
 
-    inline const uint8_t GNSSQueueSize = 1;
+    inline constexpr uint8_t GNSSQueueSize = 1;
 
     /**
  * The maximum size for the data field of a GNSS Payload.

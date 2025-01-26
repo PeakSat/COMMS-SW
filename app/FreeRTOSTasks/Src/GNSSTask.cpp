@@ -194,19 +194,19 @@ void GNSSTask::resetGNSSHardware() {
 }
 
 etl::expected<Status, Error> GNSSTask::controlGNSSwithACK(GNSSMessage gnssMessageToSend) {
-    control = 1;
+    control = true;
     // This is actually useful for the very first command because for an unknown reason does not return ACK
-    constexpr uint8_t maxRetries = 3;
+    constexpr uint8_t maxRetries = MAX_RETRIES;
     // Initialize error to indicate no error initially
     Error currentError = Error::Timeout;
     Status currentStatus = Status::ERROR;
     // Try up to maxRetries to receive an ACK/NACK
-    vTaskDelay(200);
+    vTaskDelay(DELAY_BTW_COMMANDS);
     for (uint8_t attempt = 0; attempt < maxRetries; attempt++) {
         if (HAL_UART_Transmit(&huart5, gnssMessageToSend.messageBody.data(), gnssMessageToSend.messageBody.size(), 1000) != HAL_OK)
             currentError = Error::TransmissionFailed;
         uint32_t received_events;
-        if (xTaskNotifyWaitIndexed(GNSS_INDEX_ACK, pdFALSE, pdTRUE, &received_events, pdMS_TO_TICKS(1000)) == pdTRUE) {
+        if (xTaskNotifyWaitIndexed(GNSS_INDEX_ACK, pdFALSE, pdTRUE, &received_events, pdMS_TO_TICKS(MAXIMUM_INTERVAL_ACK)) == pdTRUE) {
             LOG_DEBUG << "Received GNSS ACK";
             currentError = Error::NoError;
             break;

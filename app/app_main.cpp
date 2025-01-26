@@ -152,24 +152,21 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     xHigherPriorityTaskWoken = pdFALSE;
     if (huart->Instance == UART5) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
-            // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
             // Size = 9 have the messages with main ID and Size = 10 have the messages with Sub ID
             if (gnssTask->control && (Size == 9 || Size == 10)) {
                 gnssTask->control = false;
-                if (huart5.pRxBuffPtr[4] == 131)
+                if (huart5.pRxBuffPtr[4] == gnssTask->ACK)
                     xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_ACK, GNSS_ACK, eSetBits, &xHigherPriorityTaskWoken);
-            } else { // maybe some filtering here also
+            } else {
                 gnssTask->size_message = Size;
                 gnssTask->sendToQueue = huart5.pRxBuffPtr;
                 xHigherPriorityTaskWoken = pdFALSE;
-                if ((huart5.pRxBuffPtr[4] != 131)) {
-                    xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_MESSAGE, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
-                    xQueueSendFromISR(gnssTask->gnssQueueHandle, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
-                }
+                xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_MESSAGE, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
+                xQueueSendFromISR(gnssTask->gnssQueueHandle, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
             }
-            // Perform a context switch if a higher-priority task was woken up by the notification
-            // portYIELD_FROM_ISR will yield the processor to the higher-priority task immediately if xHigherPriorityTaskWoken is pdTRUE
-            gnssTask->startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
         }
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
     }
 }
+
