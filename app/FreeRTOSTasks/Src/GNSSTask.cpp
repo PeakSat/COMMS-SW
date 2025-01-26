@@ -96,86 +96,22 @@ void GNSSTask::setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gg
 
 
 void GNSSTask::initGNSS() {
-    // Initialize GNSS hardware
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
     resetGNSSHardware();
-
-    // Create a queue to store GNSS commands
-    QueueHandle_t commandQueue = xQueueCreate(5, sizeof(GNSSMessage));
-    if (commandQueue == nullptr) {
-        LOG_ERROR << "Failed to create GNSS command queue";
-        return;
-    }
-
-    // Enqueue GNSS commands
-    GNSSMessage message;
-
-    message = GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults);
-    xQueueSend(commandQueue, (void const *)&message, portMAX_DELAY);
-
-    message = GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH);
-    xQueueSend(commandQueue, (void const *)&message, portMAX_DELAY);
-
-    message = GNSSReceiver::configureGNSSNavigationMode(NavigationMode::Auto, Attributes::UpdateToSRAM);
-    xQueueSend(commandQueue, (void const *)&message, portMAX_DELAY);
-
-    message = GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM);
-    xQueueSend(commandQueue, (void const *)&message, portMAX_DELAY);
-
-    etl::vector<uint8_t, 12> interval_vec(12, 0);
-    interval_vec[0] = 1; // Set interval for RMC
-    interval_vec[4] = 1; // Set interval for GGA
-    message = GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM);
-    xQueueSend(commandQueue, (void const *)&message, portMAX_DELAY);
-
-    // Initialize the ACK flag
-    bool previous_ack = true;
-
-    // Process commands in the queue
-    GNSSMessage queuedCommand;
-    while (xQueueReceive(commandQueue, &queuedCommand, portMAX_DELAY) == pdPASS) {
-        int retry_count = 0;
-        const int max_retries = 3;  // Maximum retries for failed command
-        const TickType_t delay_time = pdMS_TO_TICKS(500);  // Delay between retries
-
-        while (retry_count < max_retries) {
-            // If the previous command failed, retry the same command after a delay
-            LOG_ERROR << "Previous command failed, retrying...";
-            vTaskDelay(delay_time);  // Delay before retrying
-            auto status = controlGNSSwithACK(queuedCommand);
-            if (status.has_value()) {
-                if (status.value() == Status::OK) {
-                    LOG_INFO << "Command executed successfully after retry";
-                    previous_ack = true;  // Mark as acknowledged
-                } else {
-                    retry_count++;
-                    if (retry_count >= max_retries) {
-                        LOG_ERROR << "Command failed after multiple retries";
-                        previous_ack = false;  // Keep it false if retries exceed limit
-                    }
-                }
-            }
-        }
-
-        // If the previous command succeeded, process the next command
-        if (previous_ack) {
-            auto status = controlGNSSwithACK(queuedCommand);
-            if (status.has_value()) {
-                if (status.value() == Status::OK) {
-                    LOG_INFO << "Command executed successfully";
-                    previous_ack = true;  // Mark as acknowledged
-                } else {
-                    LOG_ERROR << "GNSS command failed";
-                    previous_ack = false;  // Keep it false if error occurred
-                }
-            }
-        }
-    }
-
-    // Cleanup: Delete the queue after processing
-    vQueueDelete(commandQueue);
+    controlGNSSwithACK(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
+    controlGNSSwithACK(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
+    etl::vector<uint8_t, 12> interval_vec;
+    interval_vec.resize(12, 0);
+    uint8_t seconds = 1;
+    // 4 is for RMC, 2 for GSV, 0 is for GGA
+    interval_vec[0] = seconds;
+    //    interval_vec[2] = seconds;
+    interval_vec[4] = seconds;
+    controlGNSSwithACK(GNSSReceiver::configureGNSSNavigationMode(NavigationMode::Auto, Attributes::UpdateToSRAM));
+    controlGNSSwithACK(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
+    controlGNSSwithACK(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
 }
 
 
@@ -265,6 +201,7 @@ etl::expected<Status, Error> GNSSTask::controlGNSSwithACK(GNSSMessage gnssMessag
     Error currentError = Error::Timeout;
     Status currentStatus = Status::ERROR;
     // Try up to maxRetries to receive an ACK/NACK
+    vTaskDelay(200);
     for (uint8_t attempt = 0; attempt < maxRetries; attempt++) {
         if (HAL_UART_Transmit(&huart5, gnssMessageToSend.messageBody.data(), gnssMessageToSend.messageBody.size(), 1000) != HAL_OK)
             currentError = Error::TransmissionFailed;
