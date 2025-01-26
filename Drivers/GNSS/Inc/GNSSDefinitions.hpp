@@ -1,19 +1,13 @@
 #pragma once
 #include "etl/vector.h"
-
-
+// Task notification defines
+// flags
+#define GNSS_ACK (1 << 0)
+#define GNSS_MESSAGE_READY (1 << 1)
+// indexes
 #define GNSS_INDEX_MESSAGE 1
 #define GNSS_INDEX_ACK 2
-// Define event bit masks
-// Event Bit for responses of GNSS to control messages
-#define GNSS_ACK (1 << 0)
-// Event Bit for knowing when a whole GNSS message is ready to be parsed
-#define GNSS_MESSAGE_READY (1 << 1)
-// 5 SECONDS
-#define MAXIMUM_INTERVAL 5000
-#define MAXIMUM_INTERVAL_ACK 1000
-#define DELAY_BTW_COMMANDS 200
-#define printing_frequency 1
+
 
 namespace GNSSDefinitions {
 

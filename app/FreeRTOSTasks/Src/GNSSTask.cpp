@@ -179,11 +179,11 @@ etl::expected<Status, Error> GNSSTask::controlGNSS(GNSSMessage gnssMessageToSend
     Error currentError = {};
     Status currentStatus;
     uint32_t received_events;
-    vTaskDelay(DELAY_BTW_COMMANDS);
+    vTaskDelay(gnss_handler.DELAY_BTW_CMDS_MS);
     for (uint8_t attempt = 0; attempt < maxRetries; attempt++) {
         if (HAL_UART_Transmit(&huart5, gnssMessageToSend.messageBody.data(), gnssMessageToSend.messageBody.size(), 1000) != HAL_OK)
             currentError = Error::TransmissionFailed;
-        if (xTaskNotifyWaitIndexed(GNSS_INDEX_ACK, pdFALSE, pdTRUE, &received_events, pdMS_TO_TICKS(MAXIMUM_INTERVAL_ACK)) == pdTRUE) {
+        if (xTaskNotifyWaitIndexed(GNSS_INDEX_ACK, pdFALSE, pdTRUE, &received_events, pdMS_TO_TICKS(gnss_handler.ACK_TIMOUT_MS)) == pdTRUE) {
             LOG_DEBUG << "Received GNSS ACK";
             currentError = Error::NoError;
             break;

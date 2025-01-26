@@ -10,6 +10,8 @@
 #include "minmea.h"
 
 
+#define printing_frequency 1
+
 extern UART_HandleTypeDef huart5;
 extern DMA_HandleTypeDef hdma_uart5_rx;
 
