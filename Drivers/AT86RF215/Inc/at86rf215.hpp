@@ -13,17 +13,13 @@
 const uint16_t TIMEOUT = 1000;
 typedef struct __SPI_HandleTypeDef SPI_HandleTypeDef;
 extern SPI_HandleTypeDef hspi4;
-
-extern uint8_t transmit;
 namespace AT86RF215 {
     class TransceiverHandler {
     public:
         SemaphoreHandle_t resources_mtx = nullptr;
         StaticSemaphore_t mtx_buf = {};
         uint16_t RX_REFRESH_PERIOD_MS = 50;
-        uint32_t TRANSMIT_CNT = 0;
-        uint32_t TRANSMIT_FRM_END_CNT = 0;
-        uint16_t BEACON_PERIOD_MS = 1000;
+        uint16_t BEACON_PERIOD_MS = 500;
         void initialize_semaphore() {
             resources_mtx = xSemaphoreCreateMutexStatic(&mtx_buf);
             if (resources_mtx == nullptr) {

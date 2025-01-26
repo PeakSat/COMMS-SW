@@ -112,11 +112,10 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
         transceiver.chip_reset(error);
         xSemaphoreGive(transceiver_handler.resources_mtx);
     }
-
+    uint32_t tx_counter = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, pdTICKS_TO_MS(transceiver_handler.BEACON_PERIOD_MS + 1000)) == pdTRUE) {
             if (receivedEventsTransmit & TRANSMIT) {
-                transceiver_handler.TRANSMIT_CNT++;
                 if (counter == 255)
                     counter = 0;
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -134,6 +133,8 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                 packetTestData.packet[0] = counter;
                                 transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
                                 LOG_INFO << "[TX] c: " << counter;
+                                tx_counter++;
+                                LOG_INFO << "[TX] TX counter: " << tx_counter;
                             }
                             xSemaphoreGive(transceiver_handler.resources_mtx);
                         }
@@ -156,6 +157,8 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                         packetTestData.packet[0] = counter;
                                         transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
                                         LOG_INFO << "[TX TXFE] c: " << counter;
+                                        tx_counter++;
+                                        LOG_INFO << "[TX] TX counter: " << tx_counter;
                                     }
                                     xSemaphoreGive(transceiver_handler.resources_mtx);
                                 }
@@ -180,6 +183,8 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                         packetTestData.packet[0] = counter;
                                         transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
                                         LOG_INFO << "[TX RXFE] c: " << counter;
+                                        tx_counter++;
+                                        LOG_INFO << "[TX] TX counter: " << tx_counter;
                                     }
                                     xSemaphoreGive(transceiver_handler.resources_mtx);
                                 }
