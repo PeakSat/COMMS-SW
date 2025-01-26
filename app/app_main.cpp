@@ -60,7 +60,7 @@ void app_main(void) {
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     TransceiverHandler::initialize_semaphore();
-    gnssTask->gnss_ack_handler.initialize_semaphore();
+    gnssTask->gnss_handler.initialize_mutex();
     /* Start the scheduler. */
 
     vTaskStartScheduler();
@@ -156,9 +156,8 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
             // Size = 9 have the messages with main ID and Size = 10 have the messages with Sub ID
             if (gnssTask->control && (Size == 9 || Size == 10)) {
                 gnssTask->control = false;
-                if (huart5.pRxBuffPtr[4] == 131) {
+                if (huart5.pRxBuffPtr[4] == 131)
                     xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_ACK, GNSS_ACK, eSetBits, &xHigherPriorityTaskWoken);
-                }
             } else { // maybe some filtering here also
                 gnssTask->size_message = Size;
                 gnssTask->sendToQueue = huart5.pRxBuffPtr;

@@ -15,13 +15,13 @@
 namespace GNSSDefinitions {
 
     enum class Error {
-        Noerror,
+        NoError = 0,
         TransmissionFailed,
         Timeout,
         NACKReceived,
         MultipleCommandsFail
     };
-    enum class status{
+    enum class Status{
         OK,
         ERROR
     };

@@ -27,7 +27,7 @@ public:
     /**
     * Depth of the stack allocated for the task, in 16-bit words.
     */
-    static const uint16_t TaskStackDepth = 4000;
+    static const uint16_t TaskStackDepth = 8000;
 
     /**
     * Array representing the stack memory for the task.
@@ -93,18 +93,18 @@ public:
     */
     uint8_t control = 0;
 
-   struct GNSS_ACK_HANDLER {
-     SemaphoreHandle_t GNSS_ACK_SEMAPHORE = nullptr;
-     StaticSemaphore_t GNSS_ACK_SEMAPHORE_STATIC;
-     uint32_t TIMEOUT = 500;
-     void initialize_semaphore() {
-       GNSS_ACK_SEMAPHORE = xSemaphoreCreateBinaryStatic(&GNSS_ACK_SEMAPHORE_STATIC);
-       if (GNSS_ACK_SEMAPHORE == nullptr) {
-         LOG_ERROR << "Failed to create semaphore!";
+   struct GNSS_HANDLER {
+     SemaphoreHandle_t mutex = nullptr;
+     StaticSemaphore_t mutex_buffer;
+     bool previous_ack;
+     void initialize_mutex() {
+       mutex = xSemaphoreCreateBinaryStatic(&mutex_buffer);
+       if (mutex == nullptr) {
+         LOG_ERROR << "Failed to create mutex!";
        }
      }
    };
-   GNSS_ACK_HANDLER gnss_ack_handler;
+   GNSS_HANDLER gnss_handler;
 
     /**
     * Executes the main logic of the GNSS task.
@@ -161,7 +161,7 @@ public:
     * @return An `etl::expected` containing `void` on success (ACK received), or an `ErrorFromGNSS` enumeration value (`TransmissionFailed`, `Timeout`, or `NACKReceived`) on failure.
     *
     */
-    etl::expected<status, Error> controlGNSSwithACK(GNSSMessage gnssMessageToSend);
+    etl::expected<Status, Error> controlGNSSwithACK(GNSSMessage gnssMessageToSend);
 
     /**
     * Toggles between fast mode and slow mode for testing the GNSS module's functionality
