@@ -1525,7 +1525,9 @@ void At86rf215::print_error(Error& err) {
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             xHigherPriorityTaskWoken = pdFALSE;
             tx_ongoing = false;
-            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_TXFE, TXFE, eSetBits, &xHigherPriorityTaskWoken);
+            transceiver_handler.TRANSMIT_FRM_END_CNT++;
+            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_TXFE_TX, TXFE, eSetBits, &xHigherPriorityTaskWoken);
+            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_TXFE_RX, TXFE, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {

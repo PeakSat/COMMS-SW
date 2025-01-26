@@ -8,12 +8,11 @@
 #include <etl/expected.h>
 #include "main.h"
 
-#define RX_REFRESH_PERIOD_MS 50
-
 
 using namespace AT86RF215;
 class RF_RXTask : public Task {
 public:
+
     RF_RXTask() : Task("RF RX TASK"){}
     void ensureRxMode();
     [[noreturn]] void execute();
