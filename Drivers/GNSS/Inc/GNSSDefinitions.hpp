@@ -13,13 +13,12 @@
 #define MAXIMUM_INTERVAL 5000
 #define MAXIMUM_INTERVAL_ACK 1000
 #define DELAY_BTW_COMMANDS 200
-#define MAX_RETRIES 3
-
+#define printing_frequency 1
 
 namespace GNSSDefinitions {
 
     enum class Error {
-        NoError = 0,
+        NoError,
         TransmissionFailed,
         Timeout,
         NACKReceived,
@@ -67,12 +66,12 @@ namespace GNSSDefinitions {
     /**
  * The maximum size for the data field of a GNSS Payload.
  */
-    inline const uint16_t GNSSPayloadSize = 1024;
+    inline constexpr uint16_t GNSSPayloadSize = 1024;
 
     /**
  * The maximum size for the data field of a GNSS Message.
  */
-    inline const uint16_t GNSSMessageSize = GNSSPayloadSize + 16;
+    inline constexpr uint16_t GNSSMessageSize = GNSSPayloadSize + 16;
 
     typedef etl::vector<uint8_t, GNSSPayloadSize> Payload;
 

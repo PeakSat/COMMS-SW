@@ -6,14 +6,9 @@
 #include "GNSS.hpp"
 #include "GNSSMessage.hpp"
 #include "stm32h7xx_hal.h"
-#include <etl/string.h>
 #include <etl/expected.h>
 #include "minmea.h"
-#include "Logger.hpp"
 
-#include <semphr.h>
-
-#define printing_frequency 1
 
 extern UART_HandleTypeDef huart5;
 extern DMA_HandleTypeDef hdma_uart5_rx;
@@ -27,7 +22,7 @@ public:
     /**
     * Depth of the stack allocated for the task, in 16-bit words.
     */
-    static const uint16_t TaskStackDepth = 8000;
+    static constexpr uint16_t TaskStackDepth = 4000;
 
     /**
     * Array representing the stack memory for the task.
@@ -91,19 +86,19 @@ public:
     * Control flag used for task synchronization or GNSS state management.
     * Its value can be modified dynamically to track or adjust GNSS-related operations.
     */
-    uint8_t control = 0;
-    uint8_t ACK = 131;
+
    struct GNSS_HANDLER {
-     SemaphoreHandle_t mutex = nullptr;
-     StaticSemaphore_t mutex_buffer{};
-     bool previous_ack{};
-     void initialize_mutex() {
-       mutex = xSemaphoreCreateBinaryStatic(&mutex_buffer);
-       if (mutex == nullptr) {
-         LOG_ERROR << "Failed to create mutex!";
-       }
-     }
+     bool CONTROL = false;
+     uint8_t ACK = 131;
+     uint8_t SIZE_ID_LENGTH = 9;
+     uint8_t SIZE_SUB_ID_LENGTH = 10;
+     uint16_t ACK_TIMOUT_MS = 500;
+     uint8_t DELAY_BTW_CMDS_MS = 200;
+     uint8_t CMD_RETRIES = 3;
+     uint16_t ERROR_TIMEOUT_MS = 10000;
+     uint8_t ERROR_TIMEOUT_COUNTER_THRD = 5;
    };
+
    GNSS_HANDLER gnss_handler;
 
     /**
@@ -161,7 +156,7 @@ public:
     * @return An `etl::expected` containing `void` on success (ACK received), or an `ErrorFromGNSS` enumeration value (`TransmissionFailed`, `Timeout`, or `NACKReceived`) on failure.
     *
     */
-    etl::expected<Status, Error> controlGNSSwithACK(GNSSMessage gnssMessageToSend);
+    etl::expected<Status, Error> controlGNSS(GNSSMessage gnssMessageToSend);
 
     /**
     * Toggles between fast mode and slow mode for testing the GNSS module's functionality

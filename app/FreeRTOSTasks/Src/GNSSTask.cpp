@@ -75,33 +75,14 @@ void GNSSTask::setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gg
     compact.satellites_tracked = static_cast<int8_t>(frame_gga.satellites_tracked);
 }
 
-// void GNSSTask::initGNSS() {
-//     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
-//     HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_RESET);
-//     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-//     resetGNSSHardware();
-//     controlGNSSwithACK(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
-//     controlGNSSwithACK(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
-//     etl::vector<uint8_t, 12> interval_vec;
-//     interval_vec.resize(12, 0);
-//     uint8_t seconds = 1;
-//     // 4 is for RMC, 2 for GSV, 0 is for GGA
-//     interval_vec[0] = seconds;
-//     //    interval_vec[2] = seconds;
-//     interval_vec[4] = seconds;
-//     controlGNSSwithACK(GNSSReceiver::configureGNSSNavigationMode(NavigationMode::Auto, Attributes::UpdateToSRAM));
-//     controlGNSSwithACK(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
-//     controlGNSSwithACK(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
-// }
-
 
 void GNSSTask::initGNSS() {
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
     resetGNSSHardware();
-    controlGNSSwithACK(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
-    controlGNSSwithACK(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
+    controlGNSS(GNSSReceiver::setFactoryDefaults(DefaultType::RebootAfterSettingToFactoryDefaults));
+    controlGNSS(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
     etl::vector<uint8_t, 12> interval_vec;
     interval_vec.resize(12, 0);
     uint8_t seconds = 1;
@@ -109,11 +90,10 @@ void GNSSTask::initGNSS() {
     interval_vec[0] = seconds;
     //    interval_vec[2] = seconds;
     interval_vec[4] = seconds;
-    controlGNSSwithACK(GNSSReceiver::configureGNSSNavigationMode(NavigationMode::Auto, Attributes::UpdateToSRAM));
-    controlGNSSwithACK(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
-    controlGNSSwithACK(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
+    controlGNSS(GNSSReceiver::configureGNSSNavigationMode(NavigationMode::Auto, Attributes::UpdateToSRAM));
+    controlGNSS(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
+    controlGNSS(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
 }
-
 
 
 void GNSSTask::parser(uint8_t* buf, GNSSData& compact) {
@@ -156,7 +136,7 @@ void GNSSTask::switchGNSSMode() {
         // 4 is for RMC, 6 for ZDA, 0 is for GGA
         interval_vec[0] = seconds;
         interval_vec[4] = seconds;
-        controlGNSSwithACK(GNSSReceiver::configureSystemPositionRate(PositionRate::Option5Hz, Attributes::UpdateSRAMandFLASH));
+        controlGNSS(GNSSReceiver::configureSystemPositionRate(PositionRate::Option5Hz, Attributes::UpdateSRAMandFLASH));
     } else {
         LOG_INFO << "SLOW MODE";
         interval_vec.resize(12, 0);
@@ -165,9 +145,9 @@ void GNSSTask::switchGNSSMode() {
         // 4 is for RMC, 6 for ZDA, 0 is for GGA
         interval_vec[0] = seconds;
         interval_vec[4] = seconds;
-        controlGNSSwithACK(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
+        controlGNSS(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
     }
-    auto status = controlGNSSwithACK(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
+    auto status = controlGNSS(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
     if (status.has_value())
         LOG_DEBUG << "GNSS INTERVAL CHANGED WITH SUCCESS";
     else
@@ -193,19 +173,16 @@ void GNSSTask::resetGNSSHardware() {
     vTaskDelay(50);
 }
 
-etl::expected<Status, Error> GNSSTask::controlGNSSwithACK(GNSSMessage gnssMessageToSend) {
-    control = true;
-    // This is actually useful for the very first command because for an unknown reason does not return ACK
-    constexpr uint8_t maxRetries = MAX_RETRIES;
-    // Initialize error to indicate no error initially
-    Error currentError = Error::Timeout;
-    Status currentStatus = Status::ERROR;
-    // Try up to maxRetries to receive an ACK/NACK
+etl::expected<Status, Error> GNSSTask::controlGNSS(GNSSMessage gnssMessageToSend) {
+    gnss_handler.CONTROL = true;
+    uint8_t maxRetries = gnss_handler.CMD_RETRIES;
+    Error currentError = {};
+    Status currentStatus;
+    uint32_t received_events;
     vTaskDelay(DELAY_BTW_COMMANDS);
     for (uint8_t attempt = 0; attempt < maxRetries; attempt++) {
         if (HAL_UART_Transmit(&huart5, gnssMessageToSend.messageBody.data(), gnssMessageToSend.messageBody.size(), 1000) != HAL_OK)
             currentError = Error::TransmissionFailed;
-        uint32_t received_events;
         if (xTaskNotifyWaitIndexed(GNSS_INDEX_ACK, pdFALSE, pdTRUE, &received_events, pdMS_TO_TICKS(MAXIMUM_INTERVAL_ACK)) == pdTRUE) {
             LOG_DEBUG << "Received GNSS ACK";
             currentError = Error::NoError;
@@ -236,35 +213,29 @@ void GNSSTask::initQueuesToAcceptPointers() {
     startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
     initGNSS();
     GNSSData compact{};
-    int timeoutCounter = 0;
+    uint16_t gnss_error_timout_counter = 0;
     Logger::format.precision(Precision);
     uint32_t receivedEvents = 0;
     while (true) {
-        // you may have a counter that counts how many
-        if (xTaskNotifyWaitIndexed(GNSS_INDEX_MESSAGE, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(MAXIMUM_INTERVAL)) == pdTRUE) {
+        if (xTaskNotifyWaitIndexed(GNSS_INDEX_MESSAGE, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(gnss_handler.ERROR_TIMEOUT_MS)) == pdTRUE) {
             if (receivedEvents & GNSS_MESSAGE_READY) {
                 // Receive a message on the created queue.Block for 100ms if the message is not immediately available
                 if (xQueueReceive(gnssQueueHandle, &rx_buf_p_from_queue, pdMS_TO_TICKS(100)) == pdTRUE) {
                     if (rx_buf_p_from_queue != nullptr) {
                         parser(rx_buf_p_from_queue, compact);
-                        // filter the messages
-                        // fix quality 1 means : valid position fix, SPS mode
-                        // if (compact.fix_quality == 1 && compact.satellites_tracked > 3)
                         GNSSprint(compact);
-                        timeoutCounter = 0;
+                        gnss_error_timout_counter = 0;
                     }
-                } else {
-                    LOG_ERROR << "Queue Timeout";
                 }
             }
         } else {
             LOG_ERROR << "Timeout waiting for GNSS message.";
-            timeoutCounter++;
-            if (timeoutCounter >= 5) {
-                LOG_ERROR << "Multiple GNSS timeouts, attempting to reset GNSS communication.";
+            gnss_error_timout_counter++;
+            if (gnss_error_timout_counter >= gnss_handler.ERROR_TIMEOUT_COUNTER_THRD) {
+                LOG_ERROR << "Multiple GNSS timeouts, attempting to reset GNSS communication...Threshold: " << gnss_handler.ERROR_TIMEOUT_COUNTER_THRD; ;
                 resetGNSSHardware();
                 LOG_ERROR << "GNSS reset due to timeout";
-                timeoutCounter = 0; // Reset the counter after corrective action
+                gnss_error_timout_counter = 0; // Reset the counter after corrective action
             }
         }
     }
