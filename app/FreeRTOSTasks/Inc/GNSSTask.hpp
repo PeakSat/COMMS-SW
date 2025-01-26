@@ -94,10 +94,11 @@ public:
     uint8_t control = 0;
 
    struct GNSS_ACK_HANDLER {
-     SemaphoreHandle_t GNSS_ACK_SEMAPHORE;
+     SemaphoreHandle_t GNSS_ACK_SEMAPHORE = nullptr;
+     StaticSemaphore_t GNSS_ACK_SEMAPHORE_STATIC;
      uint32_t TIMEOUT = 500;
      void initialize_semaphore() {
-       GNSS_ACK_SEMAPHORE = xSemaphoreCreateBinary();
+       GNSS_ACK_SEMAPHORE = xSemaphoreCreateBinaryStatic(&GNSS_ACK_SEMAPHORE_STATIC);
        if (GNSS_ACK_SEMAPHORE == nullptr) {
          LOG_ERROR << "Failed to create semaphore!";
        }
@@ -160,7 +161,7 @@ public:
     * @return An `etl::expected` containing `void` on success (ACK received), or an `ErrorFromGNSS` enumeration value (`TransmissionFailed`, `Timeout`, or `NACKReceived`) on failure.
     *
     */
-    etl::expected<void, ErrorFromGNSS> controlGNSSwithACK(GNSSMessage gnssMessageToSend);
+    etl::expected<status, Error> controlGNSSwithACK(GNSSMessage gnssMessageToSend);
 
     /**
     * Toggles between fast mode and slow mode for testing the GNSS module's functionality

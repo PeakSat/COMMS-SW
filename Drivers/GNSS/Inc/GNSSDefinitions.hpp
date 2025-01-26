@@ -1,22 +1,32 @@
 #pragma once
 #include "etl/vector.h"
 
+
+#define GNSS_INDEX_MESSAGE 1
+#define GNSS_INDEX_ACK 2
 // Define event bit masks
 // Event Bit for responses of GNSS to control messages
-#define GNSS_RESPONSE (1 << 0)
+#define GNSS_ACK (1 << 0)
 // Event Bit for knowing when a whole GNSS message is ready to be parsed
 #define GNSS_MESSAGE_READY (1 << 1)
-// 255 SECONDS
-#define MAXIMUM_INTERVAL 255000
+// 5 SECONDS
+#define MAXIMUM_INTERVAL 5000
 
 namespace GNSSDefinitions {
 
-    enum class ErrorFromGNSS {
+    enum class Error {
+        Noerror,
         TransmissionFailed,
         Timeout,
         NACKReceived,
         MultipleCommandsFail
     };
+    enum class status{
+        OK,
+        ERROR
+    };
+
+
 
     struct GNSSData {
         int32_t utc;

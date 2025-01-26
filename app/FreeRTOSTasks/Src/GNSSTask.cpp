@@ -99,7 +99,7 @@ void GNSSTask::parser(uint8_t* buf, GNSSData& compact) {
     GNSSMessageString.assign(buf, buf + GNSSPayloadSize);
     minmea_sentence_rmc frame_rmc{};
     minmea_sentence_gga frame_gga{};
-    LOG_INFO << GNSSMessageString.c_str();
+    // LOG_INFO << GNSSMessageString.c_str();
     // Tokenize the string by newline characters
     char* line = strtok(&GNSSMessageString[0], "\n");
     while (line != nullptr) {
@@ -134,7 +134,7 @@ void GNSSTask::switchGNSSMode() {
         // 4 is for RMC, 6 for ZDA, 0 is for GGA
         interval_vec[0] = seconds;
         interval_vec[4] = seconds;
-        controlGNSSwithACK(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
+        controlGNSSwithACK(GNSSReceiver::configureSystemPositionRate(PositionRate::Option5Hz, Attributes::UpdateSRAMandFLASH));
     } else {
         LOG_INFO << "SLOW MODE";
         interval_vec.resize(12, 0);
@@ -143,7 +143,7 @@ void GNSSTask::switchGNSSMode() {
         // 4 is for RMC, 6 for ZDA, 0 is for GGA
         interval_vec[0] = seconds;
         interval_vec[4] = seconds;
-        controlGNSSwithACK(GNSSReceiver::configureSystemPositionRate(PositionRate::Option1Hz, Attributes::UpdateToSRAM));
+        controlGNSSwithACK(GNSSReceiver::configureSystemPositionRate(PositionRate::Option2Hz, Attributes::UpdateToSRAM));
     }
     auto status = controlGNSSwithACK(GNSSReceiver::configureExtendedNMEAMessageInterval(interval_vec, Attributes::UpdateToSRAM));
     if (status.has_value())
@@ -166,27 +166,42 @@ void GNSSTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
 void GNSSTask::resetGNSSHardware() {
     HAL_GPIO_WritePin(GNSS_RSTN_GPIO_Port, GNSS_RSTN_Pin, GPIO_PIN_RESET);
     vTaskDelay(50);
+    // TODO pass this delay to the parameter map
     HAL_GPIO_WritePin(GNSS_RSTN_GPIO_Port, GNSS_RSTN_Pin, GPIO_PIN_SET);
 }
 
-etl::expected<void, ErrorFromGNSS> GNSSTask::controlGNSSwithACK(GNSSMessage gnssMessageToSend) {
+etl::expected<status, Error> GNSSTask::controlGNSSwithACK(GNSSMessage gnssMessageToSend) {
     control = 1;
     // This is actually useful for the very first command because for an unknown reason does not return ACK
     constexpr uint8_t maxRetries = 3;
+
+    // Initialize error to indicate no error initially
+    Error currentError = Error::Timeout;
+    status currentStatus = status::ERROR;
+
     // Try up to maxRetries to receive an ACK/NACK
     for (uint8_t attempt = 0; attempt < maxRetries; attempt++) {
         if (HAL_UART_Transmit(&huart5, gnssMessageToSend.messageBody.data(), gnssMessageToSend.messageBody.size(), 1000) != HAL_OK) {
             LOG_ERROR << "Transmission failed";
-            return etl::unexpected(ErrorFromGNSS::TransmissionFailed); // Return TransmissionFailed error
+            currentError = Error::TransmissionFailed;
+            currentStatus = status::ERROR;
         }
-        if (xSemaphoreTake(gnss_ack_handler.GNSS_ACK_SEMAPHORE, pdMS_TO_TICKS(gnss_ack_handler.TIMEOUT)) == pdTRUE) {
-            LOG_DEBUG << "GNSS ACK received!";
-            xSemaphoreGive(gnss_ack_handler.GNSS_ACK_SEMAPHORE);
-            return {};
+        uint32_t received_events;
+        if (xTaskNotifyWaitIndexed(GNSS_INDEX_ACK, pdFALSE, pdTRUE, &received_events, pdMS_TO_TICKS(500)) == pdTRUE) {
+            LOG_DEBUG << "Received GNSS ACK";
+            currentStatus = status::OK;
+            currentError = Error::Noerror;
+            break;
         }
     }
-    LOG_ERROR << "Timeout waiting for CAN ACK after maximum tries";
-    return etl::unexpected(ErrorFromGNSS::Timeout);
+    // Log and return based on final error state
+    if (currentError == Error::Noerror) {
+        currentStatus = status::OK;
+        return currentStatus; // Success
+    }
+
+    LOG_ERROR << "Operation failed with error: " << static_cast<int>(currentError);
+    return currentStatus;
 }
 
 
@@ -200,16 +215,16 @@ void GNSSTask::initQueuesToAcceptPointers() {
 
 [[noreturn]] void GNSSTask::execute() {
     rx_buf_pointer = rx_buf;
+    uint8_t* rx_buf_p_from_queue;
     startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
     initGNSS();
-    uint8_t* rx_buf_p_from_queue = nullptr;
     GNSSData compact{};
     int timeoutCounter = 0;
     Logger::format.precision(Precision);
     uint32_t receivedEvents = 0;
     while (true) {
         // you may have a counter that counts how many
-        if (xTaskNotifyWait(pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(MAXIMUM_INTERVAL)) == pdTRUE) {
+        if (xTaskNotifyWaitIndexed(GNSS_INDEX_MESSAGE, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(MAXIMUM_INTERVAL)) == pdTRUE) {
             if (receivedEvents & GNSS_MESSAGE_READY) {
                 // Receive a message on the created queue.Block for 100ms if the message is not immediately available
                 if (xQueueReceive(gnssQueueHandle, &rx_buf_p_from_queue, pdMS_TO_TICKS(100)) == pdTRUE) {
