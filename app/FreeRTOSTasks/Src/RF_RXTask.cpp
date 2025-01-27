@@ -140,7 +140,15 @@ void RF_RXTask::ensureRxMode() {
                         }
                         else {
                             LOG_ERROR << "[RX] TXFE NOT RECEIVED";
-                            // TODO: HANDLE THE DEADLOCK
+                            // DEADLOCK HANDLING
+                            transceiver.print_error(error);
+                            transceiver.print_state(RF09, error);
+                            transceiver.set_state(RF09, RF_TRXOFF, error);
+                            transceiver.chip_reset(error);
+                            transceiver.print_error(error);
+                            /
+                            transceiver.tx_ongoing = false;
+                            ensureRxMode();
                         }
                         break;
                     }
