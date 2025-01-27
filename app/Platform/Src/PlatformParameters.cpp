@@ -7,8 +7,8 @@
 
 void ParameterService::initializeParameterMap() {
     parameters = {
-        {PAYParameters::xID, PAYParameters::x},
-        {PAYParameters::yID, PAYParameters::y},
+        {PAYParameters::pointing_offset_xID, PAYParameters::pointing_offset_x},
+        {PAYParameters::pointing_offset_yID, PAYParameters::pointing_offset_y},
         {PAYParameters::zID, PAYParameters::z},
         {PAYParameters::uptimeID, PAYParameters::uptime},
         {PAYParameters::timeID, PAYParameters::time},
@@ -837,10 +837,22 @@ void ParameterService::initializeParameterMap() {
         {ADCSParameters::SunPointBodyVecYID, ADCSParameters::SunPointBodyVecY},
         {ADCSParameters::SunPointBodyVecZID, ADCSParameters::SunPointBodyVecZ},
         {ADCSParameters::ModelMagOrcXID, ADCSParameters::ModelMagOrcX},
-        {COMMSParameters::commsUHFBandPATemperatureID, COMMSParameters::commsUHFBandPATemperature},
-        {COMMSParameters::commsPCBTemperatureID, COMMSParameters::commsPCBTemperature},
-        {COMMSParameters::commsGNSSTemperatureID, COMMSParameters::commsGNSSTemperature},
-        {COMMSParameters::Antenna_Deployment_StatusID, COMMSParameters::Antenna_Deployment_Status},
-        {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}};
+        {COMMSParameters::uhf_power_amp_tempID, COMMSParameters::uhf_power_amp_temp},
+        {COMMSParameters::pcb_tempID, COMMSParameters::pcb_temp},
+        {COMMSParameters::gnss_tempID, COMMSParameters::gnss_temp},
+        {COMMSParameters::antenna_deployment_statusID, COMMSParameters::antenna_deployment_status},
+        {COMMSParameters::gnss_latID, COMMSParameters::gnss_lat},
+        {COMMSParameters::gnss_longID, COMMSParameters::gnss_long},
+        {COMMSParameters::gnss_altID, COMMSParameters::gnss_alt},
+        {COMMSParameters::gnss_timeID, COMMSParameters::gnss_time},
+        {COMMSParameters::gnss_ack_timeoutID, COMMSParameters::gnss_ack_timeout},
+        {COMMSParameters::gnss_cmd_retriesID, COMMSParameters::gnss_cmd_retries},
+        {COMMSParameters::gnss_error_timeoutID, COMMSParameters::gnss_error_timeout},
+        {COMMSParameters::error_timeout_cnt_thrhdID, COMMSParameters::error_timeout_cnt_thrhd},
+        {COMMSParameters::gnss_delay_cmdsID, COMMSParameters::gnss_delay_cmds},
+        {COMMSParameters::satellites_trackedID, COMMSParameters::satellites_tracked},
+        {COMMSParameters::gnss_fix_qualityID, COMMSParameters::gnss_fix_quality},
+        {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}
+    };
 }
 #endif

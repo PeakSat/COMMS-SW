@@ -8,6 +8,9 @@
 #include "stm32h7xx_hal.h"
 #include <etl/expected.h>
 #include "minmea.h"
+#include "PlatformParameters.hpp"
+#include "ParameterService.hpp"
+
 
 
 #define printing_frequency 1
@@ -95,7 +98,7 @@ public:
      uint8_t SIZE_ID_LENGTH = 9;
      uint8_t SIZE_SUB_ID_LENGTH = 10;
      uint16_t ACK_TIMOUT_MS = 500;
-     uint8_t DELAY_BTW_CMDS_MS = 200;
+     uint16_t DELAY_BTW_CMDS_MS = 200;
      uint8_t CMD_RETRIES = 3;
      uint16_t ERROR_TIMEOUT_MS = 20000;
      uint8_t ERROR_TIMEOUT_COUNTER_THRD = 5;

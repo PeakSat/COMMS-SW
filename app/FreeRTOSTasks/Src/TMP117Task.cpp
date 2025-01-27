@@ -54,13 +54,13 @@ void TemperatureSensorsTask::execute() {
             if (temperature.first == TMP117::Error::NoErrors) {
                 // LOG_DEBUG << "Temperature at " << s.sensorName.data() << ": " << temperature.second;
                 if (s.sensorName == "PCB") {
-                    COMMSParameters::commsPCBTemperature.setValue(temperature.second);
+                    COMMSParameters::pcb_temp.setValue(temperature.second);
                 }
                 else if (s.sensorName == "PA") {
-                    COMMSParameters::commsUHFBandPATemperature.setValue(temperature.second);
+                    COMMSParameters::uhf_power_amp_temp.setValue(temperature.second);
                 }
                 else if (s.sensorName == "GNSS") {
-                    COMMSParameters::commsGNSSTemperature.setValue(temperature.second);
+                    COMMSParameters::gnss_temp.setValue(temperature.second);
                 }
             } else {
                 LOG_ERROR << "Could not get temperature at " << s.sensorName.data() << ". Error: "

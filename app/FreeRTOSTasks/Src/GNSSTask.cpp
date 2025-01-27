@@ -18,8 +18,10 @@ void GNSSTask::printing(uint8_t* buf) {
 
 void GNSSTask::GNSSprint(const GNSSData& c) {
     LOG_INFO << "---------RMC---------";
-    LOG_INFO << "latitude " << c.latitudeI;
-    LOG_INFO << "longitude " << c.longitudeI;
+    // LOG_INFO << "latitude " << c.latitudeI;
+    // LOG_INFO << "longitude " << c.longitudeI;
+    LOG_INFO << "latitude " << COMMSParameters::gnss_lat.getValue();
+    LOG_INFO << "longitude " << COMMSParameters::gnss_long.getValue();
     LOG_INFO << "year: " << c.year;
     LOG_INFO << "month: " << c.month;
     LOG_INFO << "day: " << c.day;
@@ -31,9 +33,12 @@ void GNSSTask::GNSSprint(const GNSSData& c) {
     LOG_INFO << "speed over ground[km/s] " << c.speed;
     LOG_INFO << "course over ground[deg] " << c.course;
     LOG_INFO << "---------GGA---------";
-    LOG_INFO << "altitude " << c.altitudeI;
-    LOG_INFO << "quality indicator " << c.fix_quality;
-    LOG_INFO << "satellites tracked " << c.satellites_tracked;
+    // LOG_INFO << "altitude " << c.altitudeI;
+    LOG_INFO << "altitude " << COMMSParameters::gnss_alt.getValue();
+    // LOG_INFO << "quality indicator " << c.fix_quality;
+    LOG_INFO << "quality indicator " << COMMSParameters::gnss_fix_quality.getValue();
+    // LOG_INFO << "satellites tracked " << c.satellites_tracked;
+    LOG_INFO << "satellites tracked: " << COMMSParameters::satellites_tracked.getValue();
 }
 
 
@@ -43,10 +48,12 @@ void GNSSTask::setCompactGnssDataRMC(GNSSData& compact, const minmea_sentence_rm
     compact.latitudeD = convertToDecimalDegrees(compact.latitudeD);
     // convert to int
     compact.latitudeI = static_cast<int32_t>(10000000 * compact.latitudeD);
+    COMMSParameters::gnss_lat.setValue(compact.latitudeI);
     // longitude
     compact.longitudeD = static_cast<double>(frame_rmc.longitude.value) / 10000000.0;
     compact.longitudeD = convertToDecimalDegrees(compact.longitudeD);
     compact.longitudeI = static_cast<int32_t>(10000000 * compact.longitudeD);
+    COMMSParameters::gnss_long.setValue(compact.longitudeI);
     // date
     compact.year = static_cast<int8_t>(frame_rmc.date.year);
     compact.month = static_cast<int8_t>(frame_rmc.date.month);
@@ -69,10 +76,13 @@ void GNSSTask::setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gg
     compact.altitude = static_cast<double>(frame_gga.altitude.value) / 10.0f;
     // convert
     compact.altitudeI = static_cast<int32_t>(compact.altitude * 10);
+    COMMSParameters::gnss_alt.setValue(compact.altitudeI);
     // fix quality
     compact.fix_quality = static_cast<int8_t>(frame_gga.fix_quality);
+    COMMSParameters::gnss_fix_quality.setValue(compact.fix_quality);
     // satellites tracked
     compact.satellites_tracked = static_cast<int8_t>(frame_gga.satellites_tracked);
+    COMMSParameters::satellites_tracked.setValue(compact.satellites_tracked);
 }
 
 
@@ -209,6 +219,11 @@ void GNSSTask::initQueuesToAcceptPointers() {
 
 [[noreturn]] void GNSSTask::execute() {
     vTaskDelay(10000);
+    COMMSParameters::gnss_ack_timeout.setValue(gnss_handler.ACK_TIMOUT_MS);
+    COMMSParameters::gnss_cmd_retries.setValue(gnss_handler.CMD_RETRIES);
+    COMMSParameters::gnss_delay_cmds.setValue(gnss_handler.DELAY_BTW_CMDS_MS);
+    COMMSParameters::gnss_error_timeout.setValue(gnss_handler.ERROR_TIMEOUT_MS);
+    COMMSParameters::error_timeout_cnt_thrhd.setValue(gnss_handler.ERROR_TIMEOUT_COUNTER_THRD);
     rx_buf_pointer = rx_buf;
     uint8_t* rx_buf_p_from_queue;
     startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
