@@ -146,7 +146,6 @@ void RF_RXTask::ensureRxMode() {
                             transceiver.set_state(RF09, RF_TRXOFF, error);
                             transceiver.chip_reset(error);
                             transceiver.print_error(error);
-                            /
                             transceiver.tx_ongoing = false;
                             ensureRxMode();
                         }
