@@ -97,7 +97,7 @@ public:
      uint16_t ACK_TIMOUT_MS = 500;
      uint8_t DELAY_BTW_CMDS_MS = 200;
      uint8_t CMD_RETRIES = 3;
-     uint16_t ERROR_TIMEOUT_MS = 10000;
+     uint16_t ERROR_TIMEOUT_MS = 20000;
      uint8_t ERROR_TIMEOUT_COUNTER_THRD = 5;
    };
 
