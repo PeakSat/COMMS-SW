@@ -208,6 +208,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
 }
 
 [[noreturn]] void GNSSTask::execute() {
+    vTaskDelay(10000);
     rx_buf_pointer = rx_buf;
     uint8_t* rx_buf_p_from_queue;
     startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
