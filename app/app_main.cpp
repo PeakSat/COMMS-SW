@@ -43,24 +43,20 @@ void app_main(void) {
     rf_txtask.emplace();
     eMMCTask.emplace();
     gnssTask.emplace();
-
-
     ina3221Task.emplace();
-    canGatekeeperTask.emplace();
+    // canGatekeeperTask.emplace();
     tmp117Task.emplace();
-    canTestTask.emplace();
+    // canTestTask.emplace();
+
     uartGatekeeperTask->createTask();
     rf_rxtask->createTask();
     rf_txtask->createTask();
-    // Ensure task handle is valid
-
-
     eMMCTask->createTask();
     gnssTask->createTask();
     ina3221Task->createTask();
-    canGatekeeperTask->createTask();
+    // canGatekeeperTask->createTask();
     tmp117Task->createTask();
-    canTestTask->createTask();
+    // canTestTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     TransceiverHandler::initialize_semaphore();
@@ -155,24 +151,21 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     xHigherPriorityTaskWoken = pdFALSE;
     if (huart->Instance == UART5) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
-            // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
             // Size = 9 have the messages with main ID and Size = 10 have the messages with Sub ID
-            if (gnssTask->control && (Size == 9 || Size == 10)) {
-                gnssTask->size_response = Size;
-                gnssTask->sendToQueueResponse = huart5.pRxBuffPtr;
-                xQueueSendFromISR(gnssTask->gnssQueueHandleGNSSResponse, &gnssTask->sendToQueueResponse, &xHigherPriorityTaskWoken);
-                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_RESPONSE, eSetBits, &xHigherPriorityTaskWoken);
+            if (gnssTask->gnss_handler.CONTROL && (Size == gnssTask->gnss_handler.SIZE_ID_LENGTH || Size == gnssTask->gnss_handler.SIZE_SUB_ID_LENGTH)) {
+                gnssTask->gnss_handler.CONTROL = false;
+                if (huart5.pRxBuffPtr[4] == gnssTask->gnss_handler.ACK)
+                    xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_ACK, GNSS_ACK, eSetBits, &xHigherPriorityTaskWoken);
             } else {
                 gnssTask->size_message = Size;
                 gnssTask->sendToQueue = huart5.pRxBuffPtr;
-                xQueueSendFromISR(gnssTask->gnssQueueHandleDefault, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
-                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
+                xHigherPriorityTaskWoken = pdFALSE;
+                xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_MESSAGE, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
+                xQueueSendFromISR(gnssTask->gnssQueueHandle, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
             }
-            // Perform a context switch if a higher-priority task was woken up by the notification
-            // portYIELD_FROM_ISR will yield the processor to the higher-priority task immediately if xHigherPriorityTaskWoken is pdTRUE
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            // restart the DMA //
-            gnssTask->startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
         }
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
     }
 }
+
