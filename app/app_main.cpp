@@ -39,9 +39,9 @@ void app_main(void) {
     transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());
 
     uartGatekeeperTask.emplace();
-    // rf_rxtask.emplace();
-    // rf_txtask.emplace();
-    // eMMCTask.emplace();
+    rf_rxtask.emplace();
+    rf_txtask.emplace();
+    eMMCTask.emplace();
     gnssTask.emplace();
     ina3221Task.emplace();
     // canGatekeeperTask.emplace();
@@ -49,11 +49,11 @@ void app_main(void) {
     // canTestTask.emplace();
 
     uartGatekeeperTask->createTask();
-    // rf_rxtask->createTask();
-    // rf_txtask->createTask();
-    // eMMCTask->createTask();
+    rf_rxtask->createTask();
+    rf_txtask->createTask();
+    eMMCTask->createTask();
     gnssTask->createTask();
-    // ina3221Task->createTask();
+    ina3221Task->createTask();
     // canGatekeeperTask->createTask();
     tmp117Task->createTask();
     // canTestTask->createTask();
