@@ -14,22 +14,26 @@ void CANTestTask::execute() {
     for (uint8_t idx = 0; idx < CAN::MaxPayloadLength; idx++) {
         message.push_back(idx);
     }
-    String<ECSSMaxMessageSize> testPayload1("CAN1 SAYS: SPONGEBOB SQUAREPANTS! ");
+    String<ECSSMaxMessageSize> testPayload1("ccccccccccccccccccccccccccccccccc");
 
-    String<ECSSMaxMessageSize> testPayload2("CAN2 SAYS: WHO LET THE DOGS OUT!?");
+    String<ECSSMaxMessageSize> testPayload2("d");
+
     CAN::ActiveBus activeBus = CAN::ActiveBus::Redundant;
+    int counter = 0;
     while (true) {
-        // if (activeBus == CAN::ActiveBus::Redundant) {
-        //     activeBus = CAN::ActiveBus::Main;
-        //     canGatekeeperTask->switchActiveBus(activeBus);
-        //     CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
-        //     LOG_DEBUG << "REDUNDANT CAN is sending";
-        // } else {
-        //     activeBus = CAN::ActiveBus::Redundant;
-        //     canGatekeeperTask->switchActiveBus(activeBus);
-        //     CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
-        //     LOG_DEBUG << "MAIN CAN is sending";
-        // }
+        if (counter == 0) {
+            counter = 1;
+            // CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
+            CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
+
+            LOG_DEBUG << "REDUNDANT CAN is sending";
+        } else {
+            counter = 0;
+            // CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
+            CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
+
+            LOG_DEBUG << "MAIN CAN is sending";
+        }
         while (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue)) {
             CAN::StoredPacket StoredPacket;
             xQueueReceive(canGatekeeperTask->storedPacketQueue, &StoredPacket, portMAX_DELAY);

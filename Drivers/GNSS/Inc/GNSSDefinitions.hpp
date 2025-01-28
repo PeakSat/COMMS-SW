@@ -1,22 +1,28 @@
 #pragma once
 #include "etl/vector.h"
-
-// Define event bit masks
-// Event Bit for responses of GNSS to control messages
-#define GNSS_RESPONSE (1 << 0)
-// Event Bit for knowing when a whole GNSS message is ready to be parsed
+// Task notification defines
+// flags
+#define GNSS_ACK (1 << 0)
 #define GNSS_MESSAGE_READY (1 << 1)
-// 255 SECONDS
-#define MAXIMUM_INTERVAL 255000
+// indexes
+#define GNSS_INDEX_MESSAGE 1
+#define GNSS_INDEX_ACK 2
+
 
 namespace GNSSDefinitions {
 
-    enum class ErrorFromGNSS {
+    enum class Error {
+        NoError,
         TransmissionFailed,
         Timeout,
         NACKReceived,
         MultipleCommandsFail
     };
+    enum class Status{
+        OK,
+        ERROR
+    };
+
 
     struct GNSSData {
         int32_t utc;
@@ -49,17 +55,17 @@ namespace GNSSDefinitions {
     };
 
 
-    inline const uint8_t GNSSQueueSize = 1;
+    inline constexpr uint8_t GNSSQueueSize = 1;
 
     /**
  * The maximum size for the data field of a GNSS Payload.
  */
-    inline const uint16_t GNSSPayloadSize = 1024;
+    inline constexpr uint16_t GNSSPayloadSize = 1024;
 
     /**
  * The maximum size for the data field of a GNSS Message.
  */
-    inline const uint16_t GNSSMessageSize = GNSSPayloadSize + 16;
+    inline constexpr uint16_t GNSSMessageSize = GNSSPayloadSize + 16;
 
     typedef etl::vector<uint8_t, GNSSPayloadSize> Payload;
 

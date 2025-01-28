@@ -42,31 +42,27 @@ void app_main(void) {
     uartGatekeeperTask.emplace();
     rf_rxtask.emplace();
     rf_txtask.emplace();
-    //    eMMCTask.emplace();
-    //    gnssTask.emplace();
-
-
-    //    ina3221Task.emplace();
-    //    canGatekeeperTask.emplace();
+    eMMCTask.emplace();
+    gnssTask.emplace();
+    ina3221Task.emplace();
+    // canGatekeeperTask.emplace();
     tmp117Task.emplace();
-    //    canTestTask.emplace();
+    // canTestTask.emplace();
+
     uartGatekeeperTask->createTask();
     rf_rxtask->createTask();
     rf_txtask->createTask();
-    // Ensure task handle is valid
-
-
-    //    eMMCTask->createTask();
-    //    gnssTask->createTask();
-    //    ina3221Task->createTask();
-    //    canGatekeeperTask->createTask();
+    eMMCTask->createTask();
+    gnssTask->createTask();
+    ina3221Task->createTask();
+    // canGatekeeperTask->createTask();
     tmp117Task->createTask();
-    //    canTestTask->createTask();
+    // canTestTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+    //    canTestTask->createTask();
 
 
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
-
     transceiver_handler.initialize_semaphore();
     /* Start the scheduler. */
 
@@ -103,44 +99,6 @@ extern "C" [[maybe_unused]] void HAL_MMC_AbortCallback(MMC_HandleTypeDef* hmmc) 
     // __NOP();
 }
 
-/**
-  * probably wont need this
-  */
-extern "C" void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo1ITs) {
-    // BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    //
-    // __NOP();
-    //
-    //
-    //
-    // if ((RxFifo1ITs & FDCAN_IT_RX_FIFO1_NEW_MESSAGE) != RESET) {
-    //     /* Retreive Rx messages from RX FIFO1 */
-    //     if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO1, &CAN::rxHeader1, CAN::rxFifo1.data()) != HAL_OK) {
-    //         /* Reception Error */
-    //         Error_Handler();
-    //     }
-    //     //        canGatekeeperTask->switchActiveBus(CAN::Redundant);
-    //     CAN::rxFifo1.repair();
-    //     CAN::Packet newFrame = CAN::getFrame(&CAN::rxFifo1, CAN::rxHeader1.Identifier);
-    //     if (CAN::rxFifo0[0] >> 6 == CAN::TPProtocol::Frame::Single) {
-    //         canGatekeeperTask->addSFToIncoming(newFrame);
-    //         xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
-    //
-    //     } else {
-    //         canGatekeeperTask->addMFToIncoming(newFrame);
-    //         if (CAN::rxFifo0[0] >> 6 == CAN::TPProtocol::Frame::Final) {
-    //             xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
-    //             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-    //         }
-    //     }
-    //
-    //     if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
-    //         /* Notification Error */
-    //         Error_Handler();
-    //     }
-    // }
-}
-
 extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
 
     if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
@@ -164,20 +122,24 @@ extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t 
             } else if (newFrame.bus->Instance == FDCAN2) {
                 __NOP();
             }
-        }
-        if (xQueueIsQueueFullFromISR(canGatekeeperTask->incomingFrameQueue)) {
-            // Queue is full. Handle the error
-            // todo
-            __NOP();
+        } else if (newFrame.header.Identifier == 0x380) {
+            if (xQueueIsQueueFullFromISR(canGatekeeperTask->incomingFrameQueue)) {
+                // Queue is full. Handle the error
+                // todo
+                __NOP();
+            } else {
+                // Send the data to the gatekeeper
+                incomingFIFO.lastItemPointer++;
+                BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+                xQueueSendToBackFromISR(canGatekeeperTask->incomingFrameQueue, &newFrame, NULL);
+                xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
+                portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+                __NOP();
+            }
         } else {
-            // Send the data to the gatekeeper
-            incomingFIFO.lastItemPointer++;
-            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            xQueueSendToBackFromISR(canGatekeeperTask->incomingFrameQueue, &newFrame, NULL);
-            xTaskNotifyFromISR(canGatekeeperTask->taskHandle, 0, eNoAction, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             __NOP();
         }
+
 
         // Re-activate the callback
         if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
@@ -193,24 +155,21 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     xHigherPriorityTaskWoken = pdFALSE;
     if (huart->Instance == UART5) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
-            // if xTaskNotifyFromISR() sets the value of xHigherPriorityTaskWoken TO pdTRUE then a context switch should be requested before the interrupt is exited.
             // Size = 9 have the messages with main ID and Size = 10 have the messages with Sub ID
-            if (gnssTask->control && (Size == 9 || Size == 10)) {
-                gnssTask->size_response = Size;
-                gnssTask->sendToQueueResponse = huart5.pRxBuffPtr;
-                xQueueSendFromISR(gnssTask->gnssQueueHandleGNSSResponse, &gnssTask->sendToQueueResponse, &xHigherPriorityTaskWoken);
-                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_RESPONSE, eSetBits, &xHigherPriorityTaskWoken);
+            if (gnssTask->gnss_handler.CONTROL && (Size == gnssTask->gnss_handler.SIZE_ID_LENGTH || Size == gnssTask->gnss_handler.SIZE_SUB_ID_LENGTH)) {
+                gnssTask->gnss_handler.CONTROL = false;
+                if (huart5.pRxBuffPtr[4] == gnssTask->gnss_handler.ACK)
+                    xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_ACK, GNSS_ACK, eSetBits, &xHigherPriorityTaskWoken);
             } else {
                 gnssTask->size_message = Size;
                 gnssTask->sendToQueue = huart5.pRxBuffPtr;
-                xQueueSendFromISR(gnssTask->gnssQueueHandleDefault, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
-                xTaskNotifyFromISR(gnssTask->taskHandle, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
+                xHigherPriorityTaskWoken = pdFALSE;
+                xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_MESSAGE, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
+                xQueueSendFromISR(gnssTask->gnssQueueHandle, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
             }
-            // Perform a context switch if a higher-priority task was woken up by the notification
-            // portYIELD_FROM_ISR will yield the processor to the higher-priority task immediately if xHigherPriorityTaskWoken is pdTRUE
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            // restart the DMA //
-            gnssTask->startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
         }
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
     }
 }
+

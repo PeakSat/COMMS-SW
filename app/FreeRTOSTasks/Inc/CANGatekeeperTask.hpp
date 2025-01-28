@@ -49,35 +49,7 @@ public:
      * Storage area given to freeRTOS to manage the queue items.
      */
     static inline uint8_t outgoingQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
-    /**
-     * A freeRTOS queue to handle incoming packetss part of a CAN-TP message, since they need to be parsed as a whole.
-     */
-    QueueHandle_t incomingSFQueue;
-    /**
-     * The variable used to hold the queue's data structure.
-     */
-    static inline StaticQueue_t incomingSFQueueBuffer;
-    /**
-     * Storage area given to freeRTOS to manage the queue items.
-     */
-    static inline uint8_t incomingSFQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
-    /**
-     * A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
-     */
-    QueueHandle_t incomingMFQueue;
-    /**
-     * The variable used to hold the queue's data structure.
-     */
-    static inline StaticQueue_t incomingMFQueueBuffer;
-
-    /**
-     * Storage area given to freeRTOS to manage the queue items.
-     */
-    static inline uint8_t incomingMFQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
-
-
-    /**
- * A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
+    /* A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
  */
     QueueHandle_t incomingFrameQueue;
     /**
@@ -105,7 +77,7 @@ public:
    */
     static inline uint8_t storedPacketQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)];
 
-    const static inline uint16_t TaskStackDepth = 6000;
+    const static inline uint16_t TaskStackDepth = 7000;
 
     StackType_t taskStack[TaskStackDepth];
 
@@ -164,7 +136,6 @@ public:
     inline void addSFToIncoming(const CAN::Packet& message) {
         BaseType_t taskShouldYield = pdFALSE;
 
-        xQueueSendToBackFromISR(incomingSFQueue, &message, &taskShouldYield);
 
         if (taskShouldYield) {
             taskYIELD();
@@ -183,68 +154,16 @@ public:
     inline void addMFToIncoming(const CAN::Packet& message) {
         BaseType_t taskShouldYield = pdFALSE;
 
-        xQueueSendToBackFromISR(incomingMFQueue, &message, &taskShouldYield);
 
         if (taskShouldYield) {
             taskYIELD();
         }
     }
 
-    /**
-     * An abstraction layer over the freeRTOS queue API to get the number of messages in the incoming queue.
-     * @return The number of messages in the queue.
-     */
-    inline uint8_t getIncomingSFMessagesCount() {
-        return uxQueueMessagesWaiting(incomingSFQueue);
-    }
-
-    /**
-     * An abstraction layer over the freeRTOS queue API to get the number of messages in the incoming queue.
-     * @return The number of messages in the queue.
-     */
-    inline uint8_t getIncomingMFMessagesCount() {
-        return uxQueueMessagesWaiting(incomingMFQueue);
-    }
-
-    /**
-     * Receives a CAN::Packet from the CAN Gatekeeper's incoming queue.
-     *
-     * This function was added as an extra abstraction layer to house the `xQueueReceive` function.
-     * It can be used from anywhere in the code to get access to the CAN queue/CAN Gatekeeper task, without having to
-     * know the low level details of the queue.
-     *
-     * If the queue is empty, the returned message is empty.
-     */
-    inline CAN::Packet getFromSFQueue() {
-        CAN::Packet message;
-        xQueueReceive(incomingSFQueue, &message, 0);
-        return message;
-    }
-
     inline void switchActiveBus(CAN::ActiveBus activeBus) {
         this->ActiveBus = activeBus;
     }
 
-
-    /**
-     * Deletes all items present in the incoming queue.
-     */
-    void emptyIncomingSFQueue() {
-        xQueueReset(incomingSFQueue);
-    }
-
-    inline CAN::Packet getFromMFQueue() {
-        CAN::Packet message;
-        xQueueReceive(incomingMFQueue, &message, 0);
-        return message;
-    }
-
-    /**
-     * Deletes all items present in the incoming queue.
-     */
-    void emptyIncomingMFQueue() {
-        xQueueReset(incomingMFQueue);
-    }
 
     void createTask() {
         taskHandle = xTaskCreateStatic(vClassTask<CANGatekeeperTask>, this->TaskName, CANGatekeeperTask::TaskStackDepth, this,
