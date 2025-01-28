@@ -7,20 +7,39 @@
 #include <utility>
 #include <cstdint>
 #include <etl/expected.h>
+#include "Logger.hpp"
 
 
 const uint16_t TIMEOUT = 1000;
 typedef struct __SPI_HandleTypeDef SPI_HandleTypeDef;
 extern SPI_HandleTypeDef hspi4;
-
 namespace AT86RF215 {
-
     class TransceiverHandler {
     public:
-        static SemaphoreHandle_t transceiver_semaphore;
-        static void initialize_semaphore() {
-            transceiver_semaphore = xSemaphoreCreateMutex();
+        SemaphoreHandle_t resources_mtx = nullptr;
+        StaticSemaphore_t mtx_buf = {};
+        uint16_t RX_REFRESH_PERIOD_MS = 50;
+        uint16_t BEACON_PERIOD_MS = 5000;
+        void initialize_semaphore();
+    };
+
+    inline void TransceiverHandler::initialize_semaphore() {
+        resources_mtx = xSemaphoreCreateMutexStatic(&mtx_buf);
+        if (resources_mtx == nullptr) {
+            LOG_ERROR << "Failed to create semaphore";
         }
+    }
+
+    // rf_state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing)
+    enum RF_STATE {
+        // rx_ongoing = false, tx_ongoing = false
+        READY = 0,
+        // rx_ongoing = false, tx_ongoing = true
+        TX_ONG = 1,
+        // rx_ongoing = true, tx_ongoing = false
+        RX_ONG = 2,
+        // rx_ongoing = true, tx_ongoing = true
+        RX_TX_ONG = 3,
     };
 
 
@@ -454,7 +473,10 @@ namespace AT86RF215 {
          * @param err				Pointer to raised error
          */
         uint8_t get_ed_average_detection(Transceiver transceiver, Error& err);
-        int8_t get_receiver_energy_detection(Transceiver transceiver, Error& err);
+        /*
+         * Read RSSI reg
+         */
+        int8_t get_rssi(Transceiver transceiver, Error& err);
 
         /*
          * Get transceiver battery monitor status
@@ -701,9 +723,11 @@ namespace AT86RF215 {
         etl::expected<uint16_t, Error> get_received_length(Transceiver transceiver, Error& err);
         etl::expected<void, Error> check_transceiver_connection(Error& err);
         void packetReception(Transceiver transceiver, Error& err);
+        void print_state(Transceiver transceiver, Error& err);
+        void print_error(Error& err);
         uint8_t received_packet[2047];
         /// Radio interrupts
-        bool IFSynchronization_flag, TransceiverError_flag, EnergyDetectionCompletion_flag, TransceiverReady_flag, Wakeup_flag = false;
+        bool IFSynchronization_flag, TransceiverError_flag, EnergyDetectionCompletion_flag, TransceiverReady_flag, Wakeup_flag, Voltage_Drop = false;
 
         /// Baseband Core Interrupts
         bool FrameBufferLevelIndication_flag, AGCRelease_flag, AGCHold_flag, TransmitterFrameEnd_flag, ReceiverExtendMatch_flag, ReceiverAddressMatch_flag, ReceiverFrameEnd_flag, ReceiverFrameStart_flag = false;
@@ -716,6 +740,8 @@ namespace AT86RF215 {
     };
 
     extern At86rf215 transceiver;
+    extern TransceiverHandler transceiver_handler;
+
 
 
 } // namespace AT86RF215
