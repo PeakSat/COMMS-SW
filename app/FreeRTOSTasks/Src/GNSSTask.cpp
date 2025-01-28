@@ -208,6 +208,8 @@ void GNSSTask::initQueuesToAcceptPointers() {
 }
 
 [[noreturn]] void GNSSTask::execute() {
+    vTaskDelay(5000);
+    HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     rx_buf_pointer = rx_buf;
     uint8_t* rx_buf_p_from_queue;
     startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
