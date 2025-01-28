@@ -48,7 +48,6 @@ struct eMMCTransactionHandler {
     uint32_t getSemaphoreTimeout = 1000;       // ms
 };
 
-  void vTimerCallback( TimerHandle_t pxTimer );
   extern eMMCTransactionHandler eMMCTransactionHandler;
 
 
