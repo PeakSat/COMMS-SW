@@ -96,6 +96,8 @@ void RF_RXTask::ensureRxMode() {
     uint32_t receivedEvents;
     State trx_state;
     ensureRxMode();
+    uint32_t rx_total_packets = 0;
+    uint32_t rx_total_drop_packets = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
             if (receivedEvents & AGC_HOLD) {
@@ -105,11 +107,15 @@ void RF_RXTask::ensureRxMode() {
                     if (received_length == 1024) {
                         current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
                         LOG_DEBUG << "[RX] c: " << current_counter;
+                        rx_total_packets++;
+                        LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                         drop_counter = 0;
                     }
                     else {
                         drop_counter++;
+                        rx_total_drop_packets++;
                         LOG_DEBUG << "[RX DROP] c: " << drop_counter;
+                        LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
                     }
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
