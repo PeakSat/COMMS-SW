@@ -46,6 +46,7 @@ void app_main(void) {
     rf_txtask.emplace();
     eMMCTask.emplace();
     gnssTask.emplace();
+    testTask.emplace();
     // ina3221Task.emplace();
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
