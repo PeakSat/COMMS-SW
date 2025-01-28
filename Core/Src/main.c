@@ -78,7 +78,7 @@ static void MX_FDCAN2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void app_main(void);
 /* USER CODE END 0 */
 
 /**

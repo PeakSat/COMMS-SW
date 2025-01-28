@@ -21,10 +21,12 @@
 #include "RF_RXTask.hpp"
 #include "git_version.h"
 #include <ServicePool.hpp>
+#include "at86rf215.hpp"
 
 ParameterService parameterMap;
 
 void app_main(void) {
+
     eMMC::eMMCMemoryInit();
     if (eMMC::memoryMap[eMMC::firmware].endAddress != 0) {
         __NOP();
@@ -44,8 +46,6 @@ void app_main(void) {
     rf_txtask.emplace();
     eMMCTask.emplace();
     gnssTask.emplace();
-
-
     // ina3221Task.emplace();
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
@@ -54,10 +54,6 @@ void app_main(void) {
     uartGatekeeperTask->createTask();
     rf_rxtask->createTask();
     rf_txtask->createTask();
-    testTask.emplace();
-    // Ensure task handle is valid
-
-
     eMMCTask->createTask();
     gnssTask->createTask();
     testTask->createTask();
@@ -67,12 +63,10 @@ void app_main(void) {
     canParserTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
-    TransceiverHandler::initialize_semaphore();
-
+    /* Start the scheduler. */
     can_ack_handler.initialize_semaphore();
     CAN_TRANSMIT_Handler.initialize_semaphore();
-
-    /* Start the scheduler. */
+    transceiver_handler.initialize_semaphore();
 
     vTaskStartScheduler();
 
@@ -180,3 +174,4 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
         GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
     }
 }
+
