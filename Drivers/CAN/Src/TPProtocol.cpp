@@ -49,6 +49,7 @@ void TPProtocol::parseMessage(TPMessage& message) {
             // CAN::Application::parseTCMessage(message);
             break;
         case CAN::Application::CCSDSPacket:
+            __NOP();
             break; //todo send this to comms? idk
         case CAN::Application::Ping: {
             auto senderID = static_cast<CAN::NodeIDs>(message.idInfo.sourceAddress);
@@ -71,7 +72,7 @@ void TPProtocol::parseMessage(TPMessage& message) {
             LOG_DEBUG << logSource.c_str() << logData.c_str();
         } break;
         default:
-            // ErrorHandler::reportInternalError(ErrorHandler::UnknownMessageType);
+            ErrorHandler::reportInternalError(ErrorHandler::UnknownMessageType);
             break;
     }
 }
@@ -157,7 +158,6 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         uint8_t secondByte = messageSize & 0xFF;
 
         etl::array<uint8_t, CAN::MaxPayloadLength> firstFrame = {firstByte, secondByte};
-        LOG_DEBUG << "First Frame";
         canGatekeeperTask->send({id, firstFrame}, false);
     }
 
@@ -167,7 +167,6 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
          currentConsecutiveFrameCount <= totalConsecutiveFramesNeeded; currentConsecutiveFrameCount++) {
         uint8_t firstByte = (Consecutive << 6);
         if (currentConsecutiveFrameCount == totalConsecutiveFramesNeeded) {
-            LOG_DEBUG << "Final Frame";
             firstByte = (Final << 6);
         }
         etl::array<uint8_t, CAN::MaxPayloadLength> consecutiveFrame = {firstByte};
@@ -181,7 +180,6 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
             vTaskDelay(1);
         }
         canGatekeeperTask->send({id, consecutiveFrame}, isISR);
-        LOG_DEBUG << "Sending CAN packet";
         xTaskNotifyGive(canGatekeeperTask->taskHandle);
     }
     if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(can_ack_handler.TIMEOUT)) == pdTRUE) {

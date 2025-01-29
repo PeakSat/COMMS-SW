@@ -6,7 +6,9 @@
 #include <eMMC.hpp>
 
 void CANParserTask::execute() {
-
+    outgoingTMQueue = xQueueCreateStatic(TMQueueSize, sizeof(CAN::StoredPacket), outgoingTMQueueStorageArea,
+                                         &outgoingTMQueueBuffer);
+    vQueueAddToRegistry(outgoingTMQueue, "CAN TM queue");
     // CAN::CANBuffer_t message = {};
     // /**
     //  * Simple 64 byte message sending
@@ -41,22 +43,29 @@ void CANParserTask::execute() {
                 CAN::Application::getStoredMessage(&StoredPacket, messageBuff, StoredPacket.size, sizeof(messageBuff) / sizeof(messageBuff[0]));
                 LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << StoredPacket.size;
 
-                // parse
-                CAN::TPMessage message;
-                message.appendUint8(StoredPacket.Identifier);
-                for (int i = 0; i < StoredPacket.size; i++) {
-                    message.appendUint8(messageBuff[i]);
-                }
-                message.idInfo.sourceAddress = CAN::OBC;
-                uint32_t start = xTaskGetTickCount();
-                CAN::TPProtocol::parseMessage(message);
-
-
                 //Send ACK
                 CAN::TPMessage ACKmessage = {{CAN::NodeID, CAN::NodeIDs::OBC, false}};
                 ACKmessage.appendUint8(CAN::Application::MessageIDs::ACK);
                 CAN::TPProtocol::createCANTPMessageNoRetransmit(ACKmessage, false);
                 xTaskNotifyGive(canGatekeeperTask->taskHandle);
+
+                // parse
+
+                uint8_t messageID = static_cast<CAN::Application::MessageIDs>(StoredPacket.Identifier);
+                if (messageID == CAN::Application::CCSDSPacket) {
+                    CAN::StoredPacket TMMessage;
+                    xQueueSendToBack(outgoingTMQueue, &TMMessage, NULL);
+                    LOG_DEBUG << "New TM received: " << TMMessage.size;
+                } else {
+                    CAN::TPMessage message;
+                    message.appendUint8(StoredPacket.Identifier);
+                    for (int i = 0; i < StoredPacket.size; i++) {
+                        message.appendUint8(messageBuff[i]);
+                    }
+                    message.idInfo.sourceAddress = CAN::OBC;
+                    CAN::TPProtocol::parseMessage(message);
+                }
+
             } else {
                 LOG_DEBUG << "Old message discarded";
             }
