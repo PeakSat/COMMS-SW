@@ -837,10 +837,19 @@ void ParameterService::initializeParameterMap() {
         {ADCSParameters::SunPointBodyVecYID, ADCSParameters::SunPointBodyVecY},
         {ADCSParameters::SunPointBodyVecZID, ADCSParameters::SunPointBodyVecZ},
         {ADCSParameters::ModelMagOrcXID, ADCSParameters::ModelMagOrcX},
+        {ADCSParameters::ModelMagOrcYID, ADCSParameters::ModelMagOrcY},
+        {ADCSParameters::ModelMagOrcZID, ADCSParameters::ModelMagOrcZ},
+        {ADCSParameters::ModelSunOrcXID, ADCSParameters::ModelSunOrcX},
+        {ADCSParameters::ModelSunOrcYID, ADCSParameters::ModelSunOrcY},
+        {ADCSParameters::ModelSunOrcZID, ADCSParameters::ModelSunOrcZ},
         {COMMSParameters::uhf_power_amp_tempID, COMMSParameters::uhf_power_amp_temp},
         {COMMSParameters::pcb_tempID, COMMSParameters::pcb_temp},
         {COMMSParameters::gnss_tempID, COMMSParameters::gnss_temp},
         {COMMSParameters::antenna_deployment_statusID, COMMSParameters::antenna_deployment_status},
+        {COMMSParameters::cw_intervalID, COMMSParameters::cw_interval},
+        {COMMSParameters::bfsk_beacon_intervalID, COMMSParameters::bfsk_beacon_interval},
+        {COMMSParameters::uhf_tx_powerID, COMMSParameters::uhf_tx_power},
+        {COMMSParameters::rssiID, COMMSParameters::rssi},
         {COMMSParameters::gnss_latID, COMMSParameters::gnss_lat},
         {COMMSParameters::gnss_longID, COMMSParameters::gnss_long},
         {COMMSParameters::gnss_altID, COMMSParameters::gnss_alt},
@@ -852,7 +861,6 @@ void ParameterService::initializeParameterMap() {
         {COMMSParameters::gnss_delay_cmdsID, COMMSParameters::gnss_delay_cmds},
         {COMMSParameters::satellites_trackedID, COMMSParameters::satellites_tracked},
         {COMMSParameters::gnss_fix_qualityID, COMMSParameters::gnss_fix_quality},
-        {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}
-    };
+        {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}};
 }
 #endif
