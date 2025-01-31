@@ -1,0 +1,3 @@
+[submodule "Lib/ECSS-Services"]
+	path = Lib/ECSS-Services
+	url = git@github.com:PeakSat/ECSS-Services.git

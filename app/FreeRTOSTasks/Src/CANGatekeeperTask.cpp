@@ -1,14 +1,19 @@
 // #pragma once
 #include "CANDriver.hpp"
 #include "CANGatekeeperTask.hpp"
+#include "CANParserTask.hpp"
 #include "TPProtocol.hpp"
 #include "Logger.hpp"
 #include "queue.h"
 #include "eMMC.hpp"
 #include <ApplicationLayer.hpp>
-// #include "CANDriver.cpp"
-struct incomingFIFO incomingFIFO;
-uint8_t incomingBuffer[CANMessageSize * sizeOfIncommingFrameBuffer];
+#include <TestTask.hpp>
+
+struct incomingFIFO incomingFIFO __attribute__((section(".dtcmram_data")));
+uint8_t incomingBuffer[CANMessageSize * sizeOfIncommingFrameBuffer] __attribute__((section(".dtcmram_data")));
+struct localPacketHandler CAN1PacketHandler __attribute__((section(".dtcmram_data")));
+struct localPacketHandler CAN2PacketHandler __attribute__((section(".dtcmram_data")));
+
 
 CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
     CAN::initialize(0);
@@ -26,6 +31,7 @@ CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
                                             &incomingFrameQueueBuffer);
     vQueueAddToRegistry(incomingFrameQueue, "CAN Incoming Frame");
 
+
     storedPacketQueue = xQueueCreateStatic(128, sizeof(CAN::StoredPacket), storedPacketQueueStorageArea,
                                            &storedPacketQueueBuffer);
     vQueueAddToRegistry(storedPacketQueue, "CAN stored packet");
@@ -42,14 +48,6 @@ void CANGatekeeperTask::execute() {
 
     uint32_t ulNotifiedValue;
 
-    struct localPacketHandler {
-        uint8_t Buffer[1024];
-        uint32_t TailPointer = 0;
-        uint32_t PacketSize = 0;
-        uint8_t PacketID = 0;
-    };
-    struct localPacketHandler CAN1PacketHandler;
-    struct localPacketHandler CAN2PacketHandler;
 
     // Variables for Rx message processing/storing
     uint8_t localPacketBuffer[1024];
@@ -59,9 +57,13 @@ void CANGatekeeperTask::execute() {
     uint8_t currentMFPacketID = 0;
     uint32_t eMMCPacketTailPointer = 0;
     int j = 0;
+
+
     while (true) {
         // LOG_DEBUG << "{START OF" << this->TaskName << "}";
         xTaskNotifyWait(0, 0, &ulNotifiedValue, pdMS_TO_TICKS(1000));
+        //
+        // xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, portMAX_DELAY);
 
         while (uxQueueMessagesWaiting(incomingFrameQueue)) {
             if (eMMCPacketTailPointer + 2 > eMMC::memoryMap[eMMC::CANMessages].size / 512) {
@@ -85,15 +87,15 @@ void CANGatekeeperTask::execute() {
                 uint8_t payloadLength = metadata & 0x3F;
                 if (frameType == CAN::TPProtocol::Frame::Single) {
                     if (in_frame_handler.pointerToData[1] == CAN::Application::ACK) {
-                        CAN_TRANSMIT_Handler.ACKReceived = true;
+                        xSemaphoreGive(can_ack_handler.CAN_ACK_SEMAPHORE);
                     }
                     __NOP();
                 } else if (frameType == CAN::TPProtocol::Frame::First) {
-                    // debugCounter=0;
+                    // debugCounter = 0;
                     CANPacketHandler->PacketSize = payloadLength << 8;
                     CANPacketHandler->PacketSize = CANPacketHandler->PacketSize | in_frame_handler.pointerToData[1];
                     CANPacketHandler->PacketSize -= 1; //compensate for ID byte
-                    // currenConsecutiveFrameCounter=0;
+                    // currenConsecutiveFrameCounter = 0;
                     CANPacketHandler->TailPointer = 0;
                     __NOP();
                 } else if (frameType == CAN::TPProtocol::Frame::Consecutive) {
@@ -101,7 +103,6 @@ void CANGatekeeperTask::execute() {
                     uint8_t FrameNumber = in_frame_handler.pointerToData[1] - 1;
                     // Add frame to local buffer
                     __NOP();
-
                     for (uint32_t i = 0; i < (CAN::MaxPayloadLength - 2); i++) {
                         __NOP();
                         if (i + FrameNumber == 0) {
@@ -133,22 +134,6 @@ void CANGatekeeperTask::execute() {
                             }
                         }
 
-                        // Send ACK
-                        CAN::TPMessage ACKmessage = {{CAN::NodeID, CAN::NodeIDs::OBC, false}};
-
-                        ACKmessage.appendUint8(CAN::Application::MessageIDs::ACK);
-
-                        CAN::TPProtocol::createCANTPMessageNoRetransmit(ACKmessage, false);
-                        xTaskNotifyGive(canGatekeeperTask->taskHandle);
-
-                        // Parse message
-                        CAN::TPMessage message;
-                        message.appendUint8(CANPacketHandler->PacketID);
-                        for (int i = 0; i < CANPacketHandler->PacketSize; i++) {
-                            message.appendUint8(CANPacketHandler->Buffer[i]);
-                        }
-                        message.idInfo.sourceAddress = CAN::OBC;
-                        CAN::TPProtocol::parseMessage(message);
                         // Write message to eMMC
                         auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::CANMessages], &CANPacketHandler->Buffer[0], 1024, eMMCPacketTailPointer, 2);
                         // Add message to queue
@@ -166,6 +151,8 @@ void CANGatekeeperTask::execute() {
                         }
 
                         xQueueSendToBack(storedPacketQueue, &PacketToBeStored, NULL);
+                        xTaskNotifyGive(canParserTask->taskHandle);
+                        LOG_DEBUG << "message came at : " << xTaskGetTickCount();
                     } else {
                         // Message not received correctly
                         LOG_ERROR << "DROPPED CAN MESSAGE";

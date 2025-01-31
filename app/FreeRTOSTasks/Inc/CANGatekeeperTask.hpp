@@ -5,6 +5,12 @@
 #include "Logger.hpp"
 
 #include <optional>
+struct localPacketHandler {
+    uint8_t Buffer[1024];
+    uint32_t TailPointer = 0;
+    uint16_t PacketSize = 0;
+    uint8_t PacketID = 0;
+};
 /**
 * Every variable needed to control the incoming frames' fifo buffer
 * will be stored in this struct.
@@ -16,8 +22,12 @@ struct incomingFIFO {
     incomingFIFO() : buffer(nullptr), NOfItems(0), lastItemPointer(0) {}
     incomingFIFO(uint8_t* externalBuffer, uint32_t NOfItems) : buffer(externalBuffer), NOfItems(NOfItems), lastItemPointer(0) {}
 };
-extern incomingFIFO incomingFIFO;
 
+extern incomingFIFO incomingFIFO;
+static inline uint8_t storedPacketQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)] __attribute__((section(".dtcmram_data")));
+static inline uint8_t incomingFrameQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)] __attribute__((section(".dtcmram_data")));
+static const uint8_t PacketQueueSize = 20;
+static inline uint8_t outgoingQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)] __attribute__((section(".dtcmram_data")));
 
 /**
  * Contains functionality of a Gatekeeper Task for the CAN Bus. It has the sole access to CAN, to avoid any
@@ -44,11 +54,11 @@ public:
     /**
      * The maximum of the length of the queue for incoming/outgoing CAN Packets.
      */
-    static const uint8_t PacketQueueSize = 20;
+
     /**
      * Storage area given to freeRTOS to manage the queue items.
      */
-    static inline uint8_t outgoingQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)];
+
     /* A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
  */
     QueueHandle_t incomingFrameQueue;
@@ -60,7 +70,6 @@ public:
     /**
    * Storage area given to freeRTOS to manage the queue items.
    */
-    static inline uint8_t incomingFrameQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)];
 
 
     /**
@@ -75,7 +84,6 @@ public:
     /**
    * Storage area given to freeRTOS to manage the queue items.
    */
-    static inline uint8_t storedPacketQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)];
 
     const static inline uint16_t TaskStackDepth = 7000;
 
@@ -166,8 +174,8 @@ public:
 
 
     void createTask() {
-        taskHandle = xTaskCreateStatic(vClassTask<CANGatekeeperTask>, this->TaskName, CANGatekeeperTask::TaskStackDepth, this,
-                                       tskIDLE_PRIORITY + 2, this->taskStack, &(this->taskBuffer));
+        this->taskHandle = xTaskCreateStatic(vClassTask<CANGatekeeperTask>, this->TaskName, this->TaskStackDepth, this,
+                                             tskIDLE_PRIORITY + 3, this->taskStack, &(this->taskBuffer));
     }
 };
 

@@ -20,7 +20,7 @@ public:
     }
 
 private:
-    const static inline uint16_t DelayMs = 5000;
+    const static inline uint16_t DelayMs = 500;
     const static inline uint16_t TaskStackDepth = 2000;
     const static inline uint8_t LoggerPrecision = 2;
     const static uint8_t MaxErrorStringSize = 25;

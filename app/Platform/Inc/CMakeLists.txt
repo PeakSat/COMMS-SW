@@ -1,0 +1,2 @@
+add_library(platform_headers INTERFACE)
+target_include_directories(platform_headers INTERFACE .)

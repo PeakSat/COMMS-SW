@@ -5,10 +5,12 @@
 #include "etl/array.h"
 #include "etl/String.hpp"
 #include "Frame.hpp"
-#include "Logger_Definitions.hpp"
 #include "Message.hpp"
 #include "Peripheral_Definitions.hpp"
 #include "TPMessage.hpp"
+#include <ParameterService.hpp>
+
+extern ParameterService parameterMap;
 
 
 namespace CAN::Application {
@@ -34,7 +36,7 @@ namespace CAN::Application {
         EventReport = 0x10,
         TMPacket = 0x20,
         TCPacket = 0x23, // Changed because 21 is NACK in ascii
-        CCSDSPacket = 0x022,
+        CCSDSPacket = 0x22,
         Ping = 0x30,
         Pong = 0x31,
         LogMessage = 0x40,

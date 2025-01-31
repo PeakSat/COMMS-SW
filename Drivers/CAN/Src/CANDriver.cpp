@@ -11,6 +11,7 @@ using namespace CAN;
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
 
+
 void CAN::configCANFilter(uint32_t rx_fifo) {
     FDCAN_FilterTypeDef sFilterConfig1;
 

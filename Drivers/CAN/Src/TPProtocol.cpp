@@ -3,11 +3,13 @@
 #include "CANGatekeeperTask.hpp"
 #include "Peripheral_Definitions.hpp"
 #include <ApplicationLayer.hpp>
+#include <PlatformParameters.hpp>
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
 using namespace CAN;
 
 CANTransactionHandler CAN_TRANSMIT_Handler;
+CAN_ACK_HANDLER can_ack_handler;
 
 void TPProtocol::processSingleFrame(const CAN::Packet& message) {
     TPMessage tpMessage;
@@ -29,10 +31,12 @@ void TPProtocol::parseMessage(TPMessage& message) {
     uint8_t messageType = static_cast<Application::MessageIDs>(message.data[0]);
     switch (messageType) {
         case CAN::Application::SendParameters:
-            // CAN::Application::parseSendParametersMessage(message);
+
+            CAN::Application::parseSendParametersMessage(message);
             break;
         case CAN::Application::RequestParameters:
-            // CAN::Application::parseRequestParametersMessage(message);
+            OBDHParameters::debugCounter.setValue(OBDHParameters::debugCounter.getValue() + 1);
+            CAN::Application::parseRequestParametersMessage(message);
             break;
         case CAN::Application::PerformFunction:
             break; //todo: use ST[08] to execute the perform function command
@@ -45,6 +49,7 @@ void TPProtocol::parseMessage(TPMessage& message) {
             // CAN::Application::parseTCMessage(message);
             break;
         case CAN::Application::CCSDSPacket:
+            __NOP();
             break; //todo send this to comms? idk
         case CAN::Application::Ping: {
             auto senderID = static_cast<CAN::NodeIDs>(message.idInfo.sourceAddress);
@@ -63,16 +68,20 @@ void TPProtocol::parseMessage(TPMessage& message) {
             String<ECSSMaxMessageSize> logSource = "Incoming Log from ";
             logSource.append(senderName);
             logSource.append(": ");
-            auto logData = String<ECSSMaxMessageSize>(message.data + 1, message.dataSize - 1);
+            auto logData = String<ECSSMaxMessageSize>(message.data.data() + 1, message.dataSize - 1);
             LOG_DEBUG << logSource.c_str() << logData.c_str();
         } break;
         default:
-            // ErrorHandler::reportInternalError(ErrorHandler::UnknownMessageType);
+            ErrorHandler::reportInternalError(ErrorHandler::UnknownMessageType);
             break;
     }
 }
 
 bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
+    if (!createCANTPMessageWithRetry(message, isISR, 2)) {
+        return 0;
+    }
+    return 1;
     if (!createCANTPMessageWithRetry(message, isISR, 2)) {
         return 0;
     } else {
@@ -101,12 +110,12 @@ bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
             FDCAN_ProtocolStatusTypeDef CAN2ProtocolStatus;
             HAL_FDCAN_GetProtocolStatus(&hfdcan2, &CAN2ProtocolStatus);
 
-            LOG_ERROR << "Packet transmit fialure. CAN1 error:" << can1error << " CAN2 error:" << can2error;
-            LOG_ERROR << "CAN1 Error counter rx:" << CAN1errorCounter.RxErrorCnt << "Error counter tx:" << CAN1errorCounter.TxErrorCnt;
-            LOG_ERROR << "CAN1 Last error" << CAN1ProtocolStatus.LastErrorCode;
+            LOG_ERROR << "Packet transmit failure. CAN1 error:" << can1error << " CAN2 error: " << can2error;
+            LOG_ERROR << "CAN1 Error counter rx: " << CAN1errorCounter.RxErrorCnt << "Error counter tx: " << CAN1errorCounter.TxErrorCnt;
+            LOG_ERROR << "CAN1 Last error: " << CAN1ProtocolStatus.LastErrorCode;
 
-            LOG_ERROR << "CAN2 Error counter rx:" << CAN2errorCounter.RxErrorCnt << "Error counter tx:" << CAN2errorCounter.TxErrorCnt;
-            LOG_ERROR << "CAN2 Last error" << CAN2ProtocolStatus.LastErrorCode;
+            LOG_ERROR << "CAN2 Error counter rx: " << CAN2errorCounter.RxErrorCnt << "Error counter tx: " << CAN2errorCounter.TxErrorCnt;
+            LOG_ERROR << "CAN2 Last error: " << CAN2ProtocolStatus.LastErrorCode;
             return 1;
         }
     }
@@ -119,14 +128,13 @@ bool TPProtocol::createCANTPMessageWithRetry(const TPMessage& message, bool isIS
         }
         if (i > 0) {
             //number of retransmits ++
-            LOG_ERROR << "Retranmitted CAN packet";
+            LOG_ERROR << "Retransmitted CAN packet";
         }
     }
     return 1;
 }
 
 bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool isISR) {
-
     size_t messageSize = message.dataSize;
     uint32_t id = message.encodeId();
 
@@ -137,12 +145,12 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
             data.at(idx + 1) = message.data[idx];
         }
         canGatekeeperTask->send({id, data}, isISR);
+        xTaskNotifyGive(canGatekeeperTask->taskHandle);
         return false;
     }
 
     // First Frame
     xSemaphoreTake(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE, portMAX_DELAY);
-    CAN_TRANSMIT_Handler.ACKReceived = false;
     {
         // 4 MSB bits is the Frame Type identifier and the 4 LSB are the leftmost 4 bits of the data length.
         uint8_t firstByte = (First << 6) | ((messageSize >> 8) & 0b111111);
@@ -150,16 +158,13 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         uint8_t secondByte = messageSize & 0xFF;
 
         etl::array<uint8_t, CAN::MaxPayloadLength> firstFrame = {firstByte, secondByte};
-
-        canGatekeeperTask->send({id, firstFrame}, isISR);
-        xTaskNotifyGive(canGatekeeperTask->taskHandle);
+        canGatekeeperTask->send({id, firstFrame}, false);
     }
 
     // Consecutive Frames
     uint8_t totalConsecutiveFramesNeeded = ceil(static_cast<float>(messageSize) / UsableDataLength);
     for (uint8_t currentConsecutiveFrameCount = 1;
          currentConsecutiveFrameCount <= totalConsecutiveFramesNeeded; currentConsecutiveFrameCount++) {
-
         uint8_t firstByte = (Consecutive << 6);
         if (currentConsecutiveFrameCount == totalConsecutiveFramesNeeded) {
             firstByte = (Final << 6);
@@ -170,32 +175,19 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         for (uint8_t idx = 0; idx < UsableDataLength; idx++) {
             consecutiveFrame.at(idx + 2) = message.data[idx + UsableDataLength * (currentConsecutiveFrameCount - 1)];
         }
-	// Make sure the output buffers do not overflow // Added a small delay every 4 frames
-        if (currentConsecutiveFrameCount % 4 == 3) { 
+        // Make sure the output buffers do not overflow // Added a small delay every 4 frames
+        if (currentConsecutiveFrameCount % 4 == 3) {
             vTaskDelay(1);
         }
-
         canGatekeeperTask->send({id, consecutiveFrame}, isISR);
         xTaskNotifyGive(canGatekeeperTask->taskHandle);
     }
-
-    uint32_t startTime = xTaskGetTickCount();
-    while (true) {
-        vTaskDelay(1);
-        // ACK received
-        if (CAN_TRANSMIT_Handler.ACKReceived == true) {
-            xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
-            LOG_DEBUG << "CAN ACK received";
-            __NOP();
-            return false;
-        }
-
-        // Transaction timed out
-        if (xTaskGetTickCount() > (CAN_TRANSMIT_Handler.CAN_ACK_TIMEOUT + startTime)) {
-            xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
-            LOG_DEBUG << "CAN ACK timeout";
-            __NOP();
-            return true;
-        }
+    if (xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, pdMS_TO_TICKS(can_ack_handler.TIMEOUT)) == pdTRUE) {
+        LOG_DEBUG << "CAN ACK received!";
+        xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
+        return false;
     }
+    LOG_ERROR << "Timeout waiting for CAN ACK";
+    xSemaphoreGive(CAN_TRANSMIT_Handler.CAN_TRANSMIT_SEMAPHORE);
+    return true;
 }
