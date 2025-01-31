@@ -81,13 +81,13 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
         (void *)1,
         [](TimerHandle_t pxTimer) {
             BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(
-                rf_txtask->taskHandle,
-                NOTIFY_INDEX_TRANSMIT,
-                TRANSMIT,
-                eSetBits,
-                &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            // xTaskNotifyIndexedFromISR(
+            //     rf_txtask->taskHandle,
+            //     NOTIFY_INDEX_TRANSMIT,
+            //     TRANSMIT,
+            //     eSetBits,
+            //     &xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         },
         &xTimerBuffer);
 
