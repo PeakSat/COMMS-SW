@@ -709,6 +709,7 @@ void ParameterService::initializeParameterMap() {
         {OBDHParameters::UseRTTID, OBDHParameters::UseRTT},
         {OBDHParameters::UseUARTID, OBDHParameters::UseUART},
         {OBDHParameters::UseCANID, OBDHParameters::UseCAN},
+        {OBDHParameters::HeartbeatPeriodID, OBDHParameters::HeartbeatPeriod},
         {ADCSParameters::ResetTypeID, ADCSParameters::ResetType},
         {ADCSParameters::UnixTimeSecondsID, ADCSParameters::UnixTimeSeconds},
         {ADCSParameters::UnixTimeNanoSecondsID, ADCSParameters::UnixTimeNanoSeconds},

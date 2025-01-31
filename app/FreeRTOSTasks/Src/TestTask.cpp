@@ -25,11 +25,11 @@ void TestTask::execute() {
 
     while (true) {
 
-        CAN::Application::sendPingMessage(CAN::OBC, false);
+        // CAN::Application::sendPingMessage(CAN::OBC, false);
 
         vTaskDelay(5000);
 
-        CAN::Application::sendHeartbeatMessage();
+        // CAN::Application::sendHeartbeatMessage();
 
         // //LOG_DEBUG << COMMSParameters::commsUHFBandPATemperature.getValue();
         // LOG_DEBUG << "REQUESTING TEMP PARAMETERS FROM OBC";

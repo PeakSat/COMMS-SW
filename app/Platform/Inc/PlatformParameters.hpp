@@ -39,7 +39,8 @@ namespace OBDHParameters {
         CAN_TransmitFailureCountID = 47,
         UseRTTID = 48,
         UseUARTID = 49,
-        UseCANID = 50
+        UseCANID = 50,
+        HeartbeatPeriodID = 51
     };
     inline Parameter<uint32_t> debugCounter(0);
     inline Parameter<float> PCBTemperature1(0);
@@ -93,12 +94,13 @@ namespace OBDHParameters {
     inline Parameter<float> ΜRAMScrubbingFrequency(0);
     inline Parameter<float> ProgramFlashScrubbingFrequency(0);
     inline Parameter<uint16_t> CommitHash(0);
-    inline Parameter<uint32_t> CAN_ACK_timeout(0);
+    inline Parameter<uint32_t> CAN_ACK_timeout(1000);
     inline Parameter<uint32_t> CAN_FrameRetransimtCount(0);
     inline Parameter<uint32_t> CAN_TransmitFailureCount(0);
     inline Parameter<bool> UseRTT(true);
     inline Parameter<bool> UseUART(true);
     inline Parameter<bool> UseCAN(false);
+    inline Parameter<uint32_t> HeartbeatPeriod(3000);
 } // namespace OBDHParameters
 namespace COMMSParameters {
     enum ParameterID : uint16_t {
