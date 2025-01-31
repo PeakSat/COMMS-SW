@@ -20,7 +20,7 @@ void HeartbeatTask::execute() {
             LOG_ERROR << "Heartbeat timeout";
             // todo: Maybe reset OBC at some point
         }
-        if (falseCounter < 5) {
+        if (falseCounter < 6) {
             falseCounter++;
         }
 
