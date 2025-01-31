@@ -30,10 +30,10 @@ except Exception as e:
 # Subsystem acronyms and their corresponding number offsets
 subsystem_config = {
     "OBDH": 0,
-    "COMMS": 10000,
-    "PAY": 15000,
-    "ADCS": 20000,
-    "EPS": 25000,
+    "COMMS": 819,
+    "PAY": 1638,
+    "ADCS": 2457,
+    "EPS": 3276,
 }
 
 # Paths to the Excel file and output directories
@@ -134,9 +134,10 @@ for idx, row in enumerate(valid_rows):
             block_lines.append(f"        {variable_name}ID = {numeric_id}")
 
             # Enum definitions (if type is "enum")
-            if variable_type == "enum":
+            if (variable_type in {"uint8_t", "uint16_t", "uint32_t", "uint64_t",
+                                  "int8_t", "int16_t", "int32_t", "int64_t"} and row[6].value and str(row[6].value).strip()):  # 7th column (index 6)
                 enum_lines = (
-                    f"    enum {variable_name}_enum : uint8_t {{\n        {enum_items}\n    }};"
+                    f"    enum {variable_name}_enum : {type_cell.value.strip()} {{\n        {enum_items}\n    }};"
                 )
                 block_lines.append(enum_lines)
 
