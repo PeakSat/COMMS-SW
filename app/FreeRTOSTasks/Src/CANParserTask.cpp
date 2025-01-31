@@ -35,7 +35,6 @@ void CANParserTask::execute() {
             CAN::StoredPacket StoredPacket;
             xQueueReceive(canGatekeeperTask->storedPacketQueue, &StoredPacket, portMAX_DELAY);
 
-
             if (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue) == 0) {
 
                 // Get packet from eMMC
@@ -43,7 +42,7 @@ void CANParserTask::execute() {
                 CAN::Application::getStoredMessage(&StoredPacket, messageBuff, StoredPacket.size, sizeof(messageBuff) / sizeof(messageBuff[0]));
                 LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << StoredPacket.size;
 
-                //Send ACK
+                // Send ACK
                 CAN::TPMessage ACKmessage = {{CAN::NodeID, CAN::NodeIDs::OBC, false}};
                 ACKmessage.appendUint8(CAN::Application::MessageIDs::ACK);
                 CAN::TPProtocol::createCANTPMessageNoRetransmit(ACKmessage, false);
@@ -53,9 +52,9 @@ void CANParserTask::execute() {
 
                 uint8_t messageID = static_cast<CAN::Application::MessageIDs>(StoredPacket.Identifier);
                 if (messageID == CAN::Application::CCSDSPacket) {
-                    CAN::StoredPacket TMMessage;
-                    xQueueSendToBack(outgoingTMQueue, &TMMessage, NULL);
-                    LOG_DEBUG << "New TM received: " << TMMessage.size;
+                    xQueueSendToBack(outgoingTMQueue, &StoredPacket, NULL);
+                    xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_OBC, eSetBits);
+                    LOG_DEBUG << "New TM received: " ;
                 } else {
                     CAN::TPMessage message;
                     message.appendUint8(StoredPacket.Identifier);

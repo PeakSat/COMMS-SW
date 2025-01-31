@@ -18,6 +18,8 @@ namespace AT86RF215 {
     #define START_TX_TASK (1 << 12)
     #define TRANSMIT (1 << 13)
     #define RXFE_STATE (1 << 14)
+    #define TM_OBC (1 << 15)
+    #define TM_COMMS (1 << 16)
     /// Indexes
     #define NOTIFY_INDEX_TRANSMIT 1
     #define NOTIFY_INDEX_RXFE_RX 2

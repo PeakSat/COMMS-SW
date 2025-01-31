@@ -185,6 +185,20 @@ SECTIONS
       . = ALIGN(4);
   } >DTCMRAM
 
+  .dtcmram_tx_buff :
+    {
+        . = ALIGN(4);
+        *(.dtcmram_tx_buff)
+        . = ALIGN(4);
+    } >DTCMRAM
+
+  .dtcmram_outgoingTMQueueStorageArea :
+     {
+         . = ALIGN(4);
+        *(.dtcmram_outgoingTMQueueStorageArea)
+        . = ALIGN(4);
+     } >DTCMRAM
+
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
