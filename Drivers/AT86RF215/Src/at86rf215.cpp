@@ -1523,11 +1523,14 @@ void At86rf215::print_error(Error& err) {
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
+            TransmitterFrameEnd_flag = true;
             xHigherPriorityTaskWoken = pdFALSE;
             tx_ongoing = false;
             xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_TXFE_TX, TXFE, eSetBits, &xHigherPriorityTaskWoken);
+            xHigherPriorityTaskWoken = pdFALSE;
             xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_TXFE_RX, TXFE, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
             // Receiver Extended Match handling

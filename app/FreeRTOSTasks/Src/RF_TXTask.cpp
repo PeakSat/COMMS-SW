@@ -65,13 +65,6 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
 
 [[noreturn]] void RF_TXTask::execute() {
     vTaskDelay(8000);
-    /// TX AMP
-    GPIO_PinState txamp = GPIO_PIN_SET;
-    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
-    if (txamp)
-        LOG_DEBUG << "##########TX AMP DISABLED##########";
-    else
-        LOG_DEBUG << "##########TX AMP ENABLED##########";
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
     StaticTimer_t xTimerBuffer;
     TimerHandle_t xTimer = xTimerCreateStatic(
@@ -91,13 +84,13 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
         },
         &xTimerBuffer);
 
-    if (xTimer != nullptr) {
-        if (xTimerStart(xTimer, 0) != pdPASS) {
-            LOG_ERROR << "[TX] Failed to start the timer";
-        }
-        else
-            LOG_INFO << "[TX] TX TIMER HAS STARTED";
-    }
+    // if (xTimer != nullptr) {
+    //     if (xTimerStart(xTimer, 0) != pdPASS) {
+    //         LOG_ERROR << "[TX] Failed to start the timer";
+    //     }
+    //     else
+    //         LOG_INFO << "[TX] TX TIMER HAS STARTED";
+    // }
     uint8_t state = 0;
     uint8_t counter = 0;
     uint32_t receivedEventsTransmit;
@@ -116,21 +109,24 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
         xSemaphoreGive(transceiver_handler.resources_mtx);
     }
     uint32_t tx_counter = 0;
-    uint32_t receivedEvents = 0;
-    CAN::StoredPacket TM_PACKET_CAN;
-
+    CAN::StoredPacket TM_PACKET;
+    /// TX AMP
+    GPIO_PinState txamp;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, pdTICKS_TO_MS(transceiver_handler.BEACON_PERIOD_MS + 1000)) == pdTRUE) {
             while (uxQueueMessagesWaiting(outgoingTMQueue)) {
                 // Get the message pointer from the queue
-                if (receivedEvents & TM_OBC)
+                /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
+                txamp = GPIO_PIN_RESET;
+                // Open the PA before you send the packet
+                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                xQueueReceive(outgoingTMQueue, &TM_PACKET, portMAX_DELAY);
+                if (receivedEventsTransmit & TM_OBC) {
+                    CAN::Application::getStoredMessage(&TM_PACKET, TX_BUFF, TM_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
                     LOG_DEBUG << "Received TM from OBC... preparing the transmission";
-                if (receivedEvents & TM_COMMS)
+                }
+                if (receivedEventsTransmit & TM_COMMS)
                     LOG_DEBUG << "Received TM from COMMS... preparing the transmission";
-                xQueueReceive(outgoingTMQueue, &TM_PACKET_CAN, portMAX_DELAY);
-                CAN::Application::getStoredMessage(&TM_PACKET_CAN, TX_BUFF, TM_PACKET_CAN.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
-                // if (counter == 255)
-                //     counter = 0;
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     xSemaphoreGive(transceiver_handler.resources_mtx);
@@ -142,10 +138,12 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                 ensureTxMode();
                                 /// Set the down-link frequency
                                 /// send the packet
-                                // counter++;
-                                // packetTestData.packet[0] = counter;
-                                LOG_DEBUG << "[TX] TX PACKET SIZE: " << TM_PACKET_CAN.size;
-                                transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET_CAN.size, error);
+                                //  counter++;
+                                //  packetTestData.packet[0] = counter;
+                                LOG_DEBUG << "[TX] TX PACKET SIZE: " << TM_PACKET.size;
+                                // txamp = GPIO_PIN_RESET;
+                                // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                                transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size, error);
                                 // LOG_INFO << "[TX] c: " << counter;
                                 tx_counter++;
                                 LOG_INFO << "[TX] TX counter: " << tx_counter;
@@ -169,10 +167,12 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                         /// send the packet
                                         // counter++;
                                         // packetTestData.packet[0] = counter;
-                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET_CAN.size, error);
+                                        // txamp = GPIO_PIN_RESET;
+                                        // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size, error);
                                         // LOG_INFO << "[TX TXFE] c: " << counter;
                                         tx_counter++;
-                                        LOG_DEBUG << "[TXFE] TX PACKET SIZE: " << TM_PACKET_CAN.size;
+                                        LOG_DEBUG << "[TXFE] TX PACKET SIZE: " << TM_PACKET.size;
                                         LOG_INFO << "[TXFE] TX counter: " << tx_counter;
                                     }
                                     xSemaphoreGive(transceiver_handler.resources_mtx);
@@ -196,10 +196,12 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                         // send the packet
                                         // counter++;
                                         // packetTestData.packet[0] = counter;
+                                        txamp = GPIO_PIN_RESET;
+                                        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                                         transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
                                         // LOG_INFO << "[TX RXFE] c: " << counter;
                                         tx_counter++;
-                                        LOG_DEBUG << "[RXFE] TX PACKET SIZE: " << TM_PACKET_CAN.size;
+                                        LOG_DEBUG << "[RXFE] TX PACKET SIZE: " << TM_PACKET.size;
                                         LOG_INFO << "[RXFE] TX counter: " << tx_counter;
                                     }
                                     xSemaphoreGive(transceiver_handler.resources_mtx);

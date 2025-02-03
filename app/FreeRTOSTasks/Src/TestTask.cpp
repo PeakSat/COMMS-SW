@@ -11,7 +11,7 @@
 
 void TestTask::execute() {
     LOG_DEBUG << "TestTask::execute()";
-    vTaskDelay(5000);
+    vTaskDelay(12000);
     etl::array<uint16_t, CAN::TPMessageMaximumArguments> testPArameters = {OBDHParameters::debugCounterID, OBDHParameters::PCBTemperature1ID, OBDHParameters::PCBTemperature2ID,
                                                                            OBDHParameters::MCUTemperatureID, OBDHParameters::MCUInputVoltageID, OBDHParameters::MCUSystickID, OBDHParameters::MCUBootCounterID};
     constexpr int start_id = 3000; // Starting ID
