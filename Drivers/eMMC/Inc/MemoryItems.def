@@ -1,8 +1,8 @@
 // MEMORY_ITEM(name, sizeInMB)
 
 MEMORY_ITEM(firmware, 1000000)
-MEMORY_ITEM(CANMessages, 131072) //128 messages of 1024 bytes
+MEMORY_ITEM(CANMessages, 131072) // 128 messages of 1024 bytes
 MEMORY_ITEM(GNSSData, 3000000)
-MEMORY_ITEM(test, 1000000)
+MEMORY_ITEM(COMMS_HOUSEKEEPING, 1000000)
 MEMORY_ITEM(test2, 1234)
 // Add more items here...

@@ -98,18 +98,21 @@ void RF_RXTask::ensureRxMode() {
     ensureRxMode();
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
+    GPIO_PinState txamp;
     while (true) {
-        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
-            if (receivedEvents & AGC_HOLD) {
+        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
-                    if (received_length == 1024) {
-                        current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
+                    LOG_DEBUG << "[RX AGC] LENGTH: " << received_length;
+                    if (received_length) {
+                        // current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
                         LOG_DEBUG << "[RX] c: " << current_counter;
                         rx_total_packets++;
                         LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                         drop_counter = 0;
+                        for (int i = 0; i < received_length; i++)
+                            LOG_DEBUG << transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                     }
                     else {
                         drop_counter++;
@@ -119,7 +122,7 @@ void RF_RXTask::ensureRxMode() {
                     }
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
-            }
+
         }
         else {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -133,6 +136,8 @@ void RF_RXTask::ensureRxMode() {
                             // transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
                             // transceiver.chip_reset(error);
                             // transceiver.setup(error);
+                            txamp = GPIO_PIN_SET;
+                            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                             ensureRxMode();
                         }
                         break;
@@ -155,6 +160,8 @@ void RF_RXTask::ensureRxMode() {
                             transceiver.tx_ongoing = false;
                             ensureRxMode();
                         }
+                        txamp = GPIO_PIN_SET;
+                        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                         break;
                     }
                     case RX_ONG: {
@@ -209,6 +216,10 @@ void RF_RXTask::ensureRxMode() {
             if (transceiver.Voltage_Drop) {
                 transceiver.Voltage_Drop = false;
                 LOG_ERROR << "[RX] Voltage Drop";
+            }
+            if (transceiver.TransmitterFrameEnd_flag) {
+                transceiver.TransmitterFrameEnd_flag = false;
+                LOG_INFO << "[RX] Transceiver FRAME END";
             }
             xSemaphoreGive(transceiver_handler.resources_mtx);
         }
