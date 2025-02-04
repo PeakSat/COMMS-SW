@@ -1,5 +1,6 @@
 #pragma once
 #include "etl/vector.h"
+#include <eMMC.hpp>
 // Task notification defines
 // flags
 #define GNSS_ACK (1 << 0)
@@ -7,6 +8,7 @@
 // indexes
 #define GNSS_INDEX_MESSAGE 1
 #define GNSS_INDEX_ACK 2
+#define GNSS_MEASUREMENTS_PER_STRUCT 31
 
 
 namespace GNSSDefinitions {
@@ -18,7 +20,7 @@ namespace GNSSDefinitions {
         NACKReceived,
         MultipleCommandsFail
     };
-    enum class Status{
+    enum class Status {
         OK,
         ERROR
     };
@@ -47,11 +49,20 @@ namespace GNSSDefinitions {
         int snr[4];
     };
 
+    /**
+     * year/month/day correspond to the last data point.
+     * If the day changed during sampling.
+     * the receiver must compensate for it.
+     */
     struct StoredGNSSData {
-        int32_t utc_time;
-        int32_t latitudeI;
-        int32_t longitudeI;
-        int32_t altitudeI;
+        uint32_t timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT];
+        int32_t latitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
+        int32_t longitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
+        int32_t altitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
+        int8_t year;
+        int8_t month;
+        int8_t day;
+        uint8_t padding[eMMC::memoryPageSize - (sizeof(uint32_t) * GNSS_MEASUREMENTS_PER_STRUCT * 4 + sizeof(int8_t) * 3)]; //make it's size exactly one eMMC page
     };
 
 
