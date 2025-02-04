@@ -92,8 +92,8 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
     //     else
     //         LOG_INFO << "[TX] TX TIMER HAS STARTED";
     // }
+
     uint8_t state = 0;
-    uint8_t counter = 0;
     uint32_t receivedEventsTransmit;
     if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
         auto status = transceiver.check_transceiver_connection(error);
@@ -119,8 +119,8 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
     vQueueAddToRegistry(outgoingTMQueue, "TM queue");
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, pdTICKS_TO_MS(transceiver_handler.BEACON_PERIOD_MS + 1000)) == pdTRUE) {
-            txamp = GPIO_PIN_RESET;
-            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+            // txamp = GPIO_PIN_RESET;
+            // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
             while (uxQueueMessagesWaiting(outgoingTMQueue)) {
                 // Get the message pointer from the queue
                 xQueueReceive(outgoingTMQueue, &TM_PACKET, portMAX_DELAY);

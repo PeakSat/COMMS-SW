@@ -1524,7 +1524,7 @@ void At86rf215::print_error(Error& err) {
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
-            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+            // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
             xHigherPriorityTaskWoken = pdFALSE;
             tx_ongoing = false;
             xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_TXFE_TX, TXFE, eSetBits, &xHigherPriorityTaskWoken);
@@ -1549,6 +1549,7 @@ void At86rf215::print_error(Error& err) {
         }
         if ((irq & InterruptMask::ReceiverFrameStart) != 0) {
             rx_ongoing = true;
+            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_RXFS, RXFE_RX, eSetBits, &xHigherPriorityTaskWoken);
         }
     }
 }

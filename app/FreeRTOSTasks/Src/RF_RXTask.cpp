@@ -78,15 +78,39 @@ void RF_RXTask::ensureRxMode() {
     HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
     transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
     /// Check transceiver connection
-    if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-        auto status = transceiver.check_transceiver_connection(error);
-        if (status.has_value()) {
-        } else
-            LOG_ERROR << "CONNECTION ##ERROR## WITH CODE: " << status.error();
-        transceiver.set_state(RF09, RF_TRXOFF, error);
-        transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-        transceiver.chip_reset(error);
-        xSemaphoreGive(transceiver_handler.resources_mtx);
+    const int MAX_RETRIES = 3;
+    int attempt = 0;
+    bool success = false;
+    while (attempt < MAX_RETRIES) {
+        if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
+            auto status = transceiver.check_transceiver_connection(error);
+            if (status.has_value()) {
+                success = true;  // Connection successful
+                LOG_INFO << "[SPI CONNECTION ESTABLISHED]";
+            } else {
+                LOG_ERROR << "CONNECTION ##ERROR## WITH CODE: " << status.error();
+            }
+            transceiver.set_state(RF09, RF_TRXOFF, error);
+            transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09,
+                                      transceiver.freqSynthesizerConfig.channelNumber09,
+                                      transceiver.freqSynthesizerConfig.channelMode09,
+                                      transceiver.freqSynthesizerConfig.loopBandwidth09,
+                                      transceiver.freqSynthesizerConfig.channelSpacing09, error);
+            transceiver.chip_reset(error);
+
+            xSemaphoreGive(transceiver_handler.resources_mtx);
+
+            if (success) {
+                break;  // Exit loop if successful
+            }
+
+            attempt++;
+            LOG_ERROR << "Retrying connection attempt " << attempt << "/" << MAX_RETRIES;
+            vTaskDelay(pdMS_TO_TICKS(100));  // Small delay before retrying
+        }
+    }
+    if (!success) {
+        LOG_ERROR << "Failed to establish connection after " << MAX_RETRIES << " attempts.";
     }
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
     uint16_t received_length = 0;
@@ -99,20 +123,31 @@ void RF_RXTask::ensureRxMode() {
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
     GPIO_PinState txamp;
+    uint8_t received_packet[1024] = {};
     while (true) {
-        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
+        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFS, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
+                    transceiver.print_error(error);
+                    // uint8_t length = (transceiver.spi_read_8(BBC0_RXFLH, error) << 8) | static_cast<uint16_t>(transceiver.spi_read_8(BBC0_RXFLL, error));
                     LOG_DEBUG << "[RX AGC] LENGTH: " << received_length;
+                    LOG_DEBUG << "[RX AGC] RSSI: " << transceiver.get_rssi(RF09, error);
+                    transceiver.print_error(error);
+                    txamp = GPIO_PIN_SET;
+                    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                     if (received_length) {
                         // current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
                         LOG_DEBUG << "[RX] c: " << current_counter;
                         rx_total_packets++;
                         LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                         drop_counter = 0;
-                        for (int i = 0; i < received_length; i++)
+                        for (int i = 0; i < received_length; i++) {
                             LOG_DEBUG << transceiver.spi_read_8((BBC0_FBRXS) + i, error);
+                            transceiver.print_error(error);
+                        }
+
+                        // transceiver.spi_block_read_8(BBC0_FBRXS, received_length, received_packet, error);
                     }
                     else {
                         drop_counter++;
@@ -160,8 +195,8 @@ void RF_RXTask::ensureRxMode() {
                             transceiver.tx_ongoing = false;
                             ensureRxMode();
                         }
-                        txamp = GPIO_PIN_SET;
-                        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                        // txamp = GPIO_PIN_SET;
+                        // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                         break;
                     }
                     case RX_ONG: {

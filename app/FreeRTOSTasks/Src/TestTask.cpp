@@ -24,7 +24,10 @@ void TestTask::execute() {
     // }
     uint8_t counter = 0;
     uint32_t eMMCPacketTailPointer = 0;
-    uint8_t test_array[10] = {1,2,3,4,5,6,7,8,9,10};
+    uint8_t test_array[50];
+    for (int i = 0; i < 50; i++) {
+        test_array[i] = i;
+    }
 
     while (true) {
         //LOG_DEBUG << COMMSParameters::commsUHFBandPATemperature.getValue();
@@ -59,7 +62,7 @@ void TestTask::execute() {
         CAN::StoredPacket PacketToBeStored;
         PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
         eMMCPacketTailPointer += 2;
-        PacketToBeStored.size = 10;
+        PacketToBeStored.size = 50;
         LOG_DEBUG << "SEND TM FROM COMMS";
         xQueueSendToBack(outgoingTMQueue, &PacketToBeStored, 0);
         xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_COMMS, eSetBits);
