@@ -9,7 +9,7 @@ spreadsheet_id = "12m4Sq4CMnLB9nn6INxKUdSNSIlTJes_uTbg19RE9-X0"
 xlsx_export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=xlsx"
 
 # Output file
-output_file = "prameter_database.xlsx"
+output_file = "parameter_database.xlsx"
 
 try:
     # Send GET request
@@ -36,8 +36,31 @@ subsystem_config = {
     "EPS": 3276,
 }
 
+# Type encoding dictionary for the last 4 bits
+type_encoding = {
+    "uint8_t": 0,
+    "bool" : 0,
+    "int8_t": 1,
+    "uint16_t": 2,
+    "int16_t": 3,
+    "uint32_t": 4,
+    "int32_t": 5,
+    "uint64_t": 6,
+    "int64_t": 7,
+    "float": 8,
+    "double": 9,
+}
+
+# Function to encode the ID
+def encode_id(numeric_id, variable_type):
+    if variable_type not in type_encoding:
+        print(f"Error: Type '{variable_type}' not found in type encoding dictionary. Defaulting to 'uint64_t'.")
+        variable_type = "uint64_t"
+    type_code = type_encoding[variable_type]
+    return (numeric_id << 4) | type_code
+
 # Paths to the Excel file and output directories
-excel_file = "prameter_database.xlsx"
+excel_file = "parameter_database.xlsx"
 src_folder = "Src"
 inc_folder = "Inc"
 output_cpp_file = os.path.join(src_folder, "PlatformParameters.cpp")
@@ -49,6 +72,7 @@ os.makedirs(inc_folder, exist_ok=True)
 
 # Set to track unique IDs
 processed_ids = set()
+parameter_types = {}  # Dictionary to store {parameter_name: variable_type}
 
 # Load the workbook
 workbook = openpyxl.load_workbook(excel_file)
@@ -111,15 +135,31 @@ for idx, row in enumerate(valid_rows):
                 print(f"Skipping invalid numeric ID: {id_cell.value}")
                 continue
 
-            # Skip duplicates
-            if numeric_id in processed_ids:
-                continue
-            processed_ids.add(numeric_id)
-
             # Get variable name and type
             variable_name = variable_cell.value.strip()
             variable_type = type_cell.value.strip() if type_cell.value else "int"
             enum_items = enum_items_cell.value.strip() if enum_items_cell.value else ""
+
+            # Handle "_enum" type
+            if variable_type.endswith("_enum"):
+                base_param = variable_type[:-5]  # Remove "_enum"
+                if base_param in parameter_types:
+                    variable_type = parameter_types[base_param]
+                else:
+                    print(f"Error: Parameter '{base_param}' not found for '{variable_name}_enum'. Defaulting to 'uint32_t'.")
+                    variable_type = "uint32_t"
+
+            # Store the type in the parameter_types dictionary
+            parameter_types[variable_name] = variable_type
+
+            # Encode the ID with the new encoding rule
+            encoded_id = encode_id(numeric_id, variable_type)
+
+            # Skip duplicates
+            if encoded_id in processed_ids:
+                continue
+            processed_ids.add(encoded_id)
+
             # Handle float values to remove .0 for whole numbers
             if value_cell.value:
                 if isinstance(value_cell.value, float) and value_cell.value.is_integer():
@@ -131,7 +171,7 @@ for idx, row in enumerate(valid_rows):
 
             # Add to the corresponding namespace block
             block_lines = namespace_blocks[acronym]
-            block_lines.append(f"        {variable_name}ID = {numeric_id}")
+            block_lines.append(f"        {variable_name}ID = {encoded_id}")
 
             # Enum definitions (if type is "enum")
             if (variable_type in {"uint8_t", "uint16_t", "uint32_t", "uint64_t",
