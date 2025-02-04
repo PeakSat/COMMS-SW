@@ -1,7 +1,7 @@
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
 #include <RF_TXTask.hpp>
-
+#define MAGIC_NUMBER 4
 using namespace AT86RF215;
 
 void RF_RXTask::ensureRxMode() {
@@ -125,7 +125,7 @@ void RF_RXTask::ensureRxMode() {
     GPIO_PinState txamp;
     uint8_t received_packet[1024] = {};
     while (true) {
-        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFS, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
+        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
@@ -142,9 +142,8 @@ void RF_RXTask::ensureRxMode() {
                         rx_total_packets++;
                         LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                         drop_counter = 0;
-                        for (int i = 0; i < received_length; i++) {
+                        for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
                             LOG_DEBUG << transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                            transceiver.print_error(error);
                         }
 
                         // transceiver.spi_block_read_8(BBC0_FBRXS, received_length, received_packet, error);
