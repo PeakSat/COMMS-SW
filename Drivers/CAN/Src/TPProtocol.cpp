@@ -71,6 +71,10 @@ void TPProtocol::parseMessage(TPMessage& message) {
             auto logData = String<ECSSMaxMessageSize>(message.data.data() + 1, message.dataSize - 1);
             LOG_DEBUG << logSource.c_str() << logData.c_str();
         } break;
+        case CAN::Application::Heartbeat: {
+            LOG_DEBUG << "Received heartbeat from OBC";
+            break;
+        }
         default:
             ErrorHandler::reportInternalError(ErrorHandler::UnknownMessageType);
             break;
