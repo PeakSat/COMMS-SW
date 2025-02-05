@@ -1,6 +1,7 @@
 #pragma once
 #include "Task.hpp"
 #include "etl/optional.h"
+#include <queue.h>
 
 class TCHandlingTask : public Task {
 public:
@@ -18,4 +19,4 @@ private:
     StackType_t taskStack[TaskStackDepth]{};
 };
 
-inline etl::optional<TCHandlingTask> tchHandlingTask;
+inline etl::optional<TCHandlingTask> tcHandlingTask;

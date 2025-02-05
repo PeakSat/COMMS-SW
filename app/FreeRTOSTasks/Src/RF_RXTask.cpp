@@ -1,6 +1,8 @@
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
 #include <RF_TXTask.hpp>
+#include <TCHandlingTask.hpp>
+#include <eMMC.hpp>
 #define MAGIC_NUMBER 4
 using namespace AT86RF215;
 
@@ -66,6 +68,9 @@ void RF_RXTask::ensureRxMode() {
 [[noreturn]] void RF_RXTask::execute() {
     vTaskDelay(5000);
     LOG_INFO << "[RF RX TASK]";
+    incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
+                                            &incomingTCQueueBuffer);
+    vQueueAddToRegistry(incomingTCQueue, "TC queue");
     /// Set the Up-link frequency
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     /// ENABLE THE RX SWITCH
@@ -121,7 +126,22 @@ void RF_RXTask::ensureRxMode() {
     uint32_t rx_total_drop_packets = 0;
     GPIO_PinState txamp;
     State trx_state;
-    uint8_t received_packet[1024] = {};
+    // uint8_t received_packet[2048] = {};
+
+    // Write message to eMMC
+    // PacketData packetTestData = rf_txtask->createRandomPacketData(MaxPacketLength);
+    // counter++;
+    // packetTestData.packet[0] = counter;
+    // auto status = storeItem(eMMC::memoryMap[eMMC::COMMS_HOUSEKEEPING], test_array, 1024, eMMCPacketTailPointer, 2);
+    // Add message to queue
+    CAN::StoredPacket PacketToBeStored;
+    // PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+    // eMMCPacketTailPointer += 2;
+    // PacketToBeStored.size = 50;
+    // LOG_DEBUG << "SEND TM FROM COMMS";
+    // xQueueSendToBack(outgoingTMQueue, &PacketToBeStored, 0);
+    // xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_COMMS, eSetBits);
+    uint32_t eMMCPacketTailPointer = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -139,9 +159,15 @@ void RF_RXTask::ensureRxMode() {
                         rx_total_packets++;
                         LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                         drop_counter = 0;
-                        // for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
-                        //     LOG_DEBUG << transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                        // }
+                        for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
+                            RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
+                        }
+                        storeItem(eMMC::memoryMap[eMMC::RECEIVED_TC], RX_BUFF, 2048, eMMCPacketTailPointer, 4);
+                        PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                        PacketToBeStored.size = received_length - MAGIC_NUMBER;
+                        eMMCPacketTailPointer += 4;
+                        xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
+                        xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TC, 0, eNoAction);
                     }
                     else {
                         drop_counter++;

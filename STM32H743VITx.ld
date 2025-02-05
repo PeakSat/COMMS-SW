@@ -199,6 +199,22 @@ SECTIONS
         . = ALIGN(4);
      } >DTCMRAM
 
+ .dtcmram_incomingTC :
+      {
+          . = ALIGN(4);
+         *(.dtcmram_incomingTC )
+         . = ALIGN(4);
+      } >DTCMRAM
+
+    .dtcmram_incomingTCBuffer :
+        {
+            . = ALIGN(4);
+           *(.dtcmram_incomingTCBuffer )
+           . = ALIGN(4);
+        } >DTCMRAM
+
+
+
 
   /* Remove information from the standard libraries */
   /DISCARD/ :

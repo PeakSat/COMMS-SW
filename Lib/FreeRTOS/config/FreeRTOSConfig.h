@@ -66,7 +66,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_MALLOC_FAILED_HOOK			1
 #define configCHECK_FOR_STACK_OVERFLOW			2
 #define configUSE_TASK_NOTIFICATIONS            1
-#define configTASK_NOTIFICATION_ARRAY_ENTRIES   10
+#define configTASK_NOTIFICATION_ARRAY_ENTRIES   12
 
 
 

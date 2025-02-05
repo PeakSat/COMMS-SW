@@ -52,7 +52,7 @@ void app_main(void) {
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
     canParserTask.emplace();
-    tchHandlingTask.emplace();
+    tcHandlingTask.emplace();
 
     uartGatekeeperTask->createTask();
     rf_rxtask->createTask();
@@ -64,7 +64,7 @@ void app_main(void) {
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
     canParserTask->createTask();
-    tchHandlingTask->createTask();
+    tcHandlingTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     /* Start the scheduler. */

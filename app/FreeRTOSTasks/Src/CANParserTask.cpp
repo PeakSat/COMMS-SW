@@ -7,20 +7,6 @@
 
 void CANParserTask::execute() {
 
-    // CAN::CANBuffer_t message = {};
-    // /**
-    //  * Simple 64 byte message sending
-    //  */
-    //
-    // for (uint8_t idx = 0; idx < CAN::MaxPayloadLength; idx++) {
-    //     message.push_back(idx);
-    // }
-    // String<ECSSMaxMessageSize> testPayload1("ccccccccccccccccccccccccccccccccc");
-    //
-    // String<ECSSMaxMessageSize> testPayload2("d");
-    //
-    // CAN::ActiveBus activeBus = CAN::ActiveBus::Redundant;
-
     uint32_t eMMCPacketTailPointer = 0;
     int counter = 0;
     uint32_t ulNotifiedValue;
