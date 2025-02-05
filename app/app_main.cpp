@@ -53,8 +53,8 @@ void app_main(void) {
     canParserTask.emplace();
 
     uartGatekeeperTask->createTask();
-    rf_rxtask->createTask();
-    rf_txtask->createTask();
+    // rf_rxtask->createTask();
+    // rf_txtask->createTask();
     eMMCTask->createTask();
     gnssTask->createTask();
     testTask->createTask();
@@ -175,4 +175,3 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
         GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
     }
 }
-

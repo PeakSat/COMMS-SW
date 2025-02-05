@@ -96,7 +96,7 @@ void GNSSTask::initGNSS() {
     controlGNSS(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
     etl::vector<uint8_t, 12> interval_vec;
     interval_vec.resize(12, 0);
-    uint8_t seconds = 5;
+    uint8_t seconds = 1;
     // 4 is for RMC, 2 for GSV, 0 is for GGA
     interval_vec[0] = seconds;
     //    interval_vec[2] = seconds;
@@ -218,7 +218,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
 }
 
 [[noreturn]] void GNSSTask::execute() {
-    vTaskDelay(10000);
+    vTaskDelay(1000);
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     COMMSParameters::gnss_ack_timeout.setValue(gnss_handler.ACK_TIMOUT_MS);
     COMMSParameters::gnss_cmd_retries.setValue(gnss_handler.CMD_RETRIES);
@@ -235,7 +235,10 @@ void GNSSTask::initQueuesToAcceptPointers() {
     uint32_t receivedEvents = 0;
 
     uint32_t NumberOfMeasurementsInStruct = 0;
-    uint32_t eMMCDataTailPointer = 0;
+
+    // todo: find last data in the memory
+    eMMCDataTailPointer = 0;
+
     while (true) {
         if (xTaskNotifyWaitIndexed(GNSS_INDEX_MESSAGE, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(gnss_handler.ERROR_TIMEOUT_MS)) == pdTRUE) {
             if (receivedEvents & GNSS_MESSAGE_READY) {
@@ -244,33 +247,38 @@ void GNSSTask::initQueuesToAcceptPointers() {
                     if (rx_buf_p_from_queue != nullptr) {
                         parser(rx_buf_p_from_queue, compact);
 
-                        //store data in ram
-                        uint64_t minutes = compact.minutes + (compact.hours * 60);
-                        uint64_t seconds = compact.seconds + (minutes * 60);
-                        uint64_t microseconds = compact.microseconds + (seconds * 1000000);
-                        uint64_t timeOfDay64 = (static_cast<uint64_t>(UINT32_MAX) * microseconds) / 86400000000; // 86.400.000.000 us in a day
-                        auto timeOfDay32 = static_cast<uint32_t>(timeOfDay64);
+                        if (compact.year > 20) { // todo: check if data is valid so that there are no garbage stored in eMMC
+                            //store data in ram
+                            uint64_t minutes = compact.minutes + (compact.hours * 60);
+                            uint64_t seconds = compact.seconds + (minutes * 60);
+                            uint64_t microseconds = compact.microseconds + (seconds * 1000000);
+                            uint64_t timeOfDay64 = (static_cast<uint64_t>(UINT32_MAX) * microseconds) / 86400000000; // 86.400.000.000 us in a day
+                            auto timeOfDay32 = static_cast<uint32_t>(timeOfDay64);
 
-                        GNSSDataForEMMC.timeOfDay[NumberOfMeasurementsInStruct] = timeOfDay32;
-                        GNSSDataForEMMC.altitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_alt.getValue();
-                        GNSSDataForEMMC.latitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_lat.getValue();
-                        GNSSDataForEMMC.longitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_long.getValue();
+                            GNSSDataForEMMC.timeOfDay[NumberOfMeasurementsInStruct] = timeOfDay32;
+                            GNSSDataForEMMC.altitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_alt.getValue();
+                            GNSSDataForEMMC.latitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_lat.getValue();
+                            GNSSDataForEMMC.longitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_long.getValue();
 
-                        NumberOfMeasurementsInStruct++;
+                            //send data to eMMC
+                            if (NumberOfMeasurementsInStruct >= GNSS_MEASUREMENTS_PER_STRUCT) {
+                                GNSSDataForEMMC.day = compact.day;
+                                GNSSDataForEMMC.month = compact.month;
+                                GNSSDataForEMMC.year = compact.year;
 
-                        //send data to eMMC
-                        if (NumberOfMeasurementsInStruct >= GNSS_MEASUREMENTS_PER_STRUCT) {
-                            GNSSDataForEMMC.day = compact.day;
-                            GNSSDataForEMMC.month = compact.month;
-                            GNSSDataForEMMC.year = compact.year;
-
-                            auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMC::memoryPageSize, eMMCDataTailPointer, 1);
-                            eMMCDataTailPointer++;
-                            if (eMMCDataTailPointer + 1 > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
-                                eMMCDataTailPointer = 0;
+                                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMC::memoryPageSize, eMMCDataTailPointer, 1);
+                                eMMCDataTailPointer++;
+                                if (eMMCDataTailPointer + 1 > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
+                                    eMMCDataTailPointer = 0;
+                                }
+                                NumberOfMeasurementsInStruct = 0;
                             }
-                            NumberOfMeasurementsInStruct = 0;
+
+                            NumberOfMeasurementsInStruct++;
+                        } else {
+                            __NOP();
                         }
+
                         GNSSprint(compact);
                         gnss_error_timout_counter = 0;
                     }
@@ -281,7 +289,6 @@ void GNSSTask::initQueuesToAcceptPointers() {
             gnss_error_timout_counter++;
             if (gnss_error_timout_counter >= gnss_handler.ERROR_TIMEOUT_COUNTER_THRD) {
                 LOG_ERROR << "Multiple GNSS timeouts, attempting to reset GNSS communication...Threshold: " << gnss_handler.ERROR_TIMEOUT_COUNTER_THRD;
-                ;
                 resetGNSSHardware();
                 LOG_ERROR << "GNSS reset due to timeout";
                 gnss_error_timout_counter = 0; // Reset the counter after corrective action

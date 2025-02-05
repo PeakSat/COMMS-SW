@@ -2,6 +2,35 @@
 #include "etl/vector.h"
 #include "etl/string.h"
 
+#include <eMMC.hpp>
+
+bool isDataValid(int8_t year, int8_t month, int8_t day) {
+    if (year < 20 || year > 100) { return false; }
+    if (month < 0 || month > 12) { return false; }
+    if (day < 0 || day > 32) { return false; }
+    return true;
+}
+
+uint32_t findTailPointer() {
+
+    uint32_t numOfBlocks = eMMC::memoryMap[eMMC::CANMessages].size / eMMC::memoryPageSize;
+
+    uint32_t checkHead = 0;
+    uint32_t checkTail = numOfBlocks;
+
+    while (checkHead < checkTail) {
+        uint32_t checkMiddle = (checkHead + checkTail) / 2;
+        GNSSDefinitions::StoredGNSSData middleData{};
+        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&middleData), eMMC::memoryPageSize, checkMiddle, 1);
+        if (isDataValid(middleData.year, middleData.month, middleData.day) == false) {
+            checkTail = checkMiddle;
+        } else {
+        }
+    }
+
+    return 0;
+}
+
 GNSSMessage GNSSReceiver::configureNMEATalkerID(TalkerIDType type, Attributes attributes) {
     Payload payload;
     payload.push_back(GNSSDefinitions::GNSSMessages::ConfigureNMEATalkerID);

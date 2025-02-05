@@ -1,6 +1,6 @@
 #pragma once
 #include "etl/vector.h"
-#include <eMMC.hpp>
+// #include <eMMC.hpp>
 // Task notification defines
 // flags
 #define GNSS_ACK (1 << 0)
@@ -10,6 +10,7 @@
 #define GNSS_INDEX_ACK 2
 #define GNSS_MEASUREMENTS_PER_STRUCT 31
 
+inline uint32_t eMMCDataTailPointer;
 
 namespace GNSSDefinitions {
 
@@ -62,7 +63,7 @@ namespace GNSSDefinitions {
         int8_t year;
         int8_t month;
         int8_t day;
-        uint8_t padding[eMMC::memoryPageSize - (sizeof(uint32_t) * GNSS_MEASUREMENTS_PER_STRUCT * 4 + sizeof(int8_t) * 3)]; //make it's size exactly one eMMC page
+        uint8_t padding[512 - (sizeof(uint32_t) * GNSS_MEASUREMENTS_PER_STRUCT * 4 + sizeof(int8_t) * 3)]; //make it's size exactly one eMMC page
     };
 
 
