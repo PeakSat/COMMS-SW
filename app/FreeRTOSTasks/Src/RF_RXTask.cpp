@@ -77,7 +77,6 @@ void RF_RXTask::ensureRxMode() {
     vTaskDelay(20);
     HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
     transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
-    /// Check transceiver connection
     const int MAX_RETRIES = 3;
     int attempt = 0;
     bool success = false;
@@ -116,13 +115,12 @@ void RF_RXTask::ensureRxMode() {
     uint16_t received_length = 0;
     uint8_t current_counter = 0;
     uint32_t drop_counter = 0;
-    uint32_t print_tx_ong = 0;
     uint32_t receivedEvents;
-    State trx_state;
     ensureRxMode();
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
     GPIO_PinState txamp;
+    State trx_state;
     uint8_t received_packet[1024] = {};
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
@@ -130,23 +128,20 @@ void RF_RXTask::ensureRxMode() {
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
                     transceiver.print_error(error);
-                    // uint8_t length = (transceiver.spi_read_8(BBC0_RXFLH, error) << 8) | static_cast<uint16_t>(transceiver.spi_read_8(BBC0_RXFLL, error));
                     LOG_DEBUG << "[RX AGC] LENGTH: " << received_length;
                     LOG_DEBUG << "[RX AGC] RSSI: " << transceiver.get_rssi(RF09, error);
                     transceiver.print_error(error);
                     txamp = GPIO_PIN_SET;
                     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                     if (received_length) {
-                        // current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
+                        current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
                         LOG_DEBUG << "[RX] c: " << current_counter;
                         rx_total_packets++;
                         LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                         drop_counter = 0;
-                        for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
-                            LOG_DEBUG << transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                        }
-
-                        // transceiver.spi_block_read_8(BBC0_FBRXS, received_length, received_packet, error);
+                        // for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
+                        //     LOG_DEBUG << transceiver.spi_read_8((BBC0_FBRXS) + i, error);
+                        // }
                     }
                     else {
                         drop_counter++;
@@ -156,7 +151,6 @@ void RF_RXTask::ensureRxMode() {
                     }
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
-
         }
         else {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -164,12 +158,6 @@ void RF_RXTask::ensureRxMode() {
                     case READY: {
                         trx_state = transceiver.get_state(RF09, error);
                         if (trx_state != RF_RX) {
-                            // set the uplink frequency
-                            // transceiver.set_state(RF09, RF_TRXOFF, error);
-                            // transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
-                            // transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-                            // transceiver.chip_reset(error);
-                            // transceiver.setup(error);
                             txamp = GPIO_PIN_SET;
                             HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                             ensureRxMode();
@@ -203,24 +191,12 @@ void RF_RXTask::ensureRxMode() {
                             if (receivedEvents &  RXFE_RX) {
                                 trx_state = transceiver.get_state(RF09, error);
                                 if (trx_state != RF_RX) {
-                                    // set the uplink frequency
-                                    // transceiver.set_state(RF09, RF_TRXOFF, error);
-                                    // transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
-                                    // transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-                                    // transceiver.chip_reset(error);
-                                    // transceiver.setup(error);
                                     ensureRxMode();
                                 }
                             }
                         }
                         trx_state = transceiver.get_state(RF09, error);
                         if (trx_state != RF_RX) {
-                            // set the uplink frequency
-                            // transceiver.set_state(RF09, RF_TRXOFF, error);
-                            // transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
-                            // transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-                            // transceiver.chip_reset(error);
-                            // transceiver.setup(error);
                             ensureRxMode();
                         }
                         break;
