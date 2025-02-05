@@ -64,6 +64,9 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
 }
 
 [[noreturn]] void RF_TXTask::execute() {
+    outgoingTMQueue = xQueueCreateStatic(TMQueueSize, sizeof(CAN::StoredPacket), outgoingTMQueueStorageArea,
+                                            &outgoingTMQueueBuffer);
+    vQueueAddToRegistry(outgoingTMQueue, "TM queue");
     vTaskDelay(8000);
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
     StaticTimer_t xTimerBuffer;
@@ -94,20 +97,6 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
     uint8_t state = 0;
     uint8_t counter = 0;
     uint32_t receivedEventsTransmit;
-    if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-        auto status = transceiver.check_transceiver_connection(error);
-        if (status.has_value()) {
-            LOG_INFO << "AT86RF215 CONNECTION FROM TX TASK OK";
-        } else
-            /// TODO: Error handling
-                LOG_ERROR << "AT86RF215 ##ERROR## WITH CODE: " << status.error();
-        /// Set the down-link frequency
-        transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFTX);
-        transceiver.set_state(RF09, RF_TRXOFF, error);
-        transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-        transceiver.chip_reset(error);
-        xSemaphoreGive(transceiver_handler.resources_mtx);
-    }
     uint32_t tx_counter = 0;
     CAN::StoredPacket TM_PACKET;
     /// TX AMP

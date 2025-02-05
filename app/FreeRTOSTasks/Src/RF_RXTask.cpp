@@ -1,7 +1,7 @@
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
 #include <RF_TXTask.hpp>
-
+#define MAGIC_NUMBER 4
 using namespace AT86RF215;
 
 void RF_RXTask::ensureRxMode() {
@@ -77,43 +77,71 @@ void RF_RXTask::ensureRxMode() {
     vTaskDelay(20);
     HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
     transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
-    /// Check transceiver connection
-    if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-        auto status = transceiver.check_transceiver_connection(error);
-        if (status.has_value()) {
-        } else
-            LOG_ERROR << "CONNECTION ##ERROR## WITH CODE: " << status.error();
-        transceiver.set_state(RF09, RF_TRXOFF, error);
-        transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-        transceiver.chip_reset(error);
-        xSemaphoreGive(transceiver_handler.resources_mtx);
+    const int MAX_RETRIES = 3;
+    int attempt = 0;
+    bool success = false;
+    while (attempt < MAX_RETRIES) {
+        if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
+            auto status = transceiver.check_transceiver_connection(error);
+            if (status.has_value()) {
+                success = true;  // Connection successful
+                LOG_INFO << "[SPI CONNECTION ESTABLISHED]";
+            } else {
+                LOG_ERROR << "CONNECTION ##ERROR## WITH CODE: " << status.error();
+            }
+            transceiver.set_state(RF09, RF_TRXOFF, error);
+            transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09,
+                                      transceiver.freqSynthesizerConfig.channelNumber09,
+                                      transceiver.freqSynthesizerConfig.channelMode09,
+                                      transceiver.freqSynthesizerConfig.loopBandwidth09,
+                                      transceiver.freqSynthesizerConfig.channelSpacing09, error);
+            transceiver.chip_reset(error);
+
+            xSemaphoreGive(transceiver_handler.resources_mtx);
+
+            if (success) {
+                break;  // Exit loop if successful
+            }
+
+            attempt++;
+            LOG_ERROR << "Retrying connection attempt " << attempt << "/" << MAX_RETRIES;
+            vTaskDelay(pdMS_TO_TICKS(100));  // Small delay before retrying
+        }
+    }
+    if (!success) {
+        LOG_ERROR << "Failed to establish connection after " << MAX_RETRIES << " attempts.";
     }
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
     uint16_t received_length = 0;
     uint8_t current_counter = 0;
     uint32_t drop_counter = 0;
-    uint32_t print_tx_ong = 0;
     uint32_t receivedEvents;
-    State trx_state;
     ensureRxMode();
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
     GPIO_PinState txamp;
+    State trx_state;
+    uint8_t received_packet[1024] = {};
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
-            if (receivedEvents & AGC_HOLD) {
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
+                    transceiver.print_error(error);
+                    LOG_DEBUG << "[RX AGC] LENGTH: " << received_length;
+                    LOG_DEBUG << "[RX AGC] RSSI: " << transceiver.get_rssi(RF09, error);
+                    transceiver.print_error(error);
+                    txamp = GPIO_PIN_SET;
+                    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                     if (received_length) {
-                        // LOG_DEBUG << "[RSSI]: " << transceiver.get_rssi(RF09, error);
                         current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
                         LOG_DEBUG << "[RX] c: " << current_counter;
                         rx_total_packets++;
                         LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                         drop_counter = 0;
-                        for (int i = 0; i < received_length; i++)
-                            LOG_DEBUG << transceiver.spi_read_8((BBC0_FBRXS) + i, error);
+                        // for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
+                        //     LOG_DEBUG << transceiver.spi_read_8((BBC0_FBRXS) + i, error);
+                        // }
                     }
                     else {
                         drop_counter++;
@@ -123,109 +151,87 @@ void RF_RXTask::ensureRxMode() {
                     }
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
-            }
-            else {
-                if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-                    switch (uint8_t rf_state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
-                        case READY: {
-                            trx_state = transceiver.get_state(RF09, error);
-                            if (trx_state != RF_RX) {
-                                // set the uplink frequency
-                                // transceiver.set_state(RF09, RF_TRXOFF, error);
-                                // transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
-                                // transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-                                // transceiver.chip_reset(error);
-                                // transceiver.setup(error);
-                                txamp = GPIO_PIN_SET;
-                                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
-                                ensureRxMode();
-                            }
-                            break;
-                        }
-                        case TX_ONG: {
-                            if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(2000)) == pdTRUE) {
-                                ensureRxMode();
-                                LOG_INFO << "[RX] TXFE received, switching to RX mode.";
-                            }
-                            else {
-                                LOG_ERROR << "[RX] TXFE NOT RECEIVED! Possible deadlock.";
-
-                                // Attempt recovery
-                                // Uncomment if transceiver reset is necessary
-                                transceiver.set_state(RF09, RF_TRXOFF, error);
-                                transceiver.chip_reset(error);
-
-                                ensureRxMode();  // Ensure RX mode in all cases
-                            }
-                            transceiver.tx_ongoing = false;
+        }
+        else {
+            if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
+                switch (uint8_t rf_state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
+                    case READY: {
+                        trx_state = transceiver.get_state(RF09, error);
+                        if (trx_state != RF_RX) {
                             txamp = GPIO_PIN_SET;
                             HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
-                            break;
+                            ensureRxMode();
                         }
-                        case RX_ONG: {
-                            if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(1000))) {
-                                if (receivedEvents &  RXFE_RX) {
-                                    trx_state = transceiver.get_state(RF09, error);
-                                    if (trx_state != RF_RX) {
-                                        // set the uplink frequency
-                                        // transceiver.set_state(RF09, RF_TRXOFF, error);
-                                        // transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
-                                        // transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-                                        // transceiver.chip_reset(error);
-                                        // transceiver.setup(error);
-                                        txamp = GPIO_PIN_SET;
-                                        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
-                                        ensureRxMode();
-                                    }
+                        break;
+                    }
+                    case TX_ONG: {
+                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(1000)) == pdTRUE) {
+                            if (receivedEvents & TXFE) {
+                                ensureRxMode();
+                                LOG_INFO << "[RX] TXFE";
+                            }
+                        }
+                        else {
+                            LOG_ERROR << "[RX] TXFE NOT RECEIVED";
+                            // DEADLOCK HANDLING
+                            transceiver.print_error(error);
+                            transceiver.print_state(RF09, error);
+                            transceiver.set_state(RF09, RF_TRXOFF, error);
+                            transceiver.chip_reset(error);
+                            transceiver.print_error(error);
+                            transceiver.tx_ongoing = false;
+                            ensureRxMode();
+                        }
+                        // txamp = GPIO_PIN_SET;
+                        // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                        break;
+                    }
+                    case RX_ONG: {
+                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(1000))) {
+                            if (receivedEvents &  RXFE_RX) {
+                                trx_state = transceiver.get_state(RF09, error);
+                                if (trx_state != RF_RX) {
+                                    ensureRxMode();
                                 }
                             }
-                            trx_state = transceiver.get_state(RF09, error);
-                            if (trx_state != RF_RX) {
-                                // set the uplink frequency
-                                // transceiver.set_state(RF09, RF_TRXOFF, error);
-                                // transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
-                                // transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-                                // transceiver.chip_reset(error);
-                                // transceiver.setup(error);
-                                txamp = GPIO_PIN_SET;
-                                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
-                                ensureRxMode();
-                            }
-                            break;
                         }
-                        case RX_TX_ONG: {
-                            LOG_DEBUG << "[RX] RXONG AND TXONG";
-                            break;
+                        trx_state = transceiver.get_state(RF09, error);
+                        if (trx_state != RF_RX) {
+                            ensureRxMode();
                         }
-                        default: {
-                            LOG_ERROR << "[RX] UNEXPECTED CASE";
-                            break;
-                        }
+                        break;
+                    }
+                    case RX_TX_ONG: {
+                        LOG_DEBUG << "[RX] RXONG AND TXONG";
+                        break;
+                    }
+                    default: {
+                        LOG_ERROR << "[RX] UNEXPECTED CASE";
+                        break;
                     }
                 }
-                if (transceiver.TransceiverError_flag) {
-                    transceiver.TransceiverError_flag = false;
-                    LOG_ERROR << "[RX] Transceiver Error";
-                }
-                if (transceiver.FrameBufferLevelIndication_flag) {
-                    transceiver.FrameBufferLevelIndication_flag = false;
-                    LOG_ERROR << "[RX] FrameBuffer Level Indication";
-                }
-                if (transceiver.IFSynchronization_flag) {
-                    transceiver.IFSynchronization_flag = false;
-                    LOG_ERROR << "[RX] IF Synchronization";
-                }
-                if (transceiver.Voltage_Drop) {
-                    transceiver.Voltage_Drop = false;
-                    LOG_ERROR << "[RX] Voltage Drop";
-                }
-                if (transceiver.TransmitterFrameEnd_flag) {
-                    transceiver.TransmitterFrameEnd_flag = false;
-                    LOG_DEBUG << "[RX] Transmitter FrameEnd";
-                }
-                xSemaphoreGive(transceiver_handler.resources_mtx);
             }
+            if (transceiver.TransceiverError_flag) {
+                transceiver.TransceiverError_flag = false;
+                LOG_ERROR << "[RX] Transceiver Error";
+            }
+            if (transceiver.FrameBufferLevelIndication_flag) {
+                transceiver.FrameBufferLevelIndication_flag = false;
+                LOG_ERROR << "[RX] FrameBuffer Level Indication";
+            }
+            if (transceiver.IFSynchronization_flag) {
+                transceiver.IFSynchronization_flag = false;
+                LOG_ERROR << "[RX] IF Synchronization";
+            }
+            if (transceiver.Voltage_Drop) {
+                transceiver.Voltage_Drop = false;
+                LOG_ERROR << "[RX] Voltage Drop";
+            }
+            if (transceiver.TransmitterFrameEnd_flag) {
+                transceiver.TransmitterFrameEnd_flag = false;
+                LOG_INFO << "[RX] Transceiver FRAME END";
+            }
+            xSemaphoreGive(transceiver_handler.resources_mtx);
         }
     }
 }
-

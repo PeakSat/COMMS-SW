@@ -6,9 +6,7 @@
 #include <eMMC.hpp>
 
 void CANParserTask::execute() {
-    outgoingTMQueue = xQueueCreateStatic(TMQueueSize, sizeof(CAN::StoredPacket), outgoingTMQueueStorageArea,
-                                         &outgoingTMQueueBuffer);
-    vQueueAddToRegistry(outgoingTMQueue, "CAN TM queue");
+
     // CAN::CANBuffer_t message = {};
     // /**
     //  * Simple 64 byte message sending

@@ -44,7 +44,7 @@ void app_main(void) {
     uartGatekeeperTask.emplace();
     rf_rxtask.emplace();
     rf_txtask.emplace();
-    // eMMCTask.emplace();
+    eMMCTask.emplace();
     // gnssTask.emplace();
     testTask.emplace();
     ina3221Task.emplace();
@@ -55,7 +55,7 @@ void app_main(void) {
     uartGatekeeperTask->createTask();
     rf_rxtask->createTask();
     rf_txtask->createTask();
-    // eMMCTask->createTask();
+    eMMCTask->createTask();
     // gnssTask->createTask();
     testTask->createTask();
     ina3221Task->createTask();

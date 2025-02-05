@@ -6,7 +6,7 @@
 #include "etl/optional.h"
 #include <Frame.hpp>
 
-#define MaxPacketLength 2046
+#define MaxPacketLength 128
 
 inline QueueHandle_t outgoingTMQueue;
 inline StaticQueue_t outgoingTMQueueBuffer;
