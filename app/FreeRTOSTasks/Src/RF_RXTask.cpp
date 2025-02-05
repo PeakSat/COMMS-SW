@@ -126,21 +126,7 @@ void RF_RXTask::ensureRxMode() {
     uint32_t rx_total_drop_packets = 0;
     GPIO_PinState txamp;
     State trx_state;
-    // uint8_t received_packet[2048] = {};
-
-    // Write message to eMMC
-    // PacketData packetTestData = rf_txtask->createRandomPacketData(MaxPacketLength);
-    // counter++;
-    // packetTestData.packet[0] = counter;
-    // auto status = storeItem(eMMC::memoryMap[eMMC::COMMS_HOUSEKEEPING], test_array, 1024, eMMCPacketTailPointer, 2);
-    // Add message to queue
     CAN::StoredPacket PacketToBeStored;
-    // PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-    // eMMCPacketTailPointer += 2;
-    // PacketToBeStored.size = 50;
-    // LOG_DEBUG << "SEND TM FROM COMMS";
-    // xQueueSendToBack(outgoingTMQueue, &PacketToBeStored, 0);
-    // xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_COMMS, eSetBits);
     uint32_t eMMCPacketTailPointer = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {

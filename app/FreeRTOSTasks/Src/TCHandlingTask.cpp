@@ -1,8 +1,14 @@
 #include "TCHandlingTask.hpp"
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
+
+#include <ApplicationLayer.hpp>
+#include <COBS.hpp>
+#include <MessageParser.hpp>
+#include <Peripheral_Definitions.hpp>
 #include <at86rf215definitions.hpp>
 #include <eMMC.hpp>
+#include "Message.hpp"
 
 
 [[noreturn]] void TCHandlingTask::execute() {
@@ -16,10 +22,9 @@
             // TODO parse the TC
             while (uxQueueMessagesWaiting(incomingTCQueue)) {
                 xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
-                getItem(eMMC::memoryMap[eMMC::RECEIVED_TC], TC_BUFFER, 2048, TC_PACKET.pointerToeMMCItemData, 2);
-                for (int i = 0 ; i < TC_PACKET.size ; i++) {
-                    LOG_INFO << "rx data: " << TC_BUFFER[i];
-                }
+                getItem(eMMC::memoryMap[eMMC::RECEIVED_TC], TC_BUFFER, 2048, TC_PACKET.pointerToeMMCItemData, 4);
+                auto cobsDecodedMessage = COBSdecode<1024>(TC_BUFFER, TC_PACKET.size);
+                CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
             }
         }
     }
