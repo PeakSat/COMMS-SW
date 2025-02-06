@@ -128,10 +128,7 @@ void RF_RXTask::ensureRxMode() {
     ensureRxMode();
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
-    GPIO_PinState txamp;
     State trx_state;
-    CAN::StoredPacket PacketToBeStored;
-    uint32_t eMMCPacketTailPointer = 0;
     Message message;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {

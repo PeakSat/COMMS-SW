@@ -49,7 +49,7 @@ void Logger::log(Logger::LogLevel level, etl::istring &message) {
     output.append(levelString.c_str());
     output.append("] ");
 
-    etl::string<MaxLogNameSize> subsystemString = "COMMS";
+    etl::string<MaxLogNameSize> subsystemString = "COMMS-GS";
     while (subsystemString.available()) {
         subsystemString.append(" ");
     }

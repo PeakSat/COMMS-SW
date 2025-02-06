@@ -109,17 +109,18 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
             while (uxQueueMessagesWaiting(outgoingTMQueue)) {
                 // Get the message pointer from the queue
                 /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
-
                 xQueueReceive(outgoingTMQueue, &TM_PACKET, portMAX_DELAY);
-                if (receivedEventsTransmit & TM_OBC) {
-                    CAN::Application::getStoredMessage(&TM_PACKET, TX_BUFF, TM_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
-                    LOG_DEBUG << "Received TM from OBC... preparing the transmission";
-                }
-                if (receivedEventsTransmit & TM_COMMS) {
-                    LOG_DEBUG << "Received TM from COMMS... preparing the transmission";
-                    if (receivedEventsTransmit & TM_COMMS) {
-                        getItem(eMMC::memoryMap[eMMC::COMMS_HOUSEKEEPING], TX_BUFF, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]), TM_PACKET.pointerToeMMCItemData, 2);
-                        LOG_DEBUG << "Received TM from COMMS... preparing the transmission";
+                // if (receivedEventsTransmit & TM_OBC) {
+                //     CAN::Application::getStoredMessage(&TM_PACKET, TX_BUFF, TM_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
+                //     LOG_DEBUG << "Received TM from OBC... preparing the transmission";
+                // }
+                if (receivedEventsTransmit & TC_COMMS) {
+                    auto status = getItem(eMMC::memoryMap[eMMC::COMMS_TC], TX_BUFF, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]), TM_PACKET.pointerToeMMCItemData, 2);
+                    if (status.has_value()) {
+                        LOG_DEBUG << "Received TC from COMMS... preparing the transmission";
+                    }
+                    else {
+                        LOG_ERROR << "ERROR: memory";
                     }
                 }
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -127,7 +128,7 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
                 for (uint8_t i = 0; i < TM_PACKET.size; i++) {
-                    LOG_INFO << "Data to be sent: " << TX_BUFF[i];
+                    LOG_INFO << "TC to be sent: " << TX_BUFF[i];
                 }
                 switch (state) {
                     case READY: {
@@ -152,7 +153,6 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                         ensureTxMode();
                                         transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size + 4, error);
                                         tx_counter++;
-                                        LOG_DEBUG << "[TXFE] TX PACKET SIZE: " << TM_PACKET.size;
                                         LOG_INFO << "[TXFE] TX counter: " << tx_counter;
                                     }
                                     xSemaphoreGive(transceiver_handler.resources_mtx);
@@ -170,7 +170,6 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                         ensureTxMode();
                                         transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size + 4, error);
                                         tx_counter++;
-                                        LOG_DEBUG << "[RXFE] TX PACKET SIZE: " << TM_PACKET.size;
                                         LOG_INFO << "[RXFE] TX counter: " << tx_counter;
                                     }
                                     xSemaphoreGive(transceiver_handler.resources_mtx);

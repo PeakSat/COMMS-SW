@@ -20,6 +20,7 @@ namespace AT86RF215 {
     #define RXFE_STATE (1 << 14)
     #define TM_OBC (1 << 15)
     #define TM_COMMS (1 << 16)
+    #define TC_COMMS (1 << 17)
     /// Indexes
     #define NOTIFY_INDEX_TRANSMIT 1
     #define NOTIFY_INDEX_RXFE_RX 2
