@@ -122,6 +122,7 @@ void ParameterService::initializeParameterMap() {
         {EPSParameters::EPS_ABF_PLACED_1ID, EPSParameters::EPS_ABF_PLACED_1},
         {EPSParameters::EPS_VOLT_BRDSUP_RAWID, EPSParameters::EPS_VOLT_BRDSUP_RAW},
         {EPSParameters::EPS_TEMP_MCU_RAWID, EPSParameters::EPS_TEMP_MCU_RAW},
+        {EPSParameters::EPS_VIP_VOLT_VD0_RAWID, EPSParameters::EPS_VIP_VOLT_VD0_RAW},
         {EPSParameters::EPS_VIP_VOLT_VD1_RAWID, EPSParameters::EPS_VIP_VOLT_VD1_RAW},
         {EPSParameters::EPS_VIP_VOLT_VD2_RAWID, EPSParameters::EPS_VIP_VOLT_VD2_RAW},
         {EPSParameters::EPS_VIP_VOLT_VD3_RAWID, EPSParameters::EPS_VIP_VOLT_VD3_RAW},
@@ -862,6 +863,7 @@ void ParameterService::initializeParameterMap() {
         {COMMSParameters::gnss_delay_cmdsID, COMMSParameters::gnss_delay_cmds},
         {COMMSParameters::satellites_trackedID, COMMSParameters::satellites_tracked},
         {COMMSParameters::gnss_fix_qualityID, COMMSParameters::gnss_fix_quality},
+        {COMMSParameters::gnss_TM_data_periodID, COMMSParameters::gnss_TM_data_period},
         {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}};
 }
 #endif

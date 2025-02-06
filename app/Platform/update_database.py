@@ -173,6 +173,7 @@ for idx, row in enumerate(valid_rows):
             block_lines = namespace_blocks[acronym]
             block_lines.append(f"        {variable_name}ID = {encoded_id}")
 
+            variable_type = type_cell.value.strip() if type_cell.value else "int"
             # Enum definitions (if type is "enum")
             if (variable_type in {"uint8_t", "uint16_t", "uint32_t", "uint64_t",
                                   "int8_t", "int16_t", "int32_t", "int64_t"} and row[6].value and str(row[6].value).strip()):  # 7th column (index 6)
