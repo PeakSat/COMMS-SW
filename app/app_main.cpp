@@ -22,6 +22,7 @@
 #include "git_version.h"
 #include <ServicePool.hpp>
 #include "at86rf215.hpp"
+#include "HeartbeatTask.hpp"
 
 ParameterService parameterMap;
 
@@ -51,17 +52,19 @@ void app_main(void) {
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
     canParserTask.emplace();
+    heartbeatTask.emplace();
 
     uartGatekeeperTask->createTask();
-    rf_rxtask->createTask();
-    rf_txtask->createTask();
+    // rf_rxtask->createTask();
+    // rf_txtask->createTask();
     eMMCTask->createTask();
-    gnssTask->createTask();
+    // gnssTask->createTask();
     testTask->createTask();
-    ina3221Task->createTask();
+    // ina3221Task->createTask();
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
     canParserTask->createTask();
+    heartbeatTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     /* Start the scheduler. */
@@ -175,4 +178,3 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
         GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
     }
 }
-

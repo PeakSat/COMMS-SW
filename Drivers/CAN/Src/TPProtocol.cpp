@@ -3,6 +3,7 @@
 #include "CANGatekeeperTask.hpp"
 #include "Peripheral_Definitions.hpp"
 #include <ApplicationLayer.hpp>
+#include <HeartbeatTask.hpp>
 #include <PlatformParameters.hpp>
 extern FDCAN_HandleTypeDef hfdcan1;
 extern FDCAN_HandleTypeDef hfdcan2;
@@ -62,6 +63,12 @@ void TPProtocol::parseMessage(TPMessage& message) {
             auto senderName = CAN::Application::nodeIdToString.at(senderID);
             LOG_DEBUG << "Received pong from " << senderName.c_str();
         } break;
+        case CAN::Application::Heartbeat: {
+            auto senderID = static_cast<CAN::NodeIDs>(message.idInfo.sourceAddress);
+            auto senderName = CAN::Application::nodeIdToString.at(senderID);
+            LOG_DEBUG << "Received heartbeat from " << senderName.c_str();
+            heartbeatReceived = true;
+        } break;
         case CAN::Application::LogMessage: {
             auto senderID = static_cast<CAN::NodeIDs>(message.idInfo.sourceAddress);
             auto senderName = CAN::Application::nodeIdToString.at(senderID);
@@ -78,10 +85,6 @@ void TPProtocol::parseMessage(TPMessage& message) {
 }
 
 bool TPProtocol::createCANTPMessage(const TPMessage& message, bool isISR) {
-    if (!createCANTPMessageWithRetry(message, isISR, 2)) {
-        return 0;
-    }
-    return 1;
     if (!createCANTPMessageWithRetry(message, isISR, 2)) {
         return 0;
     } else {
@@ -134,7 +137,8 @@ bool TPProtocol::createCANTPMessageWithRetry(const TPMessage& message, bool isIS
     return 1;
 }
 
-bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool isISR) {
+bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& messageToBeSent, bool isISR) {
+    TPMessage message = messageToBeSent;
     size_t messageSize = message.dataSize;
     uint32_t id = message.encodeId();
 
@@ -147,6 +151,12 @@ bool TPProtocol::createCANTPMessageNoRetransmit(const TPMessage& message, bool i
         canGatekeeperTask->send({id, data}, isISR);
         xTaskNotifyGive(canGatekeeperTask->taskHandle);
         return false;
+    }
+
+    //Add a dummy byte for single byte messages so that the gatekeeper can distinguish it from trash
+    if (messageSize == 1) {
+        messageSize = 2;
+        message.appendUint8(0xAA);
     }
 
     // First Frame
