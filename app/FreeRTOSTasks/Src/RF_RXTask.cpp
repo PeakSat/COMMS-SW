@@ -146,12 +146,14 @@ void RF_RXTask::ensureRxMode() {
                         for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
                             RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                         }
-                        storeItem(eMMC::memoryMap[eMMC::RECEIVED_TC], RX_BUFF, 2048, eMMCPacketTailPointer, 4);
-                        PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                        PacketToBeStored.size = received_length - MAGIC_NUMBER;
-                        eMMCPacketTailPointer += 4;
-                        xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
-                        xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TC, 0, eNoAction);
+                        auto status = storeItem(eMMC::memoryMap[eMMC::RECEIVED_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
+                        if (status.has_value()) {
+                            PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                            PacketToBeStored.size = received_length - MAGIC_NUMBER;
+                            eMMCPacketTailPointer += 1;
+                            xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
+                            xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TC, 0, eNoAction);
+                        }
                     }
                     else {
                         drop_counter++;

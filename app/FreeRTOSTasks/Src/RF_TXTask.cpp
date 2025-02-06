@@ -114,7 +114,7 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                 if (receivedEventsTransmit & TM_OBC) {
                     CAN::Application::getStoredMessage(&TM_PACKET, TX_BUFF, TM_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
                     LOG_DEBUG << "Received TM from OBC... preparing the transmission";
-                }
+              }
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     xSemaphoreGive(transceiver_handler.resources_mtx);
