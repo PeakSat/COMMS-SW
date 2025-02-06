@@ -181,9 +181,9 @@ for idx, row in enumerate(valid_rows):
                     f"    enum {variable_name}_enum : {type_cell.value.strip()} {{\n        {enum_items}\n    }};"
                 )
                 block_lines.append(enum_lines)
-
+                param_line = f"    inline Parameter<{variable_name}_enum> {variable_name}({param_value});"
             # Parameter initializations
-            if variable_type == "enum":
+            elif variable_type == "enum":
                 param_line = f"    inline Parameter<{variable_name}_enum> {variable_name}({param_value});"
             else:
                 param_line = f"    inline Parameter<{variable_type}> {variable_name}({param_value});"

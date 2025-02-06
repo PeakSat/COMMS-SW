@@ -56,12 +56,12 @@ namespace OBDHParameters {
         ScienceMode = 2,
         SafeMode = 3
     };
-    inline Parameter<uint8_t> OperationalMode(NominalMode);
+    inline Parameter<OperationalMode_enum> OperationalMode(NominalMode);
     enum SpacecraftTimeRef_enum : uint8_t {
         Spacecraft = 0,
         GroundStation = 1
     };
-    inline Parameter<uint8_t> SpacecraftTimeRef(Spacecraft);
+    inline Parameter<SpacecraftTimeRef_enum> SpacecraftTimeRef(Spacecraft);
     inline Parameter<uint32_t> ReconfigurationTimer(0);
     inline Parameter<Time::DefaultCUC> OnBoardTime(Time::DefaultCUC(0));
     inline Parameter<float> CANBUSLoad1(0);
@@ -70,12 +70,12 @@ namespace OBDHParameters {
         Main = 0,
         Redundant = 1
     };
-    inline Parameter<uint8_t> CANBUSActive(Main);
+    inline Parameter<CANBUSActive_enum> CANBUSActive(Main);
     enum MCUFDIR_enum : uint8_t {
         OBC = 0,
         ADCS = 1
     };
-    inline Parameter<uint8_t> MCUFDIR(OBC);
+    inline Parameter<MCUFDIR_enum> MCUFDIR(OBC);
     inline Parameter<uint8_t> MCURestartSafeModeThreshold(0);
     inline Parameter<float> NANDFLASHLCLThreshold(0);
     inline Parameter<float> MRAMLCLThreshold(0);
@@ -89,7 +89,7 @@ namespace OBDHParameters {
         First = 0,
         Second = 1
     };
-    inline Parameter<uint8_t> MemoryPartition(First);
+    inline Parameter<MemoryPartition_enum> MemoryPartition(First);
     inline Parameter<float> NANDFLASHScrubbingFrequency(0);
     inline Parameter<float> ΜRAMScrubbingFrequency(0);
     inline Parameter<float> ProgramFlashScrubbingFrequency(0);
@@ -136,7 +136,7 @@ namespace COMMSParameters {
         ThreeDoorOpen = 3,
         FullyDeployed = 4
     };
-    inline Parameter<uint8_t> antenna_deployment_status(Closed);
+    inline Parameter<antenna_deployment_status_enum> antenna_deployment_status(Closed);
     inline Parameter<uint16_t> cw_interval(0);
     inline Parameter<uint16_t> bfsk_beacon_interval(0);
     inline Parameter<uint32_t> uhf_tx_power(0);
@@ -446,7 +446,7 @@ namespace ADCSParameters {
         Soft = 55,
         Hard = 66
     };
-    inline Parameter<uint8_t> ResetType(DoNothng);
+    inline Parameter<ResetType_enum> ResetType(DoNothng);
     inline Parameter<uint32_t> UnixTimeSeconds(0);
     inline Parameter<uint32_t> UnixTimeNanoSeconds(0);
     enum AdcsRunModeSelect_enum : uint8_t {
@@ -455,7 +455,7 @@ namespace ADCSParameters {
         AdcsTriggered = 2,
         AdcsSimulation = 3
     };
-    inline Parameter<uint8_t> AdcsRunModeSelect(AdcsOff);
+    inline Parameter<AdcsRunModeSelect_enum> AdcsRunModeSelect(AdcsOff);
     inline Parameter<AdcsRunModeSelect_enum> RunModeDefault(AdcsOff);
     enum OpStateDefault_enum : uint8_t {
         OpStateManual = 0,
@@ -463,7 +463,7 @@ namespace ADCSParameters {
         OpStateSafe = 2,
         OpStateFault = 3
     };
-    inline Parameter<uint8_t> OpStateDefault(OpStateManual);
+    inline Parameter<OpStateDefault_enum> OpStateDefault(OpStateManual);
     inline Parameter<OpStateDefault_enum> OpState(OpStateSafe);
     inline Parameter<float> Ixx(0);
     inline Parameter<float> Iyy(0);
@@ -479,7 +479,7 @@ namespace ADCSParameters {
         PowerOnPass = 4,
         PowerOffUpgrade = 5
     };
-    inline Parameter<uint16_t> RWL0_power_state(PowerOff);
+    inline Parameter<RWL0_power_state_enum> RWL0_power_state(PowerOff);
     inline Parameter<RWL0_power_state_enum> RWL1_power_state(PowerOff);
     inline Parameter<RWL0_power_state_enum> RWL2_power_state(PowerOff);
     inline Parameter<RWL0_power_state_enum> Mag0Power(PowerOff);
@@ -495,7 +495,7 @@ namespace ADCSParameters {
         RwlFail2 = 3,
         RwlFail3 = 4
     };
-    inline Parameter<uint8_t> RwlFailId(RwlFailNone);
+    inline Parameter<RwlFailId_enum> RwlFailId(RwlFailNone);
     enum MountStackX_enum : uint8_t {
         AxisNotUsed = 0,
         AxisPosX = 1,
@@ -514,7 +514,7 @@ namespace ADCSParameters {
         AxisPmdD = 14,
         AxisSkew = 15
     };
-    inline Parameter<uint8_t> MountStackX(AxisNegY);
+    inline Parameter<MountStackX_enum> MountStackX(AxisNegY);
     inline Parameter<MountStackX_enum> MountStackY(AxisNegX);
     inline Parameter<MountStackX_enum> MountStackZ(AxisNegZ);
     inline Parameter<MountStackX_enum> MountMtq0(AxisNegY);
@@ -548,7 +548,7 @@ namespace ADCSParameters {
         EstGyroEkf = 6,
         EstUser = 100
     };
-    inline Parameter<uint8_t> EstModeMainDefault(EstGyro);
+    inline Parameter<EstModeMainDefault_enum> EstModeMainDefault(EstGyro);
     inline Parameter<EstModeMainDefault_enum> EstModeBackupDefault(EstGyro);
     inline Parameter<EstModeMainDefault_enum> EstModeMain(EstGyro);
     inline Parameter<EstModeMainDefault_enum> EstModeBackup(EstGyro);
@@ -581,7 +581,7 @@ namespace ADCSParameters {
         OrbAsgp4 = 2,
         OrbAsgp4Gnss = 3
     };
-    inline Parameter<uint8_t> OrbMode(OrbTle);
+    inline Parameter<OrbMode_enum> OrbMode(OrbTle);
     inline Parameter<uint16_t> BatchSize(0);
     inline Parameter<uint32_t> MaxTimeBetween(0);
     inline Parameter<uint16_t> MaxPosErr(0);
@@ -645,7 +645,7 @@ namespace ADCSParameters {
         ConHxyzRW = 51,
         ConUser = 100
     };
-    inline Parameter<uint8_t> ConModeSelect(ConNone);
+    inline Parameter<ConModeSelect_enum> ConModeSelect(ConNone);
     inline Parameter<ConModeSelect_enum> ConModeDefault(ConNone);
     inline Parameter<ConModeSelect_enum> ConModeSafe(ConNone);
     inline Parameter<ConModeSelect_enum> ConModeAuto(ConNone);
