@@ -10,6 +10,8 @@
 #include <eMMC.hpp>
 #include "Message.hpp"
 
+#include <TPProtocol.hpp>
+
 
 [[noreturn]] void TCHandlingTask::execute() {
     LOG_INFO << "TCHandlingTask::execute()";
@@ -24,7 +26,15 @@
                 xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
                 getItem(eMMC::memoryMap[eMMC::RECEIVED_TC], TC_BUFFER, 2048, TC_PACKET.pointerToeMMCItemData, 4);
                 auto cobsDecodedMessage = COBSdecode<1024>(TC_BUFFER, TC_PACKET.size);
-                CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
+                CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
+                for (int i = 0; i < TC_PACKET.size; i++) {
+                    message.appendUint8(TC_BUFFER[i]);
+                }
+                LOG_INFO << "Received message TC with length: " << TC_PACKET.size;
+                if (TC_PACKET.size == 9) {
+                    CAN::TPProtocol::createCANTPMessage(message, false);
+                }
+
             }
         }
     }

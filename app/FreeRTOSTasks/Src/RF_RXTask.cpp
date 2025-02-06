@@ -137,9 +137,7 @@ void RF_RXTask::ensureRxMode() {
                     LOG_DEBUG << "[RX AGC] LENGTH: " << received_length;
                     LOG_DEBUG << "[RX AGC] RSSI: " << transceiver.get_rssi(RF09, error);
                     transceiver.print_error(error);
-                    txamp = GPIO_PIN_SET;
-                    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
-                    if (received_length) {
+                    if (received_length && received_length != 16) {
                         current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
                         LOG_DEBUG << "[RX] c: " << current_counter;
                         rx_total_packets++;
@@ -170,8 +168,8 @@ void RF_RXTask::ensureRxMode() {
                     case READY: {
                         trx_state = transceiver.get_state(RF09, error);
                         if (trx_state != RF_RX) {
-                            txamp = GPIO_PIN_SET;
-                            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                            // txamp = GPIO_PIN_SET;
+                            // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                             ensureRxMode();
                         }
                         break;
