@@ -101,27 +101,22 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
     CAN::StoredPacket TM_PACKET;
     /// TX AMP
     GPIO_PinState txamp;
-    txamp = GPIO_PIN_RESET;
+    txamp = GPIO_PIN_SET;
     // Open the PA before you send the packet
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, pdTICKS_TO_MS(transceiver_handler.BEACON_PERIOD_MS + 1000)) == pdTRUE) {
             while (uxQueueMessagesWaiting(outgoingTMQueue)) {
-                // Get the message pointer from the queue
+                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
                 /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
                 xQueueReceive(outgoingTMQueue, &TM_PACKET, portMAX_DELAY);
-                // if (receivedEventsTransmit & TM_OBC) {
-                //     CAN::Application::getStoredMessage(&TM_PACKET, TX_BUFF, TM_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
-                //     LOG_DEBUG << "Received TM from OBC... preparing the transmission";
-                // }
                 if (receivedEventsTransmit & TC_COMMS) {
                     auto status = getItem(eMMC::memoryMap[eMMC::COMMS_TC], TX_BUFF, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]), TM_PACKET.pointerToeMMCItemData, 2);
                     if (status.has_value()) {
                         LOG_DEBUG << "Received TC... preparing its transmission to the air";
                     }
-                    else {
+                    else
                         LOG_ERROR << "ERROR: memory";
-                    }
                 }
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
@@ -131,7 +126,6 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                 //     LOG_INFO << "TC to be sent: " << TX_BUFF[i];
                 // }
                 switch (state) {
-                    // LOG_DEBUG << "state: " << state;
                     case READY: {
                         if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                             if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
@@ -164,8 +158,7 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                     }
                     case RX_ONG: {
                         uint32_t receivedEventsRXFE;
-                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC_RELEASE, pdFALSE, pdTRUE, &receivedEventsRXFE, pdTICKS_TO_MS(1000)) == pdTRUE) {
-                            if (receivedEventsRXFE & AGC_RELEASE) {
+                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_TX, pdFALSE, pdTRUE, &receivedEventsRXFE, pdTICKS_TO_MS(1000)) == pdTRUE) {
                                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                                     if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                         ensureTxMode();
@@ -175,7 +168,6 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                     }
                                     xSemaphoreGive(transceiver_handler.resources_mtx);
                                 }
-                            }
                         }
                         break;
                     }

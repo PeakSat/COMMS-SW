@@ -13,10 +13,9 @@ void TestTask::execute() {
     LOG_DEBUG << "TestTask::execute()";
     vTaskDelay(12000);
     uint32_t eMMCPacketTailPointer = 0;
-    uint8_t ecssbuf[512] = {0x23, 0x20, 0x3, 0x1B, 0, 0x1, 0x1, 0, 0};
+    uint8_t ecss_tc_buf[512] = {0x23, 0x20, 0x3, 0x1B, 0, 0x1, 0x1, 0, 0};
     while (true) {
-        // Write message to eMMC
-        auto status = storeItem(eMMC::memoryMap[eMMC::COMMS_TC], ecssbuf, 512, eMMCPacketTailPointer, 1);
+        auto status = storeItem(eMMC::memoryMap[eMMC::COMMS_TC], ecss_tc_buf, 512, eMMCPacketTailPointer, 1);
         // Add message to queue
         if (status.has_value()) {
             CAN::StoredPacket PacketToBeStored;
@@ -30,9 +29,6 @@ void TestTask::execute() {
         else {
             LOG_ERROR << "Failed to send TC FROM COMMS";
         }
-        // else {
-        //     LOG_ERROR << status.error();
-        // }
         vTaskDelay(pdMS_TO_TICKS(DelayMs));
     }
 }

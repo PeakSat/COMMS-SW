@@ -135,13 +135,11 @@ void RF_RXTask::ensureRxMode() {
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
-                    transceiver.print_error(error);
-                    LOG_DEBUG << "[RX AGC] LENGTH: " << received_length;
-                    LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << transceiver.get_rssi(RF09, error);
-                    transceiver.print_error(error);
+                    int8_t rssi = transceiver.get_rssi(RF09, error);
+                    if (rssi != 127)
+                        LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
                     if (received_length && received_length != 20) {
-                        current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
-                        LOG_DEBUG << "[RX] c: " << current_counter;
+                        LOG_DEBUG << "[RX AGC] LENGTH: " << received_length - MAGIC_NUMBER;
                         rx_total_packets++;
                         LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                         drop_counter = 0;
@@ -152,32 +150,32 @@ void RF_RXTask::ensureRxMode() {
                         }
                         // appends the remaining bits to complete a byte
                         // message.finalize();
-                        Message message = MessageParser::parse(RX_BUFF, received_length - MAGIC_NUMBER);
-                        message.finalize();
-                        etl::format_spec formatSpec;
-                        auto serviceType = String<1024>("");
-                        auto messageType = String<1024>("");
-
-                        etl::to_string(message.serviceType, serviceType, formatSpec, false);
-                        etl::to_string(message.messageType, messageType, formatSpec, false);
-
-                        LOG_DEBUG << "New TM Message received from OBC";
-
-                        auto output = String<ECSSMaxMessageSize>("New ");
-                        (message.packetType == Message::TM) ? output.append("TM[") : output.append("TC[");
-                        output.append(serviceType);
-                        output.append(",");
-                        output.append(messageType);
-                        output.append("] message! ");
-
-                        auto data = String<CCSDSMaxMessageSize>("");
-                        String<CCSDSMaxMessageSize> createdPacket = MessageParser::compose(message);
-                        for (unsigned int i = 0; i < createdPacket.size(); i++) {
-                            etl::to_string(createdPacket[i], data, formatSpec, true);
-                            data.append(" ");
-                        }
-                        output.append(data.c_str());
-                        LOG_DEBUG << output.c_str();
+                        // Message message = MessageParser::parse(RX_BUFF, received_length - MAGIC_NUMBER);
+                        // message.finalize();
+                        // etl::format_spec formatSpec;
+                        // auto serviceType = String<1024>("");
+                        // auto messageType = String<1024>("");
+                        //
+                        // etl::to_string(message.serviceType, serviceType, formatSpec, false);
+                        // etl::to_string(message.messageType, messageType, formatSpec, false);
+                        //
+                        // LOG_DEBUG << "New TM Message received from OBC";
+                        //
+                        // auto output = String<ECSSMaxMessageSize>("New ");
+                        // (message.packetType == Message::TM) ? output.append("TM[") : output.append("TC[");
+                        // output.append(serviceType);
+                        // output.append(",");
+                        // output.append(messageType);
+                        // output.append("] message! ");
+                        //
+                        // auto data = String<CCSDSMaxMessageSize>("");
+                        // String<CCSDSMaxMessageSize> createdPacket = MessageParser::compose(message);
+                        // for (unsigned int i = 0; i < createdPacket.size(); i++) {
+                        //     etl::to_string(createdPacket[i], data, formatSpec, true);
+                        //     data.append(" ");
+                        // }
+                        // output.append(data.c_str());
+                        // LOG_DEBUG << output.c_str();
                     }
                     else {
                         drop_counter++;
@@ -266,6 +264,7 @@ void RF_RXTask::ensureRxMode() {
             if (transceiver.TransmitterFrameEnd_flag) {
                 transceiver.TransmitterFrameEnd_flag = false;
                 LOG_INFO << "[RX] Transceiver FRAME END";
+                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
             }
             xSemaphoreGive(transceiver_handler.resources_mtx);
         }
