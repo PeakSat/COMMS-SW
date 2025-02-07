@@ -125,11 +125,11 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                             if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                 ensureTxMode();
                                 LOG_DEBUG << "[TX] TX PACKET SIZE: " << TM_PACKET.size;
-                                transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size, error);
+                                transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size + 4, error);
                                 tx_counter++;
-                                for (int i = 0; i < TM_PACKET.size; i++) {
-                                    LOG_DEBUG << "[TX] TM PACKET: " << TX_BUFF[i];
-                                }
+                                // for (int i = 0; i < TM_PACKET.size; i++) {
+                                //     LOG_DEBUG << "[TX] TM PACKET: " << TX_BUFF[i];
+                                // }
                             }
                             xSemaphoreGive(transceiver_handler.resources_mtx);
                         }
@@ -142,7 +142,7 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                                     if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                         ensureTxMode();
-                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size, error);
+                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size + 4, error);
                                         tx_counter++;
                                         LOG_DEBUG << "[TXFE] TX PACKET SIZE: " << TM_PACKET.size;
                                         LOG_INFO << "[TXFE] TX counter: " << tx_counter;
@@ -160,7 +160,7 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                                     if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                         ensureTxMode();
-                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size, error);
+                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size + 4, error);
                                         tx_counter++;
                                         LOG_DEBUG << "[RXFE] TX PACKET SIZE: " << TM_PACKET.size;
                                         LOG_INFO << "[RXFE] TX counter: " << tx_counter;
