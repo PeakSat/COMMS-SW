@@ -15,7 +15,7 @@ void eMMCTask::execute() {
     while (true) {
 
 
-        LOG_DEBUG << "Writing to block address: " << block_address_a;
+        // LOG_DEBUG << "Writing to block address: " << block_address_a;
         auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::test2], data_buff, eMMC::memoryMap[eMMC::test2].size, 0, 3);
 
         if (status.has_value()) {
@@ -24,7 +24,7 @@ void eMMCTask::execute() {
             // handle the errors
             LOG_ERROR << "Write HAL error, a";
 
-        LOG_DEBUG << "Reading from block address: " << block_address_a;
+        // LOG_DEBUG << "Reading from block address: " << block_address_a;
         status = eMMC::getItem(eMMC::memoryMap[eMMC::test2], read_data_buff, eMMC::memoryMap[eMMC::test2].size, 0, 3);
         if (status.has_value()) {
             // read was successful

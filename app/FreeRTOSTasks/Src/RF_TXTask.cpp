@@ -101,7 +101,7 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
     CAN::StoredPacket TM_PACKET;
     /// TX AMP
     GPIO_PinState txamp;
-    txamp = GPIO_PIN_RESET;
+    txamp = GPIO_PIN_SET;
     // Open the PA before you send the packet
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
     etl::string<1024> tm_string = "";

@@ -128,18 +128,18 @@ void RF_RXTask::ensureRxMode() {
     State trx_state;
     CAN::StoredPacket PacketToBeStored;
     uint32_t eMMCPacketTailPointer = 0;
+    uint8_t counter_tx_ong;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     auto result = transceiver.get_received_length(RF09, error);
                     received_length = result.value();
+                    int8_t rssi = transceiver.get_rssi(RF09, error);
+                    if (rssi != 127)
+                        LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
                     transceiver.print_error(error);
-                    LOG_DEBUG << "[RX AGC] LENGTH: " << received_length;
-                    LOG_DEBUG << "[RX AGC] RSSI: " << transceiver.get_rssi(RF09, error);
-                    transceiver.print_error(error);
-                    if (received_length && received_length != 16) {
-                        current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
-                        LOG_DEBUG << "[RX] c: " << current_counter;
+                    if (received_length) {
+                        LOG_DEBUG << "[RX AGC] LENGTH: " << received_length - MAGIC_NUMBER;
                         rx_total_packets++;
                         LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                         drop_counter = 0;
@@ -211,6 +211,7 @@ void RF_RXTask::ensureRxMode() {
                         if (trx_state != RF_RX) {
                             ensureRxMode();
                         }
+                        LOG_DEBUG << "[RX] RX_ONG";
                         break;
                     }
                     case RX_TX_ONG: {
