@@ -22,6 +22,7 @@
 #include "git_version.h"
 #include <ServicePool.hpp>
 #include "at86rf215.hpp"
+#include "HeartbeatTask.hpp"
 #include "TCHandlingTask.hpp"
 
 ParameterService parameterMap;
@@ -52,6 +53,7 @@ void app_main(void) {
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
     canParserTask.emplace();
+    heartbeatTask.emplace();
     tcHandlingTask.emplace();
 
     uartGatekeeperTask->createTask();
@@ -65,6 +67,7 @@ void app_main(void) {
     tmp117Task->createTask();
     canParserTask->createTask();
     tcHandlingTask->createTask();
+    heartbeatTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     /* Start the scheduler. */
