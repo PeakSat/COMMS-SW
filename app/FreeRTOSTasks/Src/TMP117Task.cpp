@@ -46,13 +46,13 @@ etl::string<TemperatureSensorsTask::MaxSensorNameSize> TemperatureSensorsTask::s
 void TemperatureSensorsTask::execute() {
     // for temporarily holding a temperature and an error
     etl::pair<TMP117::Error, float> temperature;
-    vTaskDelay(100);
+    vTaskDelay(1000);
     while (true) {
         Logger::format.precision(LoggerPrecision);
         for (auto s: sensors) {
             temperature = s.sensorObject.getTemperature(true);
             if (temperature.first == TMP117::Error::NoErrors) {
-                // LOG_DEBUG << "Temperature at " << s.sensorName.data() << ": " << temperature.second;
+                LOG_INFO << "Temperature at " << s.sensorName.data() << ": " << temperature.second;
                 if (s.sensorName == "PCB") {
                     COMMSParameters::pcb_temp.setValue(temperature.second);
                 }

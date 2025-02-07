@@ -5,6 +5,9 @@
 #include "main.h"
 #include "app_main.h"
 
+#include <ApplicationLayer.hpp>
+#include <eMMC.hpp>
+
 void RF_TXTask::ensureTxMode() {
     State state = transceiver.get_state(RF09, error);
     switch (state) {
@@ -61,14 +64,10 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
 }
 
 [[noreturn]] void RF_TXTask::execute() {
+    outgoingTMQueue = xQueueCreateStatic(TMQueueSize, sizeof(CAN::StoredPacket), outgoingTMQueueStorageArea,
+                                            &outgoingTMQueueBuffer);
+    vQueueAddToRegistry(outgoingTMQueue, "TM queue");
     vTaskDelay(8000);
-    /// TX AMP
-    GPIO_PinState txamp = GPIO_PIN_SET;
-    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
-    if (txamp)
-        LOG_DEBUG << "##########TX AMP DISABLED##########";
-    else
-        LOG_DEBUG << "##########TX AMP ENABLED##########";
     PacketData packetTestData = createRandomPacketData(MaxPacketLength);
     StaticTimer_t xTimerBuffer;
     TimerHandle_t xTimer = xTimerCreateStatic(
@@ -78,46 +77,44 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
         (void *)1,
         [](TimerHandle_t pxTimer) {
             BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(
-                rf_txtask->taskHandle,
-                NOTIFY_INDEX_TRANSMIT,
-                TRANSMIT,
-                eSetBits,
-                &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            // xTaskNotifyIndexedFromISR(
+            //     rf_txtask->taskHandle,
+            //     NOTIFY_INDEX_TRANSMIT,
+            //     TRANSMIT,
+            //     eSetBits,
+            //     &xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         },
         &xTimerBuffer);
 
-    if (xTimer != nullptr) {
-        if (xTimerStart(xTimer, 0) != pdPASS) {
-            LOG_ERROR << "[TX] Failed to start the timer";
-        }
-        else
-            LOG_INFO << "[TX] TX TIMER HAS STARTED";
-    }
+    // if (xTimer != nullptr) {
+    //     if (xTimerStart(xTimer, 0) != pdPASS) {
+    //         LOG_ERROR << "[TX] Failed to start the timer";
+    //     }
+    //     else
+    //         LOG_INFO << "[TX] TX TIMER HAS STARTED";
+    // }
     uint8_t state = 0;
     uint8_t counter = 0;
     uint32_t receivedEventsTransmit;
-    if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-        auto status = transceiver.check_transceiver_connection(error);
-        if (status.has_value()) {
-            LOG_INFO << "AT86RF215 CONNECTION FROM TX TASK OK";
-        } else
-            /// TODO: Error handling
-                LOG_ERROR << "AT86RF215 ##ERROR## WITH CODE: " << status.error();
-        /// Set the down-link frequency
-        transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFTX);
-        transceiver.set_state(RF09, RF_TRXOFF, error);
-        transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-        transceiver.chip_reset(error);
-        xSemaphoreGive(transceiver_handler.resources_mtx);
-    }
     uint32_t tx_counter = 0;
+    CAN::StoredPacket TM_PACKET;
+    /// TX AMP
+    GPIO_PinState txamp;
+    txamp = GPIO_PIN_SET;
+    // Open the PA before you send the packet
+    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+    etl::string<1024> tm_string = "";
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, pdTICKS_TO_MS(transceiver_handler.BEACON_PERIOD_MS + 1000)) == pdTRUE) {
-            if (receivedEventsTransmit & TRANSMIT) {
-                if (counter == 255)
-                    counter = 0;
+            while (uxQueueMessagesWaiting(outgoingTMQueue)) {
+                // Get the message pointer from the queue
+                /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
+                xQueueReceive(outgoingTMQueue, &TM_PACKET, portMAX_DELAY);
+                if (receivedEventsTransmit & TM_OBC) {
+                    CAN::Application::getStoredMessage(&TM_PACKET, TX_BUFF, TM_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
+                    LOG_DEBUG << "Received TM from OBC... preparing the transmission";
+              }
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     xSemaphoreGive(transceiver_handler.resources_mtx);
@@ -127,14 +124,12 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                         if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                             if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                 ensureTxMode();
-                                /// Set the down-link frequency
-                                /// send the packet
-                                counter++;
-                                packetTestData.packet[0] = counter;
-                                transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                                LOG_INFO << "[TX] c: " << counter;
+                                LOG_DEBUG << "[TX] TX PACKET SIZE: " << TM_PACKET.size;
+                                transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size + 4, error);
                                 tx_counter++;
-                                LOG_INFO << "[TX] TX counter: " << tx_counter;
+                                // for (int i = 0; i < TM_PACKET.size; i++) {
+                                //     LOG_DEBUG << "[TX] TM PACKET: " << TX_BUFF[i];
+                                // }
                             }
                             xSemaphoreGive(transceiver_handler.resources_mtx);
                         }
@@ -147,18 +142,10 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                                     if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                         ensureTxMode();
-                                        /// Set the down-link frequency
-                                        // transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFTX);
-                                        // transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-                                        // transceiver.chip_reset(error);
-                                        // transceiver.setup(error);
-                                        /// send the packet
-                                        counter++;
-                                        packetTestData.packet[0] = counter;
-                                        transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                                        LOG_INFO << "[TX TXFE] c: " << counter;
+                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size + 4, error);
                                         tx_counter++;
-                                        LOG_INFO << "[TX] TX counter: " << tx_counter;
+                                        LOG_DEBUG << "[TXFE] TX PACKET SIZE: " << TM_PACKET.size;
+                                        LOG_INFO << "[TXFE] TX counter: " << tx_counter;
                                     }
                                     xSemaphoreGive(transceiver_handler.resources_mtx);
                                 }
@@ -173,18 +160,10 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                                     if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                         ensureTxMode();
-                                        /// Set the down-link frequency
-                                        // transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFTX);
-                                        // transceiver.configure_pll(RF09, transceiver.freqSynthesizerConfig.channelCenterFrequency09, transceiver.freqSynthesizerConfig.channelNumber09, transceiver.freqSynthesizerConfig.channelMode09, transceiver.freqSynthesizerConfig.loopBandwidth09, transceiver.freqSynthesizerConfig.channelSpacing09, error);
-                                        // transceiver.chip_reset(error);
-                                        // transceiver.setup(error);
-                                        // send the packet
-                                        counter++;
-                                        packetTestData.packet[0] = counter;
-                                        transceiver.transmitBasebandPacketsTx(RF09, packetTestData.packet.data(), packetTestData.length, error);
-                                        LOG_INFO << "[TX RXFE] c: " << counter;
+                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TM_PACKET.size + 4, error);
                                         tx_counter++;
-                                        LOG_INFO << "[TX] TX counter: " << tx_counter;
+                                        LOG_DEBUG << "[RXFE] TX PACKET SIZE: " << TM_PACKET.size;
+                                        LOG_INFO << "[RXFE] TX counter: " << tx_counter;
                                     }
                                     xSemaphoreGive(transceiver_handler.resources_mtx);
                                 }
@@ -202,8 +181,8 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                     }
                 }
             }
-        }else {
-            LOG_ERROR << "[TX] Failed to get the event from the timer";
         }
     }
 }
+
+

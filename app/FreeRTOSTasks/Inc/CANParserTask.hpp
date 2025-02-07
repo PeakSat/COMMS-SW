@@ -3,11 +3,7 @@
 #include "CANDriver.hpp"
 #include "Task.hpp"
 #include <optional>
-
-inline QueueHandle_t outgoingTMQueue;
-static inline StaticQueue_t outgoingTMQueueBuffer;
-static constexpr uint8_t TMQueueSize = 50;
-static inline uint8_t outgoingTMQueueStorageArea[TMQueueSize * sizeof(CAN::Packet)] __attribute__((section(".dtcmram_data")));
+#include "RF_TXTask.hpp"
 
 class CANParserTask : public Task {
 public:

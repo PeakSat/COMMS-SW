@@ -58,11 +58,9 @@ void Logger::log(Logger::LogLevel level, etl::istring &message) {
     output.append(message.c_str());
     output.append("\n");
 
-
     if (uartGatekeeperTask) {
             uartGatekeeperTask->addToQueue(output);
     }
-
 
 }
 

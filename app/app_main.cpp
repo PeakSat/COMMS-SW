@@ -23,6 +23,7 @@
 #include <ServicePool.hpp>
 #include "at86rf215.hpp"
 #include "HeartbeatTask.hpp"
+#include "TCHandlingTask.hpp"
 
 ParameterService parameterMap;
 
@@ -46,24 +47,26 @@ void app_main(void) {
     rf_rxtask.emplace();
     rf_txtask.emplace();
     eMMCTask.emplace();
-    gnssTask.emplace();
+    // gnssTask.emplace();
     testTask.emplace();
     ina3221Task.emplace();
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
     canParserTask.emplace();
     heartbeatTask.emplace();
+    tcHandlingTask.emplace();
 
     uartGatekeeperTask->createTask();
-    // rf_rxtask->createTask();
-    // rf_txtask->createTask();
+    rf_rxtask->createTask();
+    rf_txtask->createTask();
     eMMCTask->createTask();
     // gnssTask->createTask();
     testTask->createTask();
-    // ina3221Task->createTask();
+    ina3221Task->createTask();
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
     canParserTask->createTask();
+    tcHandlingTask->createTask();
     heartbeatTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
@@ -178,3 +181,4 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
         GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
     }
 }
+

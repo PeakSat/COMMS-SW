@@ -152,7 +152,7 @@ void CANGatekeeperTask::execute() {
 
                         xQueueSendToBack(storedPacketQueue, &PacketToBeStored, NULL);
                         xTaskNotifyGive(canParserTask->taskHandle);
-                        LOG_DEBUG << "message came at : " << xTaskGetTickCount();
+                        // LOG_DEBUG << "message came at : " << xTaskGetTickCount();
                     } else {
                         // Message not received correctly
                         LOG_ERROR << "DROPPED CAN MESSAGE";

@@ -4,10 +4,15 @@
 #include "at86rf215.hpp"
 #include "etl/array.h"
 #include "etl/optional.h"
+#include <Frame.hpp>
 
-#define MaxPacketLength 2046
+#define MaxPacketLength 128
 
-
+inline QueueHandle_t outgoingTMQueue;
+inline StaticQueue_t outgoingTMQueueBuffer;
+constexpr uint8_t TMQueueSize = 50;
+inline uint8_t outgoingTMQueueStorageArea[TMQueueSize * sizeof(CAN::StoredPacket)] __attribute__((section(".dtcmram_outgoingTMQueueStorageArea")));
+inline uint8_t TX_BUFF[1024] __attribute__((section(".dtcmram_tx_buff"), aligned(4)));
 using namespace AT86RF215;
 
 using PacketType = etl::array<uint8_t, MaxPacketLength>;
@@ -30,7 +35,7 @@ public:
                                              this->taskStack, &(this->taskBuffer));
     }
 private:
-    constexpr static uint16_t TaskStackDepth = 15000;
+    constexpr static uint16_t TaskStackDepth = 8000;
     /// Frequency in kHz
     constexpr static uint32_t FrequencyUHFTX = 401000;
     AT86RF215::Error error = NO_ERRORS;
