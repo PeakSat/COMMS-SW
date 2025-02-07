@@ -129,7 +129,7 @@ void RF_RXTask::ensureRxMode() {
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
     State trx_state;
-    Message message;
+    etl::string<512> message_OBC;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -137,7 +137,7 @@ void RF_RXTask::ensureRxMode() {
                     received_length = result.value();
                     transceiver.print_error(error);
                     LOG_DEBUG << "[RX AGC] LENGTH: " << received_length;
-                    LOG_DEBUG << "[RX AGC] RSSI: " << transceiver.get_rssi(RF09, error);
+                    LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << transceiver.get_rssi(RF09, error);
                     transceiver.print_error(error);
                     if (received_length && received_length != 20) {
                         current_counter = transceiver.spi_read_8((BBC0_FBRXS), error);
@@ -148,11 +148,12 @@ void RF_RXTask::ensureRxMode() {
                         for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
                             RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                             // LOG_DEBUG << "[RX] TM: " << RX_BUFF[i];
-                            message.append(RX_BUFF[i]);
+                            // message.append(RX_BUFF[i]);
                         }
                         // appends the remaining bits to complete a byte
+                        // message.finalize();
+                        Message message = MessageParser::parse(RX_BUFF, received_length - MAGIC_NUMBER);
                         message.finalize();
-
                         etl::format_spec formatSpec;
                         auto serviceType = String<1024>("");
                         auto messageType = String<1024>("");
@@ -160,7 +161,7 @@ void RF_RXTask::ensureRxMode() {
                         etl::to_string(message.serviceType, serviceType, formatSpec, false);
                         etl::to_string(message.messageType, messageType, formatSpec, false);
 
-                        LOG_DEBUG << "New TM Message generated";
+                        LOG_DEBUG << "New TM Message received from OBC";
 
                         auto output = String<ECSSMaxMessageSize>("New ");
                         (message.packetType == Message::TM) ? output.append("TM[") : output.append("TC[");

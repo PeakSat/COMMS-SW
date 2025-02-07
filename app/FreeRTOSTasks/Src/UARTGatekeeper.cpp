@@ -12,5 +12,6 @@ void UARTGatekeeperTask::execute() {
     while (true) {
         xQueueReceive(this->xUartQueue, &output, portMAX_DELAY);
         HAL_UART_Transmit(&huart4, reinterpret_cast<const uint8_t*>(output.data()), output.size(), 500);
+        // HAL_UART_Transmit_IT(&huart4, reinterpret_cast<const uint8_t*>(output.data()), output.size());
     }
 }

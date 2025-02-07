@@ -117,7 +117,7 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                 if (receivedEventsTransmit & TC_COMMS) {
                     auto status = getItem(eMMC::memoryMap[eMMC::COMMS_TC], TX_BUFF, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]), TM_PACKET.pointerToeMMCItemData, 2);
                     if (status.has_value()) {
-                        LOG_DEBUG << "Received TC from COMMS... preparing the transmission";
+                        LOG_DEBUG << "Received TC... preparing its transmission to the air";
                     }
                     else {
                         LOG_ERROR << "ERROR: memory";
@@ -127,10 +127,11 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
-                for (uint8_t i = 0; i < TM_PACKET.size; i++) {
-                    LOG_INFO << "TC to be sent: " << TX_BUFF[i];
-                }
+                // for (uint8_t i = 0; i < TM_PACKET.size; i++) {
+                //     LOG_INFO << "TC to be sent: " << TX_BUFF[i];
+                // }
                 switch (state) {
+                    // LOG_DEBUG << "state: " << state;
                     case READY: {
                         if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                             if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
