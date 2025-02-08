@@ -9,6 +9,8 @@
 #include <eMMC.hpp>
 #include "Message.hpp"
 
+#include <RF_TXTask.hpp>
+
 void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     // start the DMA
     HAL_UARTEx_ReceiveToIdle_DMA(&huart4, buf, size);
@@ -26,18 +28,33 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     TCQueueHandle = xQueueCreateStatic(TCQueueSize, sizeof(uint8_t*), incomingTCQueueStorageArea,
                                         &incomingTCQueueBuffer);
     vQueueAddToRegistry( TCQueueHandle, "TC queue");
-
     uint8_t* tc_buf_from_queue_pointer;
+    uint32_t eMMCPacketTailPointer;
+    uint8_t ECSS_TC_BUF[512];
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RECEIVED_TC, pdFALSE, pdTRUE, &received_events, portMAX_DELAY) == pdTRUE) {
             if (xQueueReceive(TCQueueHandle, &tc_buf_from_queue_pointer, pdMS_TO_TICKS(100)) == pdTRUE) {
                 // TODO parse the TC
                 __NOP();
-                if (tc_buf_from_queue_pointer != nullptr)
+                if (tc_buf_from_queue_pointer != nullptr) {
                     LOG_DEBUG << "RECEIVED TC FROM UART, size: " << size;
                     for (uint16_t i = 0; i < size; i++) {
                         LOG_DEBUG << "Received TC data: " << tc_buf_from_queue_pointer[i];
+                        ECSS_TC_BUF[i] = tc_buf_from_queue_pointer[i];
                     }
+                }
+                auto status = storeItem(eMMC::memoryMap[eMMC::COMMS_TC], ECSS_TC_BUF, 512, eMMCPacketTailPointer, 1);
+                if (status.has_value()) {
+                    CAN::StoredPacket PacketToBeStored;
+                    PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                    eMMCPacketTailPointer += 1;
+                    PacketToBeStored.size = size;
+                    xQueueSendToBack(outgoingTMQueue, &PacketToBeStored, 0);
+                    xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_COMMS, eSetBits);
+                }
+                else {
+                    LOG_ERROR << "MEMORY ERROR ON TC";
+                }
             }
         }
     }

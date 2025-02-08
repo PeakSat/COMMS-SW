@@ -15,20 +15,20 @@ void TestTask::execute() {
     uint32_t eMMCPacketTailPointer = 0;
     uint8_t ecss_tc_buf[512] = {0x23, 0x20, 0x3, 0x1B, 0, 0x1, 0x1, 0, 0};
     while (true) {
-        auto status = storeItem(eMMC::memoryMap[eMMC::COMMS_TC], ecss_tc_buf, 512, eMMCPacketTailPointer, 1);
-        // Add message to queue
-        if (status.has_value()) {
-            CAN::StoredPacket PacketToBeStored;
-            PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-            eMMCPacketTailPointer += 2;
-            PacketToBeStored.size = 9;
-            LOG_DEBUG << "SEND TC FROM COMMS";
-            xQueueSendToBack(outgoingTMQueue, &PacketToBeStored, 0);
-            xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_COMMS, eSetBits);
-        }
-        else {
-            LOG_ERROR << "Failed to send TC FROM COMMS";
-        }
+        // auto status = storeItem(eMMC::memoryMap[eMMC::COMMS_TC], ecss_tc_buf, 512, eMMCPacketTailPointer, 1);
+        // // Add message to queue
+        // if (status.has_value()) {
+        //     CAN::StoredPacket PacketToBeStored;
+        //     PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+        //     eMMCPacketTailPointer += 2;
+        //     PacketToBeStored.size = 9;
+        //     LOG_DEBUG << "SEND TC FROM COMMS";
+        //     xQueueSendToBack(outgoingTMQueue, &PacketToBeStored, 0);
+        //     xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_COMMS, eSetBits);
+        // }
+        // else {
+        //     LOG_ERROR << "Failed to send TC FROM COMMS";
+        // }
         vTaskDelay(pdMS_TO_TICKS(DelayMs));
     }
 }
