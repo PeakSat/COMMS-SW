@@ -110,6 +110,7 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
             while (uxQueueMessagesWaiting(outgoingTMQueue)) {
                 // Get the message pointer from the queue
                 /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
+                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
                 xQueueReceive(outgoingTMQueue, &TM_PACKET, portMAX_DELAY);
                 if (receivedEventsTransmit & TM_OBC) {
                     CAN::Application::getStoredMessage(&TM_PACKET, TX_BUFF, TM_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
