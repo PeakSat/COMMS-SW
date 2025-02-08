@@ -9,7 +9,7 @@ void ParameterService::initializeParameterMap() {
     parameters = {
         {PAYParameters::pointing_offset_xID, PAYParameters::pointing_offset_x},
         {PAYParameters::pointing_offset_yID, PAYParameters::pointing_offset_y},
-        {PAYParameters::zID, PAYParameters::z},
+        {PAYParameters::pointing_offset_zID, PAYParameters::pointing_offset_z},
         {PAYParameters::uptimeID, PAYParameters::uptime},
         {PAYParameters::timeID, PAYParameters::time},
         {PAYParameters::psu_12vID, PAYParameters::psu_12v},
@@ -864,6 +864,7 @@ void ParameterService::initializeParameterMap() {
         {COMMSParameters::satellites_trackedID, COMMSParameters::satellites_tracked},
         {COMMSParameters::gnss_fix_qualityID, COMMSParameters::gnss_fix_quality},
         {COMMSParameters::gnss_TM_data_periodID, COMMSParameters::gnss_TM_data_period},
-        {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}};
+        {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}
+    };
 }
 #endif
