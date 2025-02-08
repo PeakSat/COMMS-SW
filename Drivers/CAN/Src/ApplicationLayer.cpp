@@ -55,7 +55,7 @@ namespace CAN::Application {
 
         message.appendUint8(Heartbeat);
 
-        CAN::TPProtocol::createCANTPMessage(message, true);
+        CAN::TPProtocol::createCANTPMessage(message, false);
     }
 
     void sendUTCTimeMessageWithElapsedTicks() {

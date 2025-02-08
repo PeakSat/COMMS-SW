@@ -9,7 +9,7 @@
 #include <at86rf215definitions.hpp>
 #include <eMMC.hpp>
 #include "Message.hpp"
-
+#include <cstring>  // For memcpy
 #include <TPProtocol.hpp>
 
 
@@ -17,6 +17,8 @@
     LOG_INFO << "TCHandlingTask::execute()";
     uint32_t received_events;
     CAN::StoredPacket TC_PACKET;
+    uint8_t ecss_buf[512];
+    uint8_t counter = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RECEIVED_TC, pdFALSE, pdTRUE, &received_events, portMAX_DELAY) == pdTRUE) {
             LOG_INFO << "parsing of the TC...";
@@ -25,16 +27,12 @@
                 uint8_t TC_BUFFER[512];
                 xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
                 getItem(eMMC::memoryMap[eMMC::RECEIVED_TC], TC_BUFFER, 512, TC_PACKET.pointerToeMMCItemData, 1);
-                auto cobsDecodedMessage = COBSdecode<1024>(TC_BUFFER, TC_PACKET.size);
-                CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
-                for (int i = 0; i < TC_PACKET.size; i++) {
-                    message.appendUint8(TC_BUFFER[i]);
+                for (uint8_t i = 6; i < TC_PACKET.size; i++) {
+                    counter++;
+                    ecss_buf[i - 6] = TC_BUFFER[i];
                 }
-                // LOG_INFO << "Received TC from GS with length: " << TC_PACKET.size;
-                if (TC_PACKET.size == 9) {
-                    CAN::TPProtocol::createCANTPMessage(message, false);
-                }
-
+                auto cobsDecodedMessage = COBSdecode<1024>(ecss_buf, TC_PACKET.size - 6);
+                CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
             }
         }
     }
