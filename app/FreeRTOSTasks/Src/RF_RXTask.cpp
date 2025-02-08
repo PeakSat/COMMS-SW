@@ -157,7 +157,10 @@ void RF_RXTask::ensureRxMode() {
                             received_tm_packet.size = received_length - MAGIC_NUMBER;
                             eMMCPacketTailPointer += 4;
                             xQueueSendToBack(incomingTMQueue, &received_tm_packet, 0);
-                            xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TM, 0, eNoAction);
+                            xTaskNotifyIndexed(tmparserTask->taskHandle, NOTIFY_INDEX_RECEIVED_TM, 0, eNoAction);
+                        }
+                        else {
+                            LOG_ERROR << "MEMORY ERROR";
                         }
                     }
                     else {
