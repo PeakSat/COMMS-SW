@@ -32,6 +32,7 @@ namespace AT86RF215 {
     #define NOTIFY_INDEX_AGC 8
     #define NOTIFY_INDEX_RXFS 9
     #define NOTIFY_INDEX_RECEIVED_TC 10
+    #define NOTIFY_INDEX_RECEIVED_TM 11
 
     enum class EnergyDetectionTimeBasis {
         RF_2MS = 0x0,

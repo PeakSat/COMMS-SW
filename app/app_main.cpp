@@ -23,6 +23,7 @@
 #include <ServicePool.hpp>
 #include "at86rf215.hpp"
 #include "TCHandlingTask.hpp"
+#include "TMParserTask.hpp"
 
 ParameterService parameterMap;
 
@@ -54,6 +55,7 @@ void app_main(void) {
     ina3221Task.emplace();
     tmp117Task.emplace();
     tcHandlingTask.emplace();
+    tmparserTask.emplace();
 
     // gnssTask->createTask();
     // canParserTask->createTask();
@@ -67,6 +69,7 @@ void app_main(void) {
     ina3221Task->createTask();
     tmp117Task->createTask();
     tcHandlingTask->createTask();
+    tmparserTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     /* Start the scheduler. */
@@ -184,7 +187,7 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
             tcHandlingTask->send_to_tc_queue = huart4.pRxBuffPtr;
             tcHandlingTask->size = Size;
             xHigherPriorityTaskWoken = pdFALSE;
-            xQueueSendFromISR(tcHandlingTask->TCQueueHandle, &tcHandlingTask->send_to_tc_queue, &xHigherPriorityTaskWoken);
+            xQueueSendFromISR(tcHandlingTask->TCUARTQueueHandle, &tcHandlingTask->send_to_tc_queue, &xHigherPriorityTaskWoken);
             xHigherPriorityTaskWoken = pdFALSE;
             xTaskNotifyIndexedFromISR(tcHandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TC, 0, eNoAction, &xHigherPriorityTaskWoken);
             TCHandlingTask::startReceiveFromUARTwithIdle(tcHandlingTask->tc_buf_dma_pointer, 512);

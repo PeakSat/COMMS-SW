@@ -25,15 +25,19 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     tc_buf_dma_pointer = TC_BUF;
     startReceiveFromUARTwithIdle(tc_buf_dma_pointer, 512);
     uint32_t received_events;
-    TCQueueHandle = xQueueCreateStatic(TCQueueSize, sizeof(uint8_t*), incomingTCQueueStorageArea,
+    TCUARTQueueHandle = xQueueCreateStatic(TCUARTQueueSize, sizeof(uint8_t*), incomingTCUARTQueueStorageArea,
                                         &incomingTCQueueBuffer);
-    vQueueAddToRegistry( TCQueueHandle, "TC queue");
+    vQueueAddToRegistry(TCUARTQueueHandle, "TC UART queue");
+
+    incomingTCQueue = xQueueCreateStatic(incomingTCQueueSize, sizeof(CAN::Packet), incomingTCQueueStorageArea,
+                                       &incomingTCQueueBuffer);
+    vQueueAddToRegistry(TCUARTQueueHandle, "TC UART queue");
     uint8_t* tc_buf_from_queue_pointer;
-    uint32_t eMMCPacketTailPointer;
-    uint8_t ECSS_TC_BUF[512];
+    uint32_t eMMCPacketTailPointer = 0;
+    uint8_t ECSS_TC_BUF[1024];
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RECEIVED_TC, pdFALSE, pdTRUE, &received_events, portMAX_DELAY) == pdTRUE) {
-            if (xQueueReceive(TCQueueHandle, &tc_buf_from_queue_pointer, pdMS_TO_TICKS(100)) == pdTRUE) {
+            if (xQueueReceive(TCUARTQueueHandle, &tc_buf_from_queue_pointer, pdMS_TO_TICKS(100)) == pdTRUE) {
                 // TODO parse the TC
                 __NOP();
                 if (tc_buf_from_queue_pointer != nullptr) {
@@ -42,18 +46,18 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                         LOG_DEBUG << "Received TC data: " << tc_buf_from_queue_pointer[i];
                         ECSS_TC_BUF[i] = tc_buf_from_queue_pointer[i];
                     }
-                }
-                auto status = storeItem(eMMC::memoryMap[eMMC::COMMS_TC], ECSS_TC_BUF, 512, eMMCPacketTailPointer, 1);
-                if (status.has_value()) {
-                    CAN::StoredPacket PacketToBeStored;
-                    PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                    eMMCPacketTailPointer += 1;
-                    PacketToBeStored.size = size;
-                    xQueueSendToBack(outgoingTMQueue, &PacketToBeStored, 0);
-                    xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_COMMS, eSetBits);
-                }
-                else {
-                    LOG_ERROR << "MEMORY ERROR ON TC";
+                    auto status = storeItem(eMMC::memoryMap[eMMC::COMMS_TC], ECSS_TC_BUF, 1024, eMMCPacketTailPointer, 2);
+                    if (status.has_value()) {
+                        CAN::StoredPacket PacketToBeStored;
+                        PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                        eMMCPacketTailPointer += 2;
+                        PacketToBeStored.size = size;
+                        xQueueSendToBack(TXQueue, &PacketToBeStored, 0);
+                        xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_COMMS, eSetBits);
+                    }
+                    else {
+                        LOG_ERROR << "MEMORY ERROR ON TC";
+                    }
                 }
             }
         }

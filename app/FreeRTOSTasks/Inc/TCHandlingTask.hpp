@@ -4,20 +4,27 @@
 #include <queue.h>
 #include "stm32h7xx_hal.h"
 
+#include <Frame.hpp>
+
 
 extern UART_HandleTypeDef huart4;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 
-inline StaticQueue_t incomingTCQueueBuffer{};
-constexpr uint8_t TCQueueSize = 1;
+inline StaticQueue_t incomingTCUARTQueueBuffer{};
+constexpr uint8_t TCUARTQueueSize = 1;
 inline uint8_t  TC_BUF[512]{};
-inline uint8_t incomingTCQueueStorageArea[TCQueueSize * sizeof(uint8_t*)]{};
+inline uint8_t incomingTCUARTQueueStorageArea[TCUARTQueueSize * sizeof(uint8_t*)]{};
+
+inline QueueHandle_t incomingTCQueue;
+inline StaticQueue_t incomingTCQueueBuffer;
+constexpr uint8_t incomingTCQueueSize = 50;
+inline uint8_t incomingTCQueueStorageArea[incomingTCQueueSize * sizeof(CAN::StoredPacket)];
 
 class TCHandlingTask : public Task {
 public:
     uint8_t* tc_buf_dma_pointer = nullptr;
     uint16_t size = 0;
-    QueueHandle_t TCQueueHandle{};
+    QueueHandle_t TCUARTQueueHandle{};
     uint8_t* send_to_tc_queue{};
     TCHandlingTask() : Task("TC Handling Task"){}
     [[noreturn]] void execute();

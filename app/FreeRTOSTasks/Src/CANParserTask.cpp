@@ -36,7 +36,7 @@ void CANParserTask::execute() {
 
                 uint8_t messageID = static_cast<CAN::Application::MessageIDs>(StoredPacket.Identifier);
                 if (messageID == CAN::Application::CCSDSPacket) {
-                    xQueueSendToBack(outgoingTMQueue, &StoredPacket, NULL);
+                    xQueueSendToBack(TXQueue, &StoredPacket, NULL);
                     xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_OBC, eSetBits);
                     LOG_DEBUG << "New TM received: " ;
                 } else {

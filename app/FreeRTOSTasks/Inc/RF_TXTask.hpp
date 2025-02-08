@@ -8,10 +8,10 @@
 
 #define MaxPacketLength 128
 
-inline QueueHandle_t outgoingTMQueue;
-inline StaticQueue_t outgoingTMQueueBuffer;
-constexpr uint8_t TMQueueSize = 50;
-inline uint8_t outgoingTMQueueStorageArea[TMQueueSize * sizeof(CAN::StoredPacket)] __attribute__((section(".dtcmram_outgoingTMQueueStorageArea")));
+inline QueueHandle_t TXQueue;
+inline StaticQueue_t outgoingTXQueueBuffer;
+constexpr uint8_t outgoingTXQueueSize = 50;
+inline uint8_t outgoingTXQueueStorageArea[outgoingTXQueueSize * sizeof(CAN::StoredPacket)] __attribute__((section(".dtcmram_outgoingTMQueueStorageArea")));
 inline uint8_t TX_BUFF[1024] __attribute__((section(".dtcmram_tx_buff"), aligned(4)));
 using namespace AT86RF215;
 

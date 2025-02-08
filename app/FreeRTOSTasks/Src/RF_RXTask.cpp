@@ -6,6 +6,7 @@
 #include <MessageParser.hpp>
 #include <RF_TXTask.hpp>
 #include <TCHandlingTask.hpp>
+#include <TMParserTask.hpp>
 #include <eMMC.hpp>
 #define MAGIC_NUMBER 4
 using namespace AT86RF215;
@@ -126,7 +127,14 @@ void RF_RXTask::ensureRxMode() {
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
     State trx_state;
-    etl::string<512> message_OBC;
+    // etl::string<512> message_OBC;
+    CAN::StoredPacket received_tm_packet;
+    uint32_t eMMCPacketTailPointer = 0;
+
+    incomingTMQueue = xQueueCreateStatic(incomingTMQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
+                                           &incomingTCQueueBuffer);
+    vQueueAddToRegistry(incomingTMQueue, "TM incoming queue");
+
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -142,37 +150,15 @@ void RF_RXTask::ensureRxMode() {
                         drop_counter = 0;
                         for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
                             RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                            // LOG_DEBUG << "[RX] TM: " << RX_BUFF[i];
-                            // message.append(RX_BUFF[i]);
                         }
-                        // appends the remaining bits to complete a byte
-                        // message.finalize();
-                        // Message message = MessageParser::parse(RX_BUFF, received_length - MAGIC_NUMBER);
-                        // message.finalize();
-                        // etl::format_spec formatSpec;
-                        // auto serviceType = String<1024>("");
-                        // auto messageType = String<1024>("");
-                        //
-                        // etl::to_string(message.serviceType, serviceType, formatSpec, false);
-                        // etl::to_string(message.messageType, messageType, formatSpec, false);
-                        //
-                        // LOG_DEBUG << "New TM Message received from OBC";
-                        //
-                        // auto output = String<ECSSMaxMessageSize>("New ");
-                        // (message.packetType == Message::TM) ? output.append("TM[") : output.append("TC[");
-                        // output.append(serviceType);
-                        // output.append(",");
-                        // output.append(messageType);
-                        // output.append("] message! ");
-                        //
-                        // auto data = String<CCSDSMaxMessageSize>("");
-                        // String<CCSDSMaxMessageSize> createdPacket = MessageParser::compose(message);
-                        // for (unsigned int i = 0; i < createdPacket.size(); i++) {
-                        //     etl::to_string(createdPacket[i], data, formatSpec, true);
-                        //     data.append(" ");
-                        // }
-                        // output.append(data.c_str());
-                        // LOG_DEBUG << output.c_str();
+                        auto status = storeItem(eMMC::memoryMap[eMMC::RECEIVED_TM], RX_BUFF, 2048, eMMCPacketTailPointer, 4);
+                        if (status.has_value()) {
+                            received_tm_packet.pointerToeMMCItemData = eMMCPacketTailPointer;
+                            received_tm_packet.size = received_length - MAGIC_NUMBER;
+                            eMMCPacketTailPointer += 4;
+                            xQueueSendToBack(incomingTMQueue, &received_tm_packet, 0);
+                            xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TM, 0, eNoAction);
+                        }
                     }
                     else {
                         drop_counter++;
