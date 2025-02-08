@@ -72,9 +72,6 @@ void RF_RXTask::ensureRxMode() {
 [[noreturn]] void RF_RXTask::execute() {
     vTaskDelay(5000);
     LOG_INFO << "[RF RX TASK]";
-    incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
-                                            &incomingTCQueueBuffer);
-    vQueueAddToRegistry(incomingTCQueue, "TC queue");
     /// Set the Up-link frequency
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     /// ENABLE THE RX SWITCH

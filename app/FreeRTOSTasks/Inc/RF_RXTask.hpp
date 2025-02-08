@@ -9,12 +9,7 @@
 #include "main.h"
 #include <Frame.hpp>
 
-
-inline QueueHandle_t incomingTCQueue;
-inline StaticQueue_t incomingTCQueueBuffer;
-constexpr uint8_t TCQueueSize = 50;
-inline uint8_t incomingTCQueueStorageArea[TCQueueSize * sizeof(CAN::StoredPacket)] __attribute__((section(".dtcmram_incomingTC ")));
-inline uint8_t RX_BUFF[2048] __attribute__((section(".dtcmram_incomingTCBuffer"), aligned(4)));
+inline uint8_t RX_BUFF[2048] __attribute__((section(".dtcmram_incomingTMBuffer"), aligned(4)));
 using namespace AT86RF215;
 
 

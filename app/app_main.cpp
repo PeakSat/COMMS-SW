@@ -63,7 +63,7 @@ void app_main(void) {
     rf_rxtask->createTask();
     rf_txtask->createTask();
     eMMCTask->createTask();
-    testTask->createTask();
+    // testTask->createTask();
     ina3221Task->createTask();
     tmp117Task->createTask();
     tcHandlingTask->createTask();
@@ -178,6 +178,17 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
         }
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
+    }
+    if (huart->Instance == UART4) {
+        if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
+            tcHandlingTask->send_to_tc_queue = huart4.pRxBuffPtr;
+            tcHandlingTask->size = Size;
+            xHigherPriorityTaskWoken = pdFALSE;
+            xQueueSendFromISR(tcHandlingTask->TCQueueHandle, &tcHandlingTask->send_to_tc_queue, &xHigherPriorityTaskWoken);
+            xHigherPriorityTaskWoken = pdFALSE;
+            xTaskNotifyIndexedFromISR(tcHandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TC, 0, eNoAction, &xHigherPriorityTaskWoken);
+            TCHandlingTask::startReceiveFromUARTwithIdle(tcHandlingTask->tc_buf_dma_pointer, 512);
+        }
     }
 }
 
