@@ -42,28 +42,30 @@ void app_main(void) {
     transceiver.setRadioInterruptConfig(RadioInterruptsConfig::DefaultRadioInterruptsConfig());
     transceiver.setIQInterfaceConfig(IQInterfaceConfig::DefaultIQInterfaceConfig());
 
+    // gnssTask.emplace();
+    // canGatekeeperTask.emplace();
+    // canParserTask.emplace();
+
     uartGatekeeperTask.emplace();
     rf_rxtask.emplace();
     rf_txtask.emplace();
     eMMCTask.emplace();
-    // gnssTask.emplace();
     testTask.emplace();
-    // ina3221Task.emplace();
-    canGatekeeperTask.emplace();
+    ina3221Task.emplace();
     tmp117Task.emplace();
-    canParserTask.emplace();
     tcHandlingTask.emplace();
+
+    // gnssTask->createTask();
+    // canParserTask->createTask();
+    // canGatekeeperTask->createTask();
 
     uartGatekeeperTask->createTask();
     rf_rxtask->createTask();
     rf_txtask->createTask();
     eMMCTask->createTask();
-    // gnssTask->createTask();
     testTask->createTask();
-    // ina3221Task->createTask();
-    canGatekeeperTask->createTask();
+    ina3221Task->createTask();
     tmp117Task->createTask();
-    canParserTask->createTask();
     tcHandlingTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
