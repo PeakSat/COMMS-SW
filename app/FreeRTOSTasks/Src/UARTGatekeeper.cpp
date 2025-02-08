@@ -9,8 +9,10 @@ UARTGatekeeperTask::UARTGatekeeperTask() : Task("UARTGatekeeperTask") {
 
 void UARTGatekeeperTask::execute() {
     etl::string<LOGGER_MAX_MESSAGE_SIZE> output;
+    xSemaphoreGive(UART_Gatekeeper_Semaphore);
     while (true) {
         xQueueReceive(this->xUartQueue, &output, portMAX_DELAY);
-        HAL_UART_Transmit(&huart4, reinterpret_cast<const uint8_t*>(output.data()), output.size(), 500);
+        xSemaphoreTake(UART_Gatekeeper_Semaphore, portMAX_DELAY);
+        HAL_UART_Transmit_DMA(&huart4, reinterpret_cast<const uint8_t*>(output.data()), output.size());
     }
 }

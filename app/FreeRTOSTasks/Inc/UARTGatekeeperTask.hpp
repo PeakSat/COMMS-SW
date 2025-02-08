@@ -1,11 +1,14 @@
 #pragma once
 
 #include "Task.hpp"
+#include <semphr.h>
 #include "queue.h"
 #include "etl/string.h"
 #include "etl/optional.h"
 #define UARTQueueSize 20
 #define LOGGER_MAX_MESSAGE_SIZE 1024
+
+inline SemaphoreHandle_t UART_Gatekeeper_Semaphore;
 
 /**
  * Contains functionality of a Gatekeeper Task for the UART resource. It has the sole access to UART, to avoid any

@@ -182,3 +182,9 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     }
 }
 
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
+    BaseType_t xHigherPriorityTaskWoken = false;
+    if (huart->Instance == UART4) {
+        xSemaphoreGiveFromISR(UART_Gatekeeper_Semaphore, &xHigherPriorityTaskWoken);
+    }
+}
