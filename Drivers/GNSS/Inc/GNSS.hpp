@@ -15,6 +15,7 @@ public:
     static bool isDataValid(int8_t year, int8_t month, int8_t day);
 
     static uint32_t findTailPointer();
+    static void sendGNSSData(uint8_t period, uint32_t daysPrior, uint32_t numberOfSamples);
 
     // Tested Functions
 

@@ -2,6 +2,7 @@
 #include "etl/vector.h"
 #include "etl/string.h"
 
+#include <Logger.hpp>
 #include <eMMC.hpp>
 
 bool GNSSReceiver::isDataValid(int8_t year, int8_t month, int8_t day) {
@@ -34,7 +35,7 @@ uint32_t GNSSReceiver::findTailPointer() {
         bool dataIsValid = GNSSReceiver::isDataValid(lastData.year, lastData.month, lastData.day);
         if (dataIsValid == true) {
 
-            uint64_t lasttimestamp = (lastData.day + (lastData.month * 32) + (lastData.year * 385)) << 32;
+            uint64_t lasttimestamp = static_cast<uint64_t>(lastData.day + (lastData.month * 32) + (lastData.year * 385)) << 32;
             lasttimestamp |= lastData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1];
 
             if (lasttimestamp >= latest_timestamp) {
@@ -55,6 +56,25 @@ uint32_t GNSSReceiver::findTailPointer() {
         }
     }
     return latest_blockPointer;
+}
+
+void GNSSReceiver::sendGNSSData(uint8_t period, uint32_t daysPrior, uint32_t numberOfSamples) {
+    GNSSDefinitions::StoredGNSSData storedData{};
+    GNSSDefinitions::StoredGNSSData dataToBeSent{};
+    uint32_t localTailPointer = eMMCDataTailPointer;
+    uint32_t sampleCounter = 0;
+    if (eMMCDataTailPointer == 0) {
+        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, eMMCDataTailPointer, 1);
+        if (GNSSReceiver::isDataValid(storedData.year, storedData.month, storedData.day) == false) {
+            // todo: handle error, no GNSS data
+            LOG_ERROR << "Requested GNSS data but there are no data in memory";
+        }
+    }
+    uint32_t structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+    while (sampleCounter < numberOfSamples) {
+        for (; structIterator > 0; structIterator--) {
+        }
+    }
 }
 
 GNSSMessage GNSSReceiver::configureNMEATalkerID(TalkerIDType type, Attributes attributes) {
