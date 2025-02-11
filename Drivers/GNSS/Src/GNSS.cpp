@@ -17,14 +17,14 @@ uint32_t GNSSReceiver::findTailPointer() {
 
     GNSSDefinitions::StoredGNSSData lastData{};
     auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, 0, 1);
-    // if (GNSSReceiver::isDataValid(lastData.year, lastData.month, lastData.day) == false) {
-    //     return 0;
-    // }
+    if (GNSSReceiver::isDataValid(lastData.year, lastData.month, lastData.day) == false) {
+        return 0;
+    }
     int8_t latest_year = lastData.year;
     int8_t latest_month = lastData.month;
     int8_t latest_day = lastData.day;
     uint32_t latest_timeOfDay = lastData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1];
-    uint32_t latest_blockPointer = 0;
+    uint32_t latest_blockPointer = 1;
     uint64_t latest_timestamp = (latest_day + (latest_month * 32) + (latest_year * 385)) << 32;
     latest_timestamp |= latest_timeOfDay;
 
@@ -42,7 +42,7 @@ uint32_t GNSSReceiver::findTailPointer() {
                 latest_month = lastData.month;
                 latest_day = lastData.day;
                 latest_timeOfDay = lastData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1];
-                latest_blockPointer = i;
+                latest_blockPointer = i + 1;
                 latest_timestamp = (latest_day + (latest_month * 32) + (latest_year * 385)) << 32;
                 latest_timestamp |= latest_timeOfDay;
             } else {

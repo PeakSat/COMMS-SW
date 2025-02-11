@@ -236,9 +236,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
 
     uint32_t NumberOfMeasurementsInStruct = 0;
 
-    // todo: find last data in the memory
-    uint32_t tailPointer = GNSSReceiver::findTailPointer();
-    eMMCDataTailPointer = 0;
+    eMMCDataTailPointer = GNSSReceiver::findTailPointer();
 
     while (true) {
         if (xTaskNotifyWaitIndexed(GNSS_INDEX_MESSAGE, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(gnss_handler.ERROR_TIMEOUT_MS)) == pdTRUE) {
@@ -248,7 +246,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
                     if (rx_buf_p_from_queue != nullptr) {
                         parser(rx_buf_p_from_queue, compact);
 
-                        if (compact.year > 20) { // todo: check if data is valid so that there are no garbage stored in eMMC
+                        if (GNSSReceiver::isDataValid(compact.year, compact.month, compact.day) == true) {
                             //store data in ram
                             uint64_t minutes = compact.minutes + (compact.hours * 60);
                             uint64_t seconds = compact.seconds + (minutes * 60);
@@ -266,21 +264,22 @@ void GNSSTask::initQueuesToAcceptPointers() {
                                 GNSSDataForEMMC.day = compact.day;
                                 GNSSDataForEMMC.month = compact.month;
                                 GNSSDataForEMMC.year = compact.year;
-
-                                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMC::memoryPageSize, eMMCDataTailPointer, 1);
-                                eMMCDataTailPointer++;
-                                if (eMMCDataTailPointer + 1 > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
+                                if (eMMCDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
                                     eMMCDataTailPointer = 0;
                                 }
+                                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMC::memoryPageSize, eMMCDataTailPointer, 1);
+
+                                eMMCDataTailPointer++;
+
                                 NumberOfMeasurementsInStruct = 0;
                             }
 
                             NumberOfMeasurementsInStruct++;
+                            GNSSprint(compact);
                         } else {
                             __NOP();
                         }
 
-                        GNSSprint(compact);
                         gnss_error_timout_counter = 0;
                     }
                 }
