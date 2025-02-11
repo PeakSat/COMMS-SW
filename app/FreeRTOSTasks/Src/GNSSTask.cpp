@@ -237,6 +237,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
     uint32_t NumberOfMeasurementsInStruct = 0;
 
     // todo: find last data in the memory
+    uint32_t tailPointer = GNSSReceiver::findTailPointer();
     eMMCDataTailPointer = 0;
 
     while (true) {

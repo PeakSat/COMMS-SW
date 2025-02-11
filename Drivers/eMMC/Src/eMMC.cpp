@@ -1,12 +1,15 @@
 #include "eMMC.hpp"
 
+#include <Platform/Inc/PlatformParameters.hpp>
+
 using namespace eMMC;
 extern MMC_HandleTypeDef hmmc1;
 
 namespace eMMC {
     // Define the global variables
-    uint32_t memoryCapacity = 0xE90E80;
-    const uint32_t memoryPageSize = 512; // bytes
+    const uint32_t memoryPageSize = 512;                 // bytes
+    uint64_t memoryCapacity = 0xE90E80 * memoryPageSize; // bytes
+
     std::array<memoryItemHandler, memoryItemCount> memoryMap;
     struct eMMCTransactionHandler eMMCTransactionHandler;
 } // namespace eMMC
@@ -22,6 +25,8 @@ void eMMC::eMMCMemoryInit() {
     // Initialize the memoryMap array using the sizes from MemoryItems.def
 #define MEMORY_ITEM(name, size) memoryMap[name] = memoryItemHandler(size);
 #include "MemoryItems.def"
+
+
 #undef MEMORY_ITEM
 
     if (memoryMap[0].endAddress != 0) {
@@ -31,15 +36,16 @@ void eMMC::eMMCMemoryInit() {
     for (int i = 0; i < memoryItemCount; i++) {
         headPointer += memoryMap[i].size;
         if (headPointer > memoryCapacity) {
-            // memory full
+            // todo: memory full, handle the error
         } else {
             memoryMap[i].endAddress = headPointer;
             memoryMap[i].startAddress = headPointer - memoryMap[i].size;
         }
-
         // align for page size (512 bytes)
         headPointer += memoryPageSize - (headPointer % memoryPageSize);
     }
+    float eMMC_usage = (100 * static_cast<float>(headPointer)) / static_cast<float>(memoryCapacity);
+    COMMSParameters::emmc_usage.setValue(eMMC_usage);
     if (memoryMap[0].endAddress != 0) {
         __NOP();
     }

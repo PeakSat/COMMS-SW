@@ -4,31 +4,57 @@
 
 #include <eMMC.hpp>
 
-bool isDataValid(int8_t year, int8_t month, int8_t day) {
-    if (year < 20 || year > 100) { return false; }
+bool GNSSReceiver::isDataValid(int8_t year, int8_t month, int8_t day) {
+    if (year < 20 || year > 79) { return false; }
     if (month < 0 || month > 12) { return false; }
     if (day < 0 || day > 32) { return false; }
     return true;
 }
 
-uint32_t findTailPointer() {
+uint32_t GNSSReceiver::findTailPointer() {
 
-    uint32_t numOfBlocks = eMMC::memoryMap[eMMC::CANMessages].size / eMMC::memoryPageSize;
+    uint32_t numOfBlocks = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
 
-    uint32_t checkHead = 0;
-    uint32_t checkTail = numOfBlocks;
+    GNSSDefinitions::StoredGNSSData lastData{};
+    auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, 0, 1);
+    // if (GNSSReceiver::isDataValid(lastData.year, lastData.month, lastData.day) == false) {
+    //     return 0;
+    // }
+    int8_t latest_year = lastData.year;
+    int8_t latest_month = lastData.month;
+    int8_t latest_day = lastData.day;
+    uint32_t latest_timeOfDay = lastData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1];
+    uint32_t latest_blockPointer = 0;
+    uint64_t latest_timestamp = (latest_day + (latest_month * 32) + (latest_year * 385)) << 32;
+    latest_timestamp |= latest_timeOfDay;
 
-    while (checkHead < checkTail) {
-        uint32_t checkMiddle = (checkHead + checkTail) / 2;
-        GNSSDefinitions::StoredGNSSData middleData{};
-        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&middleData), eMMC::memoryPageSize, checkMiddle, 1);
-        if (isDataValid(middleData.year, middleData.month, middleData.day) == false) {
-            checkTail = checkMiddle;
+
+    for (int i = 1; i < numOfBlocks; i++) {
+        status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, i, 1);
+        bool dataIsValid = GNSSReceiver::isDataValid(lastData.year, lastData.month, lastData.day);
+        if (dataIsValid == true) {
+
+            uint64_t lasttimestamp = (lastData.day + (lastData.month * 32) + (lastData.year * 385)) << 32;
+            lasttimestamp |= lastData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1];
+
+            if (lasttimestamp >= latest_timestamp) {
+                latest_year = lastData.year;
+                latest_month = lastData.month;
+                latest_day = lastData.day;
+                latest_timeOfDay = lastData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1];
+                latest_blockPointer = i;
+                latest_timestamp = (latest_day + (latest_month * 32) + (latest_year * 385)) << 32;
+                latest_timestamp |= latest_timeOfDay;
+            } else {
+                return latest_blockPointer;
+            }
         } else {
+            if (GNSSReceiver::isDataValid(latest_year, latest_month, latest_day) == true) {
+                return latest_blockPointer;
+            }
         }
     }
-
-    return 0;
+    return latest_blockPointer;
 }
 
 GNSSMessage GNSSReceiver::configureNMEATalkerID(TalkerIDType type, Attributes attributes) {

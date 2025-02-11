@@ -12,9 +12,9 @@ class GNSSReceiver {
 public:
     GNSSReceiver();
 
-    bool isDataValid(int8_t year, int8_t month, int8_t day);
+    static bool isDataValid(int8_t year, int8_t month, int8_t day);
 
-    uint32_t findTailPointer();
+    static uint32_t findTailPointer();
 
     // Tested Functions
 

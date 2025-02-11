@@ -64,6 +64,7 @@ void app_main(void) {
     canParserTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
+    LOG_INFO << "eMMC usage = " << COMMSParameters::emmc_usage.getValue() << "%";
     /* Start the scheduler. */
     can_ack_handler.initialize_semaphore();
     CAN_TRANSMIT_Handler.initialize_semaphore();

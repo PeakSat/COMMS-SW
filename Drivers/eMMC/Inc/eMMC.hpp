@@ -22,7 +22,7 @@ namespace eMMC {
     extern eMMCTransactionHandler eMMCTransactionHandler;
 
     // Declare constants
-    extern uint32_t memoryCapacity;
+    extern uint64_t memoryCapacity;
     extern const uint32_t memoryPageSize; // bytes
 
     // Define the enum using the MEMORY_ITEM macro from the definition file
