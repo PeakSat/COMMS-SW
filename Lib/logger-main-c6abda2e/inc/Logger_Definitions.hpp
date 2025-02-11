@@ -19,4 +19,4 @@
 /**
  * @brief The maximum size of a log message
  */
-#define LOGGER_MAX_MESSAGE_SIZE 1024
+#define LOGGER_MAX_MESSAGE_SIZE 512
