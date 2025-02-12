@@ -8,7 +8,7 @@
 // indexes
 #define GNSS_INDEX_MESSAGE 1
 #define GNSS_INDEX_ACK 2
-#define GNSS_MEASUREMENTS_PER_STRUCT 31
+#define GNSS_MEASUREMENTS_PER_STRUCT 26
 
 inline uint32_t eMMCDataTailPointer;
 
@@ -60,10 +60,10 @@ namespace GNSSDefinitions {
         int32_t latitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
         int32_t longitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
         int32_t altitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
-        int8_t year;
-        int8_t month;
-        int8_t day;
-        uint8_t padding[512 - (sizeof(uint32_t) * GNSS_MEASUREMENTS_PER_STRUCT * 4 + sizeof(int8_t) * 3)]; //make it's size exactly one eMMC page
+        int8_t year[GNSS_MEASUREMENTS_PER_STRUCT];
+        int8_t month[GNSS_MEASUREMENTS_PER_STRUCT];
+        int8_t day[GNSS_MEASUREMENTS_PER_STRUCT];
+        uint8_t padding[512 - (GNSS_MEASUREMENTS_PER_STRUCT * ((sizeof(uint32_t) * 4) + (sizeof(int8_t) * 3)))]; //make it's size exactly one eMMC page
     };
 
 

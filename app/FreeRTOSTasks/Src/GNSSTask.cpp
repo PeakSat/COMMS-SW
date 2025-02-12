@@ -23,6 +23,7 @@ void GNSSTask::GNSSprint(const GNSSData& c) {
     // LOG_INFO << "longitude " << c.longitudeI;
     LOG_INFO << "latitude " << COMMSParameters::gnss_lat.getValue();
     LOG_INFO << "longitude " << COMMSParameters::gnss_long.getValue();
+    LOG_INFO << "utc: " << c.utc;
     LOG_INFO << "year: " << c.year;
     LOG_INFO << "month: " << c.month;
     LOG_INFO << "day: " << c.day;
@@ -258,12 +259,13 @@ void GNSSTask::initQueuesToAcceptPointers() {
                             GNSSDataForEMMC.altitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_alt.getValue();
                             GNSSDataForEMMC.latitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_lat.getValue();
                             GNSSDataForEMMC.longitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_long.getValue();
+                            GNSSDataForEMMC.day[NumberOfMeasurementsInStruct] = compact.day;
+                            GNSSDataForEMMC.month[NumberOfMeasurementsInStruct] = compact.month;
+                            GNSSDataForEMMC.year[NumberOfMeasurementsInStruct] = compact.year;
 
                             //send data to eMMC
                             if (NumberOfMeasurementsInStruct >= GNSS_MEASUREMENTS_PER_STRUCT) {
-                                GNSSDataForEMMC.day = compact.day;
-                                GNSSDataForEMMC.month = compact.month;
-                                GNSSDataForEMMC.year = compact.year;
+
                                 if (eMMCDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
                                     eMMCDataTailPointer = 0;
                                 }
@@ -271,9 +273,10 @@ void GNSSTask::initQueuesToAcceptPointers() {
 
                                 eMMCDataTailPointer++;
 
+
                                 NumberOfMeasurementsInStruct = 0;
                             }
-
+                            LOG_DEBUG << "eMMC tail pointer for GNSS = " << eMMCDataTailPointer;
                             NumberOfMeasurementsInStruct++;
                             GNSSprint(compact);
                         } else {

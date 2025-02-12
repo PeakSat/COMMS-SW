@@ -16,6 +16,7 @@ public:
 
     static uint32_t findTailPointer();
     static void sendGNSSData(uint8_t period, uint32_t daysPrior, uint32_t numberOfSamples);
+    static uint32_t timeOfDaytoMinutes(uint32_t ToD);
 
     // Tested Functions
 
