@@ -39,7 +39,7 @@ void TestTask::execute() {
             generateOneShotReport.append<ParameterReportStructureId>(id);
         }
 
-        auto cobsEncoded = COBSencode<ECSSMaxMessageSize>(MessageParser::composeECSS(generateOneShotReport, size));
+        auto cobsEncoded = COBSencode<ECSSMaxMessageSize>(MessageParser::composeECSS(generateOneShotReport,size));
         // auto x = (MessageParser::composeECSS(generateOneShotReport, size));
         // LOG_DEBUG << "Generate COBS encoded: " << &cobsEncoded;
         // auto cobsDecodedMessage = COBSdecode<1024>(cobsEncoded);
@@ -70,14 +70,6 @@ void TestTask::execute() {
         //     message.appendUint8(ecssbuf[i]);
         // }
         // CAN::TPProtocol::createCANTPMessage(message, false);
-        // LOG_DEBUG << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-        // vTaskDelay(pdMS_TO_TICKS(40));
-        // LOG_DEBUG << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-        // vTaskDelay(pdMS_TO_TICKS(40));
-        // LOG_DEBUG << "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-        // vTaskDelay(pdMS_TO_TICKS(40));
-        // LOG_DEBUG << "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
-        // vTaskDelay(pdMS_TO_TICKS(40));
         vTaskDelay(pdMS_TO_TICKS(DelayMs));
     }
 }

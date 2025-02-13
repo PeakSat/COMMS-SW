@@ -44,7 +44,6 @@ void Logger::log(Logger::LogLevel level, etl::istring &message) {
     etl::to_string(xTaskGetTickCount(), time, format.width(MaxTickCountStringSize), 0);
 
     etl::string<LOGGER_MAX_MESSAGE_SIZE> output;
-    output.append("\n");
     output.append(time.c_str());
     output.append(" [");
     output.append(levelString.c_str());
@@ -57,7 +56,7 @@ void Logger::log(Logger::LogLevel level, etl::istring &message) {
     output.append(subsystemString.c_str());
 
     output.append(message.c_str());
-
+    output.append("\n");
 
     if (uartGatekeeperTask) {
             uartGatekeeperTask->addToQueue(output);

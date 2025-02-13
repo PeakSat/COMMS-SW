@@ -6,7 +6,7 @@
 #include "etl/string.h"
 #include "etl/optional.h"
 #define UARTQueueSize 20
-#define LOGGER_MAX_MESSAGE_SIZE 512
+#define LOGGER_MAX_MESSAGE_SIZE 1024
 
 inline SemaphoreHandle_t UART_Gatekeeper_Semaphore;
 
