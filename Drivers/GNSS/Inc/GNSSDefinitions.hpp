@@ -1,5 +1,6 @@
 #pragma once
 #include "etl/vector.h"
+#include <ctime> // For std::tm and std::mktime
 // #include <eMMC.hpp>
 // Task notification defines
 // flags
@@ -8,7 +9,8 @@
 // indexes
 #define GNSS_INDEX_MESSAGE 1
 #define GNSS_INDEX_ACK 2
-#define GNSS_MEASUREMENTS_PER_STRUCT 26
+#define GNSS_MEASUREMENTS_PER_STRUCT 25
+
 
 inline uint32_t eMMCDataTailPointer;
 
@@ -56,14 +58,12 @@ namespace GNSSDefinitions {
      * the receiver must compensate for it.
      */
     struct StoredGNSSData {
-        uint32_t timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT];
+        uint64_t usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT];
         int32_t latitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
         int32_t longitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
         int32_t altitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
-        int8_t year[GNSS_MEASUREMENTS_PER_STRUCT];
-        int8_t month[GNSS_MEASUREMENTS_PER_STRUCT];
-        int8_t day[GNSS_MEASUREMENTS_PER_STRUCT];
-        uint8_t padding[512 - (GNSS_MEASUREMENTS_PER_STRUCT * ((sizeof(uint32_t) * 4) + (sizeof(int8_t) * 3)))]; //make it's size exactly one eMMC page
+        uint8_t valid;
+        uint8_t padding[512 - ((GNSS_MEASUREMENTS_PER_STRUCT * 20) + 1)]; //make it's size exactly one eMMC page
     };
 
 

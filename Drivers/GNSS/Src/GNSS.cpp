@@ -19,41 +19,27 @@ uint32_t GNSSReceiver::findTailPointer() {
 
     GNSSDefinitions::StoredGNSSData lastData{};
     auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, 0, 1);
-    if (GNSSReceiver::isDataValid(lastData.year[GNSS_MEASUREMENTS_PER_STRUCT - 1], lastData.month[GNSS_MEASUREMENTS_PER_STRUCT - 1], lastData.day[GNSS_MEASUREMENTS_PER_STRUCT - 1]) == false) {
+    if (lastData.valid != 0xAA) {
         return 0;
     }
-    int8_t latest_year = lastData.year[GNSS_MEASUREMENTS_PER_STRUCT - 1];
-    int8_t latest_month = lastData.month[GNSS_MEASUREMENTS_PER_STRUCT - 1];
-    int8_t latest_day = lastData.day[GNSS_MEASUREMENTS_PER_STRUCT - 1];
-    uint32_t latest_timeOfDay = lastData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1];
     uint32_t latest_blockPointer = 1;
-    uint64_t latest_timestamp = (latest_day + (latest_month * 32) + (latest_year * 385)) << 32;
-    latest_timestamp |= latest_timeOfDay;
+    uint64_t latest_timestamp = lastData.usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT - 1] >> 5;
 
 
     for (int i = 1; i < numOfBlocks; i++) {
         status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, i, 1);
-        bool dataIsValid = GNSSReceiver::isDataValid(lastData.year[GNSS_MEASUREMENTS_PER_STRUCT - 1], lastData.month[GNSS_MEASUREMENTS_PER_STRUCT - 1], lastData.day[GNSS_MEASUREMENTS_PER_STRUCT - 1]);
-        if (dataIsValid == true) {
+        if (lastData.valid == 0xAA) {
 
-            uint64_t lasttimestamp = static_cast<uint64_t>(lastData.day[GNSS_MEASUREMENTS_PER_STRUCT - 1] + (lastData.month[GNSS_MEASUREMENTS_PER_STRUCT - 1] * 32) + (lastData.year[GNSS_MEASUREMENTS_PER_STRUCT - 1] * 385)) << 32;
-            lasttimestamp |= lastData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1];
+            uint64_t lasttimestamp = lastData.usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT - 1] >> 5;
 
             if (lasttimestamp >= latest_timestamp) {
-                latest_year = lastData.year[GNSS_MEASUREMENTS_PER_STRUCT - 1];
-                latest_month = lastData.month[GNSS_MEASUREMENTS_PER_STRUCT - 1];
-                latest_day = lastData.day[GNSS_MEASUREMENTS_PER_STRUCT - 1];
-                latest_timeOfDay = lastData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1];
+                latest_timestamp = lasttimestamp;
                 latest_blockPointer = i + 1;
-                latest_timestamp = (latest_day + (latest_month * 32) + (latest_year * 385)) << 32;
-                latest_timestamp |= latest_timeOfDay;
             } else {
                 return latest_blockPointer;
             }
         } else {
-            if (GNSSReceiver::isDataValid(latest_year, latest_month, latest_day) == true) {
-                return latest_blockPointer;
-            }
+            return latest_blockPointer;
         }
     }
     return latest_blockPointer;
@@ -61,29 +47,43 @@ uint32_t GNSSReceiver::findTailPointer() {
 
 void GNSSReceiver::sendGNSSData(uint8_t period, uint32_t daysPrior, uint32_t numberOfSamples) {
     GNSSDefinitions::StoredGNSSData storedData{};
-    GNSSDefinitions::StoredGNSSData dataToBeSent{};
+    GNSSDefinitions::StoredGNSSData dataToBeSent1{};
+    GNSSDefinitions::StoredGNSSData dataToBeSent2{};
     uint32_t localTailPointer = eMMCDataTailPointer;
     uint32_t sampleCounter = 0;
 
     if (eMMCDataTailPointer == 0) {
         auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, eMMCDataTailPointer, 1);
-        if (GNSSReceiver::isDataValid(storedData.year[GNSS_MEASUREMENTS_PER_STRUCT - 1], storedData.month[GNSS_MEASUREMENTS_PER_STRUCT - 1], storedData.day[GNSS_MEASUREMENTS_PER_STRUCT - 1]) == false) {
+        if (storedData.valid == 0xAA) {
             // todo: handle error, no GNSS data
             LOG_ERROR << "Requested GNSS data but there are no data in memory";
         }
     }
-    std::tm time{};
-    time.tm_year = storedData.year[GNSS_MEASUREMENTS_PER_STRUCT - 1] - 1900;
-    time.tm_mon = storedData.month[GNSS_MEASUREMENTS_PER_STRUCT - 1] - 1;
-    time.tm_mday = storedData.day[GNSS_MEASUREMENTS_PER_STRUCT - 1];
-    uint64_t secondsOfTheDay = (static_cast<uint64_t>(storedData.timeOfDay[GNSS_MEASUREMENTS_PER_STRUCT - 1]) * 86400) / UINT32_MAX;
-    uint32_t secondsAfterTheMinute = secondsOfTheDay % 60;
-    uint32_t minutesAfterTheHour = (secondsOfTheDay / 60) % 60;
-    uint32_t hoursSinceMidnight = secondsOfTheDay / 3600;
 
-    uint32_t structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+    int32_t structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+    uint32_t dataToBeSentIterator = 0;
+    uint64_t newerTimestamp = storedData.usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT - 1] >> 5;
     while (sampleCounter < numberOfSamples) {
-        for (; structIterator > 0; structIterator--) {
+        uint64_t olderTimestamp = storedData.usFromEpoch_NofSat[structIterator] >> 5;
+        if (newerTimestamp - olderTimestamp > period) {
+            if (dataToBeSentIterator < GNSS_MEASUREMENTS_PER_STRUCT) {
+                dataToBeSent1.altitudeI[dataToBeSentIterator] = storedData.altitudeI[dataToBeSentIterator];
+            } else {
+                dataToBeSent2.altitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.altitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                if (dataToBeSentIterator >= GNSS_MEASUREMENTS_PER_STRUCT * 2) {
+                    // todo: send to TM queue
+                    dataToBeSentIterator = 0;
+                }
+            }
+
+            dataToBeSentIterator++;
+            sampleCounter++;
+        }
+
+        structIterator--;
+        if (structIterator < 0) {
+            structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+            // todo: get previous page from emmc
         }
     }
 }

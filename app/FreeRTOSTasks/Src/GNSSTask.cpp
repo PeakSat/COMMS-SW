@@ -248,31 +248,38 @@ void GNSSTask::initQueuesToAcceptPointers() {
                         parser(rx_buf_p_from_queue, compact);
 
                         if (GNSSReceiver::isDataValid(compact.year, compact.month, compact.day) == true) {
-                            //store data in ram
-                            uint64_t minutes = compact.minutes + (compact.hours * 60);
-                            uint64_t seconds = compact.seconds + (minutes * 60);
-                            uint64_t microseconds = compact.microseconds + (seconds * 1000000);
-                            uint64_t timeOfDay64 = (static_cast<uint64_t>(UINT32_MAX) * microseconds) / 86400000000; // 86.400.000.000 us in a day
-                            auto timeOfDay32 = static_cast<uint32_t>(timeOfDay64);
+                            std::tm time{};
+                            time.tm_year = compact.year + 2000;
+                            time.tm_mon = compact.month - 1;
+                            time.tm_mday = static_cast<uint8_t>(compact.day);
+                            time.tm_hour = static_cast<uint8_t>(compact.hours);
+                            time.tm_min = static_cast<uint8_t>(compact.minutes);
+                            time.tm_sec = static_cast<uint8_t>(compact.seconds);
+                            uint64_t timeFromEpoch = std::mktime(&time);
+                            timeFromEpoch *= 1000000;
+                            timeFromEpoch += static_cast<uint64_t>(compact.microseconds);
+                            LOG_DEBUG << "Time from epoch: " << timeFromEpoch;
 
-                            GNSSDataForEMMC.timeOfDay[NumberOfMeasurementsInStruct] = timeOfDay32;
+                            uint8_t numberOfSatelites = compact.satellites_tracked;
+                            if (numberOfSatelites > 0x1F) {
+                                numberOfSatelites = 0x1F;
+                            }
+                            uint64_t timeAndNofSat = (timeFromEpoch << 5) | numberOfSatelites;
+
                             GNSSDataForEMMC.altitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_alt.getValue();
                             GNSSDataForEMMC.latitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_lat.getValue();
                             GNSSDataForEMMC.longitudeI[NumberOfMeasurementsInStruct] = COMMSParameters::gnss_long.getValue();
-                            GNSSDataForEMMC.day[NumberOfMeasurementsInStruct] = compact.day;
-                            GNSSDataForEMMC.month[NumberOfMeasurementsInStruct] = compact.month;
-                            GNSSDataForEMMC.year[NumberOfMeasurementsInStruct] = compact.year;
+                            GNSSDataForEMMC.usFromEpoch_NofSat[NumberOfMeasurementsInStruct] = timeAndNofSat;
 
                             //send data to eMMC
                             if (NumberOfMeasurementsInStruct >= GNSS_MEASUREMENTS_PER_STRUCT) {
-
+                                GNSSDataForEMMC.valid = 0xAA;
                                 if (eMMCDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
                                     eMMCDataTailPointer = 0;
                                 }
                                 auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMC::memoryPageSize, eMMCDataTailPointer, 1);
 
                                 eMMCDataTailPointer++;
-
 
                                 NumberOfMeasurementsInStruct = 0;
                             }
