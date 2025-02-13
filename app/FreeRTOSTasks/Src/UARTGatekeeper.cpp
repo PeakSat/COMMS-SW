@@ -8,7 +8,6 @@ UARTGatekeeperTask::UARTGatekeeperTask() : Task("UARTGatekeeperTask") {
 }
 
 void UARTGatekeeperTask::execute() {
-    StaticSemaphore_t UART_Gatekeeper_SemaphoreBuffer;
     UART_Gatekeeper_Semaphore = xSemaphoreCreateBinaryStatic(&UART_Gatekeeper_SemaphoreBuffer);
     etl::string<LOGGER_MAX_MESSAGE_SIZE> output;
     xSemaphoreGive(UART_Gatekeeper_Semaphore);

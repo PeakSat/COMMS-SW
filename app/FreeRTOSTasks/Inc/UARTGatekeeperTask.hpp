@@ -9,6 +9,8 @@
 #define LOGGER_MAX_MESSAGE_SIZE 512
 
 inline SemaphoreHandle_t UART_Gatekeeper_Semaphore;
+inline StaticSemaphore_t UART_Gatekeeper_SemaphoreBuffer;
+
 
 /**
  * Contains functionality of a Gatekeeper Task for the UART resource. It has the sole access to UART, to avoid any
