@@ -26,7 +26,7 @@ void TestTask::execute() {
         // if (eMMCDataTailPointer > 0) {
         //     auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&data), 512, eMMCDataTailPointer - 1, 1);
         // }
-        GNSSReceiver::sendGNSSData(100, 0, 5);
+        GNSSReceiver::sendGNSSData(100, 10000, 5);
 
         vTaskDelay(pdMS_TO_TICKS(10000));
     }

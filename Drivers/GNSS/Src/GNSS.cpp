@@ -128,11 +128,33 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
         auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer - 1, 1);
     }
 
-    //todo: shift to secondsPrior
-
-    int32_t structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
-    uint32_t dataToBeSentIterator = 0;
+    //shift to secondsPrior
     uint64_t newerTimestamp = storedData.usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT - 1] >> 5;
+    int32_t structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+    uint64_t priorTimestamp = newerTimestamp;
+    while (((newerTimestamp / 1000000) - static_cast<uint64_t>(secondsPrior)) < (priorTimestamp / 1000000)) {
+        priorTimestamp = storedData.usFromEpoch_NofSat[structIterator] >> 5;
+
+        structIterator--;
+        if (structIterator < 0) {
+            structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+            if (localTailPointer == 0) {
+                localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
+            } else {
+                localTailPointer--;
+            }
+            auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+            if (storedData.valid != 0xAA) {
+                //todo: handle error
+                LOG_ERROR << "Requested GNSS data but there are no data for " << secondsPrior << " seconds prior";
+                return;
+            }
+        }
+    }
+
+
+    structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+    uint32_t dataToBeSentIterator = 0;
     uint32_t newerTimeMSBs = static_cast<uint32_t>(newerTimestamp >> 40);
     while (sampleCounter < numberOfSamples) {
         uint64_t olderTimestamp = storedData.usFromEpoch_NofSat[structIterator] >> 5;
@@ -142,7 +164,7 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
             constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator - 1);
             dataToBeSentIterator = 0;
         }
-        if ((newerTimestamp / 1000000) - (olderTimestamp / 1000000) >= period) { // todo: what should be compared?
+        if ((newerTimestamp / 1000000) - (olderTimestamp / 1000000) >= period) { // /1000000 to get to seconds
             if (dataToBeSentIterator < GNSS_MEASUREMENTS_PER_STRUCT) {
                 dataToBeSent1.altitudeI[dataToBeSentIterator] = storedData.altitudeI[dataToBeSentIterator];
                 dataToBeSent1.latitudeI[dataToBeSentIterator] = storedData.latitudeI[dataToBeSentIterator];
