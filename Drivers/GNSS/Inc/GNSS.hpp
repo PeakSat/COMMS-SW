@@ -7,6 +7,7 @@
 #include "GNSSDefinitions.hpp"
 
 using namespace GNSSDefinitions;
+inline uint8_t GNSS_TMbuffer[1024]; // todo: is max TM size defined somewhere?
 
 class GNSSReceiver {
 public:
@@ -15,7 +16,8 @@ public:
     static bool isDataValid(int8_t year, int8_t month, int8_t day);
 
     static uint32_t findTailPointer();
-    static void sendGNSSData(uint8_t period, uint32_t daysPrior, uint32_t numberOfSamples);
+    static void sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t numberOfSamples);
+    static void constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1, GNSSDefinitions::StoredGNSSData* storedData2, uint32_t numberOfData);
     static uint32_t timeOfDaytoMinutes(uint32_t ToD);
 
     // Tested Functions
