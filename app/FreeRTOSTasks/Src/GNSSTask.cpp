@@ -235,7 +235,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
     Logger::format.precision(Precision);
     uint32_t receivedEvents = 0;
 
-    uint32_t NumberOfMeasurementsInStruct = 0;
+    int32_t NumberOfMeasurementsInStruct = 0;
 
     eMMCDataTailPointer = GNSSReceiver::findTailPointer();
 
@@ -272,7 +272,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
                             GNSSDataForEMMC.usFromEpoch_NofSat[NumberOfMeasurementsInStruct] = timeAndNofSat;
 
                             //send data to eMMC
-                            if (NumberOfMeasurementsInStruct >= GNSS_MEASUREMENTS_PER_STRUCT) {
+                            if (NumberOfMeasurementsInStruct >= GNSS_MEASUREMENTS_PER_STRUCT - 1) {
                                 GNSSDataForEMMC.valid = 0xAA;
                                 if (eMMCDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
                                     eMMCDataTailPointer = 0;
@@ -281,7 +281,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
 
                                 eMMCDataTailPointer++;
 
-                                NumberOfMeasurementsInStruct = 0;
+                                NumberOfMeasurementsInStruct = -1;
                             }
                             LOG_DEBUG << "eMMC tail pointer for GNSS = " << eMMCDataTailPointer;
                             NumberOfMeasurementsInStruct++;

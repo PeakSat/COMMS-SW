@@ -70,17 +70,17 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
 
     for (uint32_t i = 0; i < numberOfData; i++) {
         if (numberOfData < GNSS_MEASUREMENTS_PER_STRUCT) {
-            GNSS_TMbuffer[5 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 32)) & 0xFF);
-            GNSS_TMbuffer[6 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 40)) & 0xFF);
+            GNSS_TMbuffer[9 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 32)) & 0xFF);
+            GNSS_TMbuffer[8 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 40)) & 0xFF);
             GNSS_TMbuffer[7 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 48)) & 0xFF);
-            GNSS_TMbuffer[8 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 56)) & 0xFF);
-            GNSS_TMbuffer[9 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i]) & 0xFF);
+            GNSS_TMbuffer[6 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 56)) & 0xFF);
+            GNSS_TMbuffer[5 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i]) & 0xFF);
         } else {
-            GNSS_TMbuffer[5 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 32)) & 0xFF);
-            GNSS_TMbuffer[6 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 40)) & 0xFF);
+            GNSS_TMbuffer[9 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 32)) & 0xFF);
+            GNSS_TMbuffer[8 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 40)) & 0xFF);
             GNSS_TMbuffer[7 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 48)) & 0xFF);
-            GNSS_TMbuffer[8 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 56)) & 0xFF);
-            GNSS_TMbuffer[9 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i]) & 0xFF);
+            GNSS_TMbuffer[6 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 56)) & 0xFF);
+            GNSS_TMbuffer[5 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i]) & 0xFF);
         }
     }
     uint8_t* LatStartByteBufferPointer = &GNSS_TMbuffer[5 + (5 * numberOfData)];
@@ -155,36 +155,40 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
 
     structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
     uint32_t dataToBeSentIterator = 0;
-    uint32_t newerTimeMSBs = static_cast<uint32_t>(newerTimestamp >> 40);
+    uint32_t newerTimeMSBs = static_cast<uint32_t>(newerTimestamp >> 35);
     while (sampleCounter < numberOfSamples) {
         uint64_t olderTimestamp = storedData.usFromEpoch_NofSat[structIterator] >> 5;
-        uint32_t olderTimeMSBs = static_cast<uint32_t>(olderTimestamp >> 40);
-        if (olderTimeMSBs != newerTimeMSBs && dataToBeSentIterator > 0) {
-            // MSBs changed. Construct another TM
-            constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator - 1);
-            dataToBeSentIterator = 0;
-        }
+
         if ((newerTimestamp / 1000000) - (olderTimestamp / 1000000) >= period) { // /1000000 to get to seconds
-            if (dataToBeSentIterator < GNSS_MEASUREMENTS_PER_STRUCT) {
-                dataToBeSent1.altitudeI[dataToBeSentIterator] = storedData.altitudeI[dataToBeSentIterator];
-                dataToBeSent1.latitudeI[dataToBeSentIterator] = storedData.latitudeI[dataToBeSentIterator];
-                dataToBeSent1.longitudeI[dataToBeSentIterator] = storedData.longitudeI[dataToBeSentIterator];
-                dataToBeSent1.usFromEpoch_NofSat[dataToBeSentIterator] = storedData.usFromEpoch_NofSat[dataToBeSentIterator];
+            uint32_t olderTimeMSBs = static_cast<uint32_t>(olderTimestamp >> 35);
+            if (olderTimeMSBs != newerTimeMSBs && dataToBeSentIterator > 0) {
+                // MSBs changed. Construct another TM
+                constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator);
+                dataToBeSentIterator = 0;
+                newerTimeMSBs = olderTimeMSBs;
             } else {
-                dataToBeSent2.altitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.altitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
-                dataToBeSent2.latitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.latitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
-                dataToBeSent2.longitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.longitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
-                dataToBeSent2.usFromEpoch_NofSat[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.usFromEpoch_NofSat[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
-                if (dataToBeSentIterator >= GNSS_MEASUREMENTS_PER_STRUCT * 2) {
-                    //send to TM queue
-                    constructGNSSTM(&dataToBeSent1, &dataToBeSent2, GNSS_MEASUREMENTS_PER_STRUCT * 2);
+                newerTimeMSBs = olderTimeMSBs;
+                if (dataToBeSentIterator < GNSS_MEASUREMENTS_PER_STRUCT) {
+                    dataToBeSent1.altitudeI[dataToBeSentIterator] = storedData.altitudeI[dataToBeSentIterator];
+                    dataToBeSent1.latitudeI[dataToBeSentIterator] = storedData.latitudeI[dataToBeSentIterator];
+                    dataToBeSent1.longitudeI[dataToBeSentIterator] = storedData.longitudeI[dataToBeSentIterator];
+                    dataToBeSent1.usFromEpoch_NofSat[dataToBeSentIterator] = storedData.usFromEpoch_NofSat[dataToBeSentIterator];
+                } else {
+                    dataToBeSent2.altitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.altitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                    dataToBeSent2.latitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.latitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                    dataToBeSent2.longitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.longitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                    dataToBeSent2.usFromEpoch_NofSat[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.usFromEpoch_NofSat[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                    if (dataToBeSentIterator >= GNSS_MEASUREMENTS_PER_STRUCT * 2) {
+                        //send to TM queue
+                        constructGNSSTM(&dataToBeSent1, &dataToBeSent2, GNSS_MEASUREMENTS_PER_STRUCT * 2);
 
-                    dataToBeSentIterator = 0;
+                        dataToBeSentIterator = 0;
+                    }
                 }
+                newerTimestamp = olderTimestamp;
+                sampleCounter++;
+                dataToBeSentIterator++;
             }
-
-            dataToBeSentIterator++;
-            sampleCounter++;
         }
 
         structIterator--;
