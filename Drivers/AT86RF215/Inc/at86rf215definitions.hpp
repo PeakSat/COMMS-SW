@@ -21,6 +21,9 @@ namespace AT86RF215 {
     #define TM_OBC (1 << 15)
     #define TM_COMMS (1 << 16)
     #define TXFE_RX (1 << 17)
+    #define TC_UART (1 << 18)
+    #define TC_RF_RX (1 << 19)
+    #define TC_UART_TC_HANDLING_TASK (1 << 20)
     /// Indexes
     #define NOTIFY_INDEX_TRANSMIT 1
     #define NOTIFY_INDEX_RXFE_RX 2
@@ -31,7 +34,7 @@ namespace AT86RF215 {
     #define NOTIFY_INDEX_TXFE_RX 7
     #define NOTIFY_INDEX_AGC 8
     #define NOTIFY_INDEX_RXFS 9
-    #define NOTIFY_INDEX_RECEIVED_TC 10
+    #define NOTIFY_INDEX_INCOMING_TC 10
 
     enum class EnergyDetectionTimeBasis {
         RF_2MS = 0x0,

@@ -146,13 +146,13 @@ void RF_RXTask::ensureRxMode() {
                         for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
                             RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                         }
-                        auto status = storeItem(eMMC::memoryMap[eMMC::RECEIVED_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
+                        auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
                         if (status.has_value()) {
                             PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
                             PacketToBeStored.size = received_length - MAGIC_NUMBER;
                             eMMCPacketTailPointer += 1;
                             xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
-                            xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TC, 0, eNoAction);
+                            xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
                         }
                     }
                     else {
@@ -170,8 +170,8 @@ void RF_RXTask::ensureRxMode() {
                     case READY: {
                         trx_state = transceiver.get_state(RF09, error);
                         if (trx_state != RF_RX) {
-                            // txamp = GPIO_PIN_SET;
-                            // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                            txamp = GPIO_PIN_SET;
+                            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                             ensureRxMode();
                         }
                         break;
@@ -194,8 +194,8 @@ void RF_RXTask::ensureRxMode() {
                             transceiver.tx_ongoing = false;
                             ensureRxMode();
                         }
-                        // txamp = GPIO_PIN_SET;
-                        // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                        txamp = GPIO_PIN_SET;
+                        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                         break;
                     }
                     case RX_ONG: {
@@ -243,6 +243,7 @@ void RF_RXTask::ensureRxMode() {
             if (transceiver.TransmitterFrameEnd_flag) {
                 transceiver.TransmitterFrameEnd_flag = false;
                 LOG_INFO << "[RX] Transceiver FRAME END";
+                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
             }
             xSemaphoreGive(transceiver_handler.resources_mtx);
         }
