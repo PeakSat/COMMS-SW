@@ -64,36 +64,10 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
 }
 
 [[noreturn]] void RF_TXTask::execute() {
-    outgoingTMQueue = xQueueCreateStatic(TMQueueSize, sizeof(CAN::StoredPacket), outgoingTMQueueStorageArea,
-                                            &outgoingTMQueueBuffer);
-    vQueueAddToRegistry(outgoingTMQueue, "TM queue");
+    TXQueue = xQueueCreateStatic(outgoingTXQueueSize, sizeof(CAN::StoredPacket), outgoingTXQueueStorageArea,
+                                            &outgoingTXQueueBuffer);
+    vQueueAddToRegistry(TXQueue, "TX queue");
     vTaskDelay(8000);
-    PacketData packetTestData = createRandomPacketData(MaxPacketLength);
-    StaticTimer_t xTimerBuffer;
-    TimerHandle_t xTimer = xTimerCreateStatic(
-        "Transmit Timer",
-        pdMS_TO_TICKS(transceiver_handler.BEACON_PERIOD_MS),
-        pdTRUE,
-        (void *)1,
-        [](TimerHandle_t pxTimer) {
-            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            // xTaskNotifyIndexedFromISR(
-            //     rf_txtask->taskHandle,
-            //     NOTIFY_INDEX_TRANSMIT,
-            //     TRANSMIT,
-            //     eSetBits,
-            //     &xHigherPriorityTaskWoken);
-            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-        },
-        &xTimerBuffer);
-
-    // if (xTimer != nullptr) {
-    //     if (xTimerStart(xTimer, 0) != pdPASS) {
-    //         LOG_ERROR << "[TX] Failed to start the timer";
-    //     }
-    //     else
-    //         LOG_INFO << "[TX] TX TIMER HAS STARTED";
-    // }
     uint8_t state = 0;
     uint8_t counter = 0;
     uint32_t receivedEventsTransmit;
@@ -107,11 +81,11 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
     etl::string<1024> tm_string = "";
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, pdTICKS_TO_MS(transceiver_handler.BEACON_PERIOD_MS + 1000)) == pdTRUE) {
-            while (uxQueueMessagesWaiting(outgoingTMQueue)) {
+            while (uxQueueMessagesWaiting(TXQueue)) {
                 // Get the message pointer from the queue
                 /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
-                xQueueReceive(outgoingTMQueue, &TM_PACKET, portMAX_DELAY);
+                xQueueReceive(TXQueue, &TM_PACKET, portMAX_DELAY);
                 if (receivedEventsTransmit & TM_OBC) {
                     CAN::Application::getStoredMessage(&TM_PACKET, TX_BUFF, TM_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
                     LOG_DEBUG << "Received TM from OBC... preparing the transmission";
