@@ -1,11 +1,16 @@
 #pragma once
 
 #include "Task.hpp"
+#include <semphr.h>
 #include "queue.h"
 #include "etl/string.h"
 #include "etl/optional.h"
 #define UARTQueueSize 20
-#define LOGGER_MAX_MESSAGE_SIZE 1024
+#define LOGGER_MAX_MESSAGE_SIZE 512
+
+inline SemaphoreHandle_t UART_Gatekeeper_Semaphore;
+inline StaticSemaphore_t UART_Gatekeeper_SemaphoreBuffer;
+
 
 /**
  * Contains functionality of a Gatekeeper Task for the UART resource. It has the sole access to UART, to avoid any
@@ -47,7 +52,7 @@ public:
 
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<UARTGatekeeperTask>, this->TaskName, UARTGatekeeperTask::TaskStackDepth, this,
-                                             tskIDLE_PRIORITY + 4, this->taskStack, &(this->taskBuffer));
+                                             tskIDLE_PRIORITY + 1, this->taskStack, &(this->taskBuffer));
     }
 };
 

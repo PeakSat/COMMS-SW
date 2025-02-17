@@ -122,6 +122,7 @@ void ParameterService::initializeParameterMap() {
         {EPSParameters::EPS_ABF_PLACED_1ID, EPSParameters::EPS_ABF_PLACED_1},
         {EPSParameters::EPS_VOLT_BRDSUP_RAWID, EPSParameters::EPS_VOLT_BRDSUP_RAW},
         {EPSParameters::EPS_TEMP_MCU_RAWID, EPSParameters::EPS_TEMP_MCU_RAW},
+        {EPSParameters::EPS_VIP_VOLT_VD0_RAWID, EPSParameters::EPS_VIP_VOLT_VD0_RAW},
         {EPSParameters::EPS_VIP_VOLT_VD1_RAWID, EPSParameters::EPS_VIP_VOLT_VD1_RAW},
         {EPSParameters::EPS_VIP_VOLT_VD2_RAWID, EPSParameters::EPS_VIP_VOLT_VD2_RAW},
         {EPSParameters::EPS_VIP_VOLT_VD3_RAWID, EPSParameters::EPS_VIP_VOLT_VD3_RAW},
@@ -709,6 +710,7 @@ void ParameterService::initializeParameterMap() {
         {OBDHParameters::UseRTTID, OBDHParameters::UseRTT},
         {OBDHParameters::UseUARTID, OBDHParameters::UseUART},
         {OBDHParameters::UseCANID, OBDHParameters::UseCAN},
+        {OBDHParameters::HeartbeatPeriodID, OBDHParameters::HeartbeatPeriod},
         {ADCSParameters::ResetTypeID, ADCSParameters::ResetType},
         {ADCSParameters::UnixTimeSecondsID, ADCSParameters::UnixTimeSeconds},
         {ADCSParameters::UnixTimeNanoSecondsID, ADCSParameters::UnixTimeNanoSeconds},
@@ -837,10 +839,19 @@ void ParameterService::initializeParameterMap() {
         {ADCSParameters::SunPointBodyVecYID, ADCSParameters::SunPointBodyVecY},
         {ADCSParameters::SunPointBodyVecZID, ADCSParameters::SunPointBodyVecZ},
         {ADCSParameters::ModelMagOrcXID, ADCSParameters::ModelMagOrcX},
+        {ADCSParameters::ModelMagOrcYID, ADCSParameters::ModelMagOrcY},
+        {ADCSParameters::ModelMagOrcZID, ADCSParameters::ModelMagOrcZ},
+        {ADCSParameters::ModelSunOrcXID, ADCSParameters::ModelSunOrcX},
+        {ADCSParameters::ModelSunOrcYID, ADCSParameters::ModelSunOrcY},
+        {ADCSParameters::ModelSunOrcZID, ADCSParameters::ModelSunOrcZ},
         {COMMSParameters::uhf_power_amp_tempID, COMMSParameters::uhf_power_amp_temp},
         {COMMSParameters::pcb_tempID, COMMSParameters::pcb_temp},
         {COMMSParameters::gnss_tempID, COMMSParameters::gnss_temp},
         {COMMSParameters::antenna_deployment_statusID, COMMSParameters::antenna_deployment_status},
+        {COMMSParameters::cw_intervalID, COMMSParameters::cw_interval},
+        {COMMSParameters::bfsk_beacon_intervalID, COMMSParameters::bfsk_beacon_interval},
+        {COMMSParameters::uhf_tx_powerID, COMMSParameters::uhf_tx_power},
+        {COMMSParameters::rssiID, COMMSParameters::rssi},
         {COMMSParameters::gnss_latID, COMMSParameters::gnss_lat},
         {COMMSParameters::gnss_longID, COMMSParameters::gnss_long},
         {COMMSParameters::gnss_altID, COMMSParameters::gnss_alt},
@@ -852,7 +863,7 @@ void ParameterService::initializeParameterMap() {
         {COMMSParameters::gnss_delay_cmdsID, COMMSParameters::gnss_delay_cmds},
         {COMMSParameters::satellites_trackedID, COMMSParameters::satellites_tracked},
         {COMMSParameters::gnss_fix_qualityID, COMMSParameters::gnss_fix_quality},
-        {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}
-    };
+        {COMMSParameters::gnss_TM_data_periodID, COMMSParameters::gnss_TM_data_period},
+        {COMMSParameters::commit_hashID, COMMSParameters::commit_hash}};
 }
 #endif

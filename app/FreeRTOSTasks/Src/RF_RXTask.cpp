@@ -1,6 +1,5 @@
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
-
 #include <ECSS_Definitions.hpp>
 #include <Message.hpp>
 #include <MessageParser.hpp>
@@ -73,6 +72,9 @@ void RF_RXTask::ensureRxMode() {
 [[noreturn]] void RF_RXTask::execute() {
     vTaskDelay(5000);
     LOG_INFO << "[RF RX TASK]";
+    incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
+                                            &incomingTCQueueBuffer);
+    vQueueAddToRegistry(incomingTCQueue, "TC queue");
     /// Set the Up-link frequency
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     /// ENABLE THE RX SWITCH
@@ -122,55 +124,52 @@ void RF_RXTask::ensureRxMode() {
     uint16_t received_length = 0;
     uint8_t current_counter = 0;
     uint32_t drop_counter = 0;
+    uint32_t print_tx_ong = 0;
     uint32_t receivedEvents;
+    State trx_state;
     ensureRxMode();
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
-    State trx_state;
-    // etl::string<512> message_OBC;
-    CAN::StoredPacket received_tm_packet;
+    GPIO_PinState txamp;
+    CAN::StoredPacket PacketToBeStored;
     uint32_t eMMCPacketTailPointer = 0;
-
-    incomingTMQueue = xQueueCreateStatic(incomingTMQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
-                                           &incomingTCQueueBuffer);
-    vQueueAddToRegistry(incomingTMQueue, "TM incoming queue");
-
+    uint8_t counter_tx_ong;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
-                if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-                    auto result = transceiver.get_received_length(RF09, error);
-                    received_length = result.value();
-                    int8_t rssi = transceiver.get_rssi(RF09, error);
-                    if (rssi != 127)
-                        LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
-                    if (received_length && received_length != 20) {
-                        LOG_DEBUG << "[RX AGC] LENGTH: " << received_length - MAGIC_NUMBER;
-                        rx_total_packets++;
-                        LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
-                        drop_counter = 0;
-                        for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
-                            RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                        }
-                        auto status = storeItem(eMMC::memoryMap[eMMC::RECEIVED_TM], RX_BUFF, 2048, eMMCPacketTailPointer, 4);
-                        if (status.has_value()) {
-                            received_tm_packet.pointerToeMMCItemData = eMMCPacketTailPointer;
-                            received_tm_packet.size = received_length - MAGIC_NUMBER;
-                            eMMCPacketTailPointer += 4;
-                            xQueueSendToBack(incomingTMQueue, &received_tm_packet, 0);
-                            xTaskNotifyIndexed(tmparserTask->taskHandle, NOTIFY_INDEX_RECEIVED_TM, 0, eNoAction);
-                        }
-                        else {
-                            LOG_ERROR << "MEMORY ERROR";
-                        }
+            if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
+                auto result = transceiver.get_received_length(RF09, error);
+                received_length = result.value();
+                int8_t rssi = transceiver.get_rssi(RF09, error);
+                if (rssi != 127)
+                    LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
+                if (received_length) {
+                    LOG_DEBUG << "[RX AGC] LENGTH: " << received_length - MAGIC_NUMBER;
+                    rx_total_packets++;
+                    LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
+                    drop_counter = 0;
+                    for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
+                        RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
+                    }
+                    auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
+                    if (status.has_value()) {
+                        PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                        PacketToBeStored.size = received_length - MAGIC_NUMBER;
+                        eMMCPacketTailPointer += 1;
+                        xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
+                        xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
                     }
                     else {
-                        drop_counter++;
-                        rx_total_drop_packets++;
-                        LOG_DEBUG << "[RX DROP] c: " << drop_counter;
-                        LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
+                        LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
                     }
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
+                else {
+                    drop_counter++;
+                    rx_total_drop_packets++;
+                    LOG_DEBUG << "[RX DROP] c: " << drop_counter;
+                    LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
+                }
+            }
         }
         else {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -178,8 +177,7 @@ void RF_RXTask::ensureRxMode() {
                     case READY: {
                         trx_state = transceiver.get_state(RF09, error);
                         if (trx_state != RF_RX) {
-                            // txamp = GPIO_PIN_SET;
-                            // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                             ensureRxMode();
                         }
                         break;
@@ -202,8 +200,8 @@ void RF_RXTask::ensureRxMode() {
                             transceiver.tx_ongoing = false;
                             ensureRxMode();
                         }
-                        // txamp = GPIO_PIN_SET;
-                        // HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                        txamp = GPIO_PIN_SET;
+                        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
                         break;
                     }
                     case RX_ONG: {
@@ -219,6 +217,7 @@ void RF_RXTask::ensureRxMode() {
                         if (trx_state != RF_RX) {
                             ensureRxMode();
                         }
+                        LOG_DEBUG << "[RX] RX_ONG";
                         break;
                     }
                     case RX_TX_ONG: {

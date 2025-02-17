@@ -51,18 +51,11 @@ namespace CAN::Application {
     }
 
     void sendHeartbeatMessage() {
-        canGatekeeperTask->send({MessageIDs::Heartbeat + CAN::NodeID}, false);
-    }
+        TPMessage message = {{NodeID, OBC, false}};
 
-    void sendBusSwitchoverMessage() {
-        ActiveBus newBus = Redundant;
-        //        if (PeakSatParameters::obcCANBUSActive.getValue() == Redundant) {
-        //            newBus = Main;
-        //        }
+        message.appendUint8(Heartbeat);
 
-        etl::array<uint8_t, CAN::MaxPayloadLength> data = {switchBus(newBus)};
-
-        canGatekeeperTask->send({MessageIDs::BusSwitchover + CAN::NodeID, data}, false);
+        CAN::TPProtocol::createCANTPMessage(message, true);
     }
 
     void sendUTCTimeMessageWithElapsedTicks() {
