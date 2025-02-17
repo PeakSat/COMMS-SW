@@ -22,6 +22,8 @@
 #include "git_version.h"
 #include <ServicePool.hpp>
 #include "at86rf215.hpp"
+#include "HeartbeatTask.hpp"
+#include "TCHandlingTask.hpp"
 
 ParameterService parameterMap;
 
@@ -51,10 +53,12 @@ void app_main(void) {
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
     canParserTask.emplace();
+    heartbeatTask.emplace();
+    tcHandlingTask.emplace();
 
     uartGatekeeperTask->createTask();
-    // rf_rxtask->createTask();
-    // rf_txtask->createTask();
+    rf_rxtask->createTask();
+    rf_txtask->createTask();
     eMMCTask->createTask();
     gnssTask->createTask();
     testTask->createTask();
@@ -62,9 +66,11 @@ void app_main(void) {
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
     canParserTask->createTask();
+    tcHandlingTask->createTask();
+    heartbeatTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
-    LOG_INFO << "eMMC usage = " << COMMSParameters::emmc_usage.getValue() << "%";
+    // LOG_INFO << "eMMC usage = " << COMMSParameters::emmc_usage.getValue() << "%";
     /* Start the scheduler. */
     can_ack_handler.initialize_semaphore();
     CAN_TRANSMIT_Handler.initialize_semaphore();
@@ -174,5 +180,23 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
         }
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
+    }
+    if (huart->Instance == UART4) {
+        if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
+            tcHandlingTask->send_to_tc_queue = huart4.pRxBuffPtr;
+            tcHandlingTask->size = Size;
+            xHigherPriorityTaskWoken = pdFALSE;
+            xQueueSendFromISR(tcHandlingTask->TCUARTQueueHandle, &tcHandlingTask->send_to_tc_queue, &xHigherPriorityTaskWoken);
+            xHigherPriorityTaskWoken = pdFALSE;
+            xTaskNotifyIndexedFromISR(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_UART, eSetBits, &xHigherPriorityTaskWoken);
+            TCHandlingTask::startReceiveFromUARTwithIdle(tcHandlingTask->tc_buf_dma_pointer, 512);
+        }
+    }
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
+    BaseType_t xHigherPriorityTaskWoken = false;
+    if (huart->Instance == UART4) {
+        xSemaphoreGiveFromISR(UART_Gatekeeper_Semaphore, &xHigherPriorityTaskWoken);
     }
 }

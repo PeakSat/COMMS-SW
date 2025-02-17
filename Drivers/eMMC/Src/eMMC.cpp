@@ -45,7 +45,7 @@ void eMMC::eMMCMemoryInit() {
         headPointer += memoryPageSize - (headPointer % memoryPageSize);
     }
     float eMMC_usage = (100 * static_cast<float>(headPointer)) / static_cast<float>(memoryCapacity);
-    COMMSParameters::emmc_usage.setValue(eMMC_usage);
+    // COMMSParameters::emmc_usage.setValue(eMMC_usage);
     if (memoryMap[0].endAddress != 0) {
         __NOP();
     }

@@ -175,7 +175,7 @@ public:
 
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<CANGatekeeperTask>, this->TaskName, this->TaskStackDepth, this,
-                                             tskIDLE_PRIORITY + 3, this->taskStack, &(this->taskBuffer));
+                                             tskIDLE_PRIORITY + 2, this->taskStack, &(this->taskBuffer));
     }
 };
 
