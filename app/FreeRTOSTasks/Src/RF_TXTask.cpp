@@ -95,9 +95,6 @@ PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
-                for (uint32_t i = 0; i < TX_PACKET.size; i++) {
-                    LOG_INFO << "TX PACKET to be sent: " << TX_BUFF[i];
-                }
                 switch (state) {
                     case READY: {
                         if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {

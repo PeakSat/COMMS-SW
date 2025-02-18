@@ -34,8 +34,8 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     LOG_INFO << "TCHandlingTask::execute()";
     CAN::StoredPacket TC_PACKET;
     uint8_t* tc_buf_from_queue_pointer;
-    uint8_t ECSS_TC_BUF[512];
-    uint8_t TC_BUFFER[512];
+    uint8_t ECSS_TC_BUF[1024];
+    uint8_t TC_BUFFER[1024];
     uint32_t eMMCPacketTailPointer = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_INCOMING_TC, pdFALSE, pdTRUE, &received_events, portMAX_DELAY) == pdTRUE) {
@@ -44,7 +44,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                 LOG_INFO << "parsing of the incoming TC from RX side...";
                 while (uxQueueMessagesWaiting(incomingTCQueue)) {
                     xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
-                    getItem(eMMC::memoryMap[eMMC::RX_TC], TC_BUFFER, 512, TC_PACKET.pointerToeMMCItemData, 1);
+                    getItem(eMMC::memoryMap[eMMC::RX_TC], TC_BUFFER, 1024, TC_PACKET.pointerToeMMCItemData, 2);
                     CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
                     /// TODO: we have to find the correct CCSDS headers and abort the magic number solution
                     for (int i = 6; i < TC_PACKET.size; i++) {
