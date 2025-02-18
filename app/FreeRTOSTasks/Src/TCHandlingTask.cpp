@@ -36,9 +36,10 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     LOG_INFO << "TCHandlingTask::execute()";
     CAN::StoredPacket TC_PACKET;
     uint8_t* tc_buf_from_queue_pointer;
-    uint8_t ECSS_TC_BUF[1024];
-    uint8_t TC_BUFFER[1024];
+    uint8_t ECSS_TC_BUF[1024] = {};
+    uint8_t TC_BUFFER[1024] = {};
     uint32_t eMMCPacketTailPointer = 0;
+    uint16_t new_size = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_INCOMING_TC, pdFALSE, pdTRUE, &received_events, portMAX_DELAY) == pdTRUE) {
             if (received_events & TC_RF_RX) {
@@ -61,17 +62,44 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                 if (xQueueReceive(TCUARTQueueHandle, &tc_buf_from_queue_pointer, pdMS_TO_TICKS(1000)) == pdTRUE) {
                     if (tc_buf_from_queue_pointer != nullptr) {
                         LOG_DEBUG << "RECEIVED TC FROM UART-YAMCS, size: " << size;
+                        new_size = 0;
                         for (uint16_t i = 0; i < size; i++) {
                             LOG_DEBUG << "Received TC data: " << tc_buf_from_queue_pointer[i];
                             ECSS_TC_BUF[i] = tc_buf_from_queue_pointer[i];
+                            new_size++;
                         }
-                        if (ECSS_TC_BUF[2] == OBC_APPLICATION_ID) {
+                        LOG_DEBUG << "RECEIVED TC FROM UART-YAMCS, new size: " << new_size;
+                        /// TODO: parse the TC
+                        Message message = MessageParser::parse(ECSS_TC_BUF, new_size);
+                        message.finalize();
+                        etl::format_spec formatSpec;
+                        auto serviceType = String<1024>("");
+                        auto messageType = String<1024>("");
+
+                        etl::to_string(message.serviceType, serviceType, formatSpec, false);
+                        etl::to_string(message.messageType, messageType, formatSpec, false);
+
+                        auto output = String<ECSSMaxMessageSize>("New ");
+                        (message.packetType == Message::TM) ? output.append("TM[") : output.append("TC[");
+                        output.append(serviceType);
+                        output.append(",");
+                        output.append(messageType);
+                        output.append("] message! ");
+                        auto data = String<CCSDSMaxMessageSize>("");
+                        String<CCSDSMaxMessageSize> createdPacket = MessageParser::compose(message);
+                        for (unsigned int i = 0; i < new_size; i++) {
+                            etl::to_string(createdPacket[i], data, formatSpec, true);
+                            data.append(" ");
+                        }
+                        output.append(data.c_str());
+                        LOG_DEBUG << output.c_str();
+                        if (ECSS_TC_BUF[1] == OBC_APPLICATION_ID) {
                             auto status = storeItem(eMMC::memoryMap[eMMC::UART_TC], ECSS_TC_BUF, 1024, eMMCPacketTailPointer, 2);
                             if (status.has_value()) {
                                 CAN::StoredPacket PacketToBeStored;
                                 PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
                                 eMMCPacketTailPointer += 2;
-                                PacketToBeStored.size = size;
+                                PacketToBeStored.size = new_size;
                                 xQueueSendToBack(TXQueue, &PacketToBeStored, 0);
                                 if (rf_txtask->taskHandle != nullptr) {
                                     xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
@@ -83,7 +111,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                                 LOG_ERROR << "MEMORY ERROR ON TC";
                             }
                         }
-                        else if (ECSS_TC_BUF[2] == COMMS_APPLICATION_ID) {
+                        else if (ECSS_TC_BUF[1] == COMMS_APPLICATION_ID) {
                             /// TODO: Forward the TC to the COMMS Execution Task
                             LOG_DEBUG << "RECEIVED COMMS_APPLICATION_ID";
                         }

@@ -63,7 +63,7 @@ void RF_TXTask::ensureTxMode() {
         LOG_DEBUG << "[TX QUEUE] SUCCESS";
     }
     vQueueAddToRegistry(TXQueue, "TX outgoing queue");
-    vTaskDelay(9000);
+    vTaskDelay(6000);
     uint8_t state = 0;
     uint32_t receivedEventsTransmit;
     uint32_t tx_counter = 0;
@@ -77,6 +77,9 @@ void RF_TXTask::ensureTxMode() {
                     auto status = getItem(eMMC::memoryMap[eMMC::UART_TC], TX_BUFF, 1024, TX_PACKET.pointerToeMMCItemData, 2);
                     if (status.has_value()) {
                         LOG_DEBUG << "[TX] Received TC from UART... preparing its transmission to the air";
+                        for (int i = 0; i < TX_PACKET.size; i++) {
+                            LOG_INFO << "[TX]: " << TX_BUFF[i];
+                        }
                     }
                     else
                         LOG_ERROR << "[TX] ERROR: memory";

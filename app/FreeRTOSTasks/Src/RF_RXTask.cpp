@@ -70,7 +70,7 @@ void RF_RXTask::ensureRxMode() {
 }
 
 [[noreturn]] void RF_RXTask::execute() {
-    vTaskDelay(8000);
+    vTaskDelay(5000);
     LOG_INFO << "[RF RX TASK]";
     incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
                                             &incomingTCQueueBuffer);
