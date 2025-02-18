@@ -89,6 +89,23 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         Core/Src/main.c
 )
 
+# Path to your virtual environment
+set(VENV_PATH "${CMAKE_SOURCE_DIR}/.venv")
+
+# Tell CMake to find the Python interpreter inside the virtual environment
+set(PYTHON_EXECUTABLE "${VENV_PATH}/bin/python")
+
+# Make sure to check if the Python interpreter exists
+if(NOT EXISTS "${PYTHON_EXECUTABLE}")
+    message(FATAL_ERROR "Python executable not found in virtual environment: ${PYTHON_EXECUTABLE}")
+endif()
+
+# Run the Python script using the Python interpreter from the venv
+execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/app/Platform/update_database.py
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
 add_compile_definitions(COMMS_SW)
 
 target_compile_definitions(log_common PUBLIC LOGLEVEL_TRACE)

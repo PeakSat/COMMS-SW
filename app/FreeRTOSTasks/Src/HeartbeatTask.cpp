@@ -29,6 +29,6 @@ void HeartbeatTask::execute() {
             CAN::Application::sendHeartbeatMessage();
         }
 
-        vTaskDelay(pdMS_TO_TICKS(OBDHParameters::HeartbeatPeriod.getValue() / 3));
+        vTaskDelay(pdMS_TO_TICKS(OBDHParameters::HEARTBEAT_PERIOD.getValue() / 3));
     }
 }

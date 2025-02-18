@@ -36,7 +36,6 @@ void TPProtocol::parseMessage(TPMessage& message) {
             CAN::Application::parseSendParametersMessage(message);
             break;
         case CAN::Application::RequestParameters:
-            OBDHParameters::debugCounter.setValue(OBDHParameters::debugCounter.getValue() + 1);
             CAN::Application::parseRequestParametersMessage(message);
             break;
         case CAN::Application::PerformFunction:
