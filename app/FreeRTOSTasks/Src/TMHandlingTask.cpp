@@ -1,13 +1,13 @@
 #include <COBS.hpp>
 #include <Message.hpp>
 #include <MessageParser.hpp>
-#include <TMParserTask.hpp>
+#include <TMHandlingTask.hpp>
 #include <at86rf215definitions.hpp>
 #include <eMMC.hpp>
 
 
-[[noreturn]] void TMParserTask::execute() {
-    LOG_INFO << "TMParserTask::execute()";
+[[noreturn]] void TMHandling::execute() {
+    LOG_INFO << "TMHandlingTask::execute()";
     while (true) {
         uint32_t received_events;
         CAN::StoredPacket TM_PACKET;

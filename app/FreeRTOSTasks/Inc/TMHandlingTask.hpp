@@ -14,12 +14,12 @@ inline StaticQueue_t incomingTMQueueBuffer;
 constexpr uint8_t incomingTMQueueSize = 50;
 inline uint8_t incomingTMQueueStorageArea[incomingTMQueueSize * sizeof(CAN::StoredPacket)];
 
-class TMParserTask : public Task {
+class TMHandling : public Task {
 public:
-   TMParserTask() : Task("TM Parsing Task"){}
+   TMHandling() : Task("TM Parsing Task"){}
     [[noreturn]] void execute();
     void createTask() {
-        this->taskHandle = xTaskCreateStatic(vClassTask<TMParserTask>, this->TaskName,
+        this->taskHandle = xTaskCreateStatic(vClassTask<TMHandling>, this->TaskName,
                                              this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
                                              this->taskStack, &(this->taskBuffer));
     }
@@ -29,4 +29,4 @@ private:
     StackType_t taskStack[TaskStackDepth]{};
 };
 
-inline etl::optional<TMParserTask> tmparserTask;
+inline etl::optional<TMHandling> tmhandlingTask;

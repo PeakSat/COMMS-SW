@@ -5,7 +5,7 @@
 #include <MessageParser.hpp>
 #include <RF_TXTask.hpp>
 #include <TCHandlingTask.hpp>
-#include <TMParserTask.hpp>
+#include <TMHandlingTask.hpp>
 #include <eMMC.hpp>
 #define MAGIC_NUMBER 4
 using namespace AT86RF215;
@@ -75,7 +75,6 @@ void RF_RXTask::ensureRxMode() {
     incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
                                             &incomingTCQueueBuffer);
     vQueueAddToRegistry(incomingTCQueue, "TC queue");
-    /// Set the Up-link frequency
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     /// ENABLE THE RX SWITCH
     HAL_GPIO_WritePin(EN_RX_UHF_GPIO_Port, EN_RX_UHF_Pin, GPIO_PIN_RESET);
@@ -122,18 +121,15 @@ void RF_RXTask::ensureRxMode() {
     }
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
     uint16_t received_length = 0;
-    uint8_t current_counter = 0;
     uint32_t drop_counter = 0;
-    uint32_t print_tx_ong = 0;
-    uint32_t receivedEvents;
-    State trx_state;
-    ensureRxMode();
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
+    uint32_t receivedEvents = 0;
+    uint32_t eMMCPacketTailPointer = 0;
+    State trx_state;
     GPIO_PinState txamp;
     CAN::StoredPacket PacketToBeStored;
-    uint32_t eMMCPacketTailPointer = 0;
-    uint8_t counter_tx_ong;
+    ensureRxMode();
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -150,6 +146,8 @@ void RF_RXTask::ensureRxMode() {
                     for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                     }
+                    /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
+                    /// TODO: if the packet is TC
                     auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
                     if (status.has_value()) {
                         PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
@@ -161,6 +159,8 @@ void RF_RXTask::ensureRxMode() {
                     else {
                         LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
                     }
+                    /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
+                    ///
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
                 else {

@@ -34,23 +34,24 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     LOG_INFO << "TCHandlingTask::execute()";
     CAN::StoredPacket TC_PACKET;
     uint8_t* tc_buf_from_queue_pointer;
-    uint8_t ECSS_TC_BUF[1024];
+    uint8_t ECSS_TC_BUF[512];
+    uint8_t TC_BUFFER[512];
     uint32_t eMMCPacketTailPointer = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_INCOMING_TC, pdFALSE, pdTRUE, &received_events, portMAX_DELAY) == pdTRUE) {
             if (received_events & TC_RF_RX) {
+                /// TODO: parse and check if it is for our spacecraft before sending it to the OBC...For example check the spacecraft id and the hmac and the length of the packet (because AT may has received less or more bytes than expected)
                 LOG_INFO << "parsing of the incoming TC from RX side...";
                 while (uxQueueMessagesWaiting(incomingTCQueue)) {
-                    uint8_t TC_BUFFER[512];
                     xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
                     getItem(eMMC::memoryMap[eMMC::RX_TC], TC_BUFFER, 512, TC_PACKET.pointerToeMMCItemData, 1);
-                    auto cobsDecodedMessage = COBSdecode<1024>(TC_BUFFER, TC_PACKET.size);
                     CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
-                    for (int i = 0; i < TC_PACKET.size; i++) {
-                        message.appendUint8(TC_BUFFER[i]);
+                    /// TODO: we have to find the correct CCSDS headers and abort the magic number solution
+                    for (int i = 6; i < TC_PACKET.size; i++) {
+                        ECSS_TC_BUF[i-6] = TC_BUFFER[i];
                     }
-                    LOG_INFO << "Received TC from GS with length: " << TC_PACKET.size;
-                    CAN::TPProtocol::createCANTPMessage(message, false);
+                    auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, TC_PACKET.size - 6);
+                    CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
                 }
             }
             if (received_events & TC_UART) {
@@ -62,6 +63,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                             LOG_DEBUG << "Received TC data: " << tc_buf_from_queue_pointer[i];
                             ECSS_TC_BUF[i] = tc_buf_from_queue_pointer[i];
                         }
+                        /// TODO: parse the TC and check if is destined for COMMS or for OBC...If it is for COMMS then, forward it to COMMS TC_Execution task
                         auto status = storeItem(eMMC::memoryMap[eMMC::UART_TC], ECSS_TC_BUF, 1024, eMMCPacketTailPointer, 2);
                         if (status.has_value()) {
                             CAN::StoredPacket PacketToBeStored;

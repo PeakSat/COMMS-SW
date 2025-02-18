@@ -24,7 +24,7 @@
 #include "at86rf215.hpp"
 #include "HeartbeatTask.hpp"
 #include "TCHandlingTask.hpp"
-#include "TMParserTask.hpp"
+#include "TMHandlingTask.hpp"
 
 ParameterService parameterMap;
 
@@ -55,7 +55,7 @@ void app_main(void) {
     tmp117Task.emplace();
     canParserTask.emplace();
     tcHandlingTask.emplace();
-    tmparserTask.emplace();
+    tmhandlingTask.emplace();
     heartbeatTask.emplace();
 
     uartGatekeeperTask->createTask();
@@ -69,7 +69,7 @@ void app_main(void) {
     tmp117Task->createTask();
     canParserTask->createTask();
     tcHandlingTask->createTask();
-    tmparserTask->createTask();
+    tmhandlingTask->createTask();
     heartbeatTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
