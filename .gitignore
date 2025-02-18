@@ -1,5 +1,7 @@
 .idea/
 
+.venv/
+
 cmake-build-debug/
 
 .mxproject
