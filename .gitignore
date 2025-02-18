@@ -1,5 +1,7 @@
 .idea/
 
+.venv/
+
 cmake-build-debug/
 
 .mxproject
@@ -8,6 +10,6 @@ STM32H743VITx_FLASH.ld
 
 build/
 
-app/Platform/prameter_database.xlsx
+app/Platform/prameter_database.xlsx/
 
 app/Platform/myenv/*

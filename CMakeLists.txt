@@ -89,23 +89,64 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         Core/Src/main.c
 )
 
-# Path to your virtual environment
+# Set the Python executable explicitly
+set(Python3_EXECUTABLE "python3")
+
+# Try to find Python again
+find_package(Python3 REQUIRED)
+
+# Find Python 3 and specify the version you want
+find_package(Python3 3.6 REQUIRED)
+
+# Display the Python version found by CMake
+message(STATUS "Found Python: ${Python3_EXECUTABLE} (${Python3_VERSION})")
+
+# Set up the virtual environment path
 set(VENV_PATH "${CMAKE_SOURCE_DIR}/.venv")
 
-# Tell CMake to find the Python interpreter inside the virtual environment
-set(PYTHON_EXECUTABLE "${VENV_PATH}/bin/python")
+# Check if virtual environment exists
+if(NOT EXISTS "${VENV_PATH}/bin/activate")
+    message(STATUS "Creating virtual environment at ${VENV_PATH}")
 
-# Make sure to check if the Python interpreter exists
-if(NOT EXISTS "${PYTHON_EXECUTABLE}")
-    message(FATAL_ERROR "Python executable not found in virtual environment: ${PYTHON_EXECUTABLE}")
+    # Create the virtual environment
+    execute_process(
+            COMMAND ${Python3_EXECUTABLE} -m venv ${VENV_PATH}
+            RESULT_VARIABLE result
+            OUTPUT_VARIABLE result_output
+            ERROR_VARIABLE result_error
+            ERROR_QUIET
+    )
+
+    if(result)
+        message(FATAL_ERROR "Failed to create virtual environment. Error: ${result_error}")
+    else()
+        message(STATUS "Virtual environment created successfully")
+    endif()
+
+    # Show stdout and stderr
+    message(STATUS "Standard Output: ${result_output}")
+    message(STATUS "Standard Error: ${result_error}")
+
+    # Install dependencies using pip (requirements.txt should exist)
+    execute_process(
+            COMMAND ${VENV_PATH}/bin/pip install --upgrade pip
+            COMMAND ${VENV_PATH}/bin/pip install -r ${CMAKE_SOURCE_DIR}/requirements.txt
+            RESULT_VARIABLE install_result
+            ERROR_QUIET
+    )
+
+    if(install_result)
+        message(FATAL_ERROR "Failed to install dependencies from requirements.txt")
+    endif()
+else()
+    message(STATUS "Virtual environment already exists at ${VENV_PATH}")
 endif()
 
-# Run the Python script using the Python interpreter from the venv
+# Run your Python script using the virtual environment's Python interpreter
 execute_process(
-        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/app/Platform/update_database.py
+        COMMAND ${VENV_PATH}/bin/python ${CMAKE_SOURCE_DIR}/app/Platform/update_database.py
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
-
 
 add_compile_definitions(COMMS_SW)
 
