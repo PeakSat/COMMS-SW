@@ -68,8 +68,8 @@ namespace OBDHParameters {
     inline Parameter<float> CAN_BUS_LOAD_1(0);
     inline Parameter<float> CAN_BUS_LOAD_2(0);
     enum CAN_BUS_ACTIVE_enum : uint8_t {
-        Main = 0,
-        Redundant = 1
+        Main=0,
+Redundant = 1
     };
     inline Parameter<CAN_BUS_ACTIVE_enum> CAN_BUS_ACTIVE(Main);
     enum MCU_FDIR_enum : uint8_t {
@@ -103,7 +103,7 @@ namespace OBDHParameters {
     inline Parameter<bool> UseCAN(false);
     inline Parameter<uint32_t> HEARTBEAT_PERIOD(3000);
     inline Parameter<uint32_t> LAST_RESET_CAUSE(0);
-} // namespace OBDHParameters
+}
 namespace COMMSParameters {
     enum ParameterID : uint16_t {
         UHF_POWER_AMP_TEMPID = 13128,
@@ -158,7 +158,7 @@ namespace COMMSParameters {
     inline Parameter<uint8_t> GNSS_TM_DATA_PERIOD(10);
     inline Parameter<uint32_t> COMMIT_HASH(0);
     inline Parameter<float> EMMC_USAGE(0);
-} // namespace COMMSParameters
+}
 namespace PAYParameters {
     enum ParameterID : uint16_t {
         pointing_offset_xID = 26229,
@@ -308,7 +308,7 @@ namespace PAYParameters {
     inline Parameter<int32_t> fpga_fault(0);
     inline Parameter<int32_t> v_cam_fault(0);
     inline Parameter<int32_t> sdd_fault(0);
-} // namespace PAYParameters
+}
 namespace ADCSParameters {
     enum ParameterID : uint16_t {
         ResetTypeID = 39328,
@@ -446,26 +446,26 @@ namespace ADCSParameters {
         ModelSunOrcZID = 41475
     };
     enum ResetType_enum : uint8_t {
-        DoNothng = 0,
-        Soft = 55,
-        Hard = 66
+        DoNothng = 0, 
+Soft = 55, 
+Hard = 66
     };
     inline Parameter<ResetType_enum> ResetType(DoNothng);
     inline Parameter<uint32_t> UnixTimeSeconds(0);
     inline Parameter<uint32_t> UnixTimeNanoSeconds(0);
     enum AdcsRunModeSelect_enum : uint8_t {
         AdcsOff = 0,
-        AdcsEnabled = 1,
-        AdcsTriggered = 2,
-        AdcsSimulation = 3
+AdcsEnabled = 1,
+AdcsTriggered = 2,
+AdcsSimulation = 3
     };
     inline Parameter<AdcsRunModeSelect_enum> AdcsRunModeSelect(AdcsOff);
     inline Parameter<AdcsRunModeSelect_enum> RunModeDefault(AdcsOff);
     enum OpStateDefault_enum : uint8_t {
         OpStateManual = 0,
-        OpStateAuto = 1,
-        OpStateSafe = 2,
-        OpStateFault = 3
+OpStateAuto = 1,
+OpStateSafe = 2,
+OpStateFault = 3
     };
     inline Parameter<OpStateDefault_enum> OpStateDefault(OpStateManual);
     inline Parameter<OpStateDefault_enum> OpState(OpStateSafe);
@@ -477,11 +477,11 @@ namespace ADCSParameters {
     inline Parameter<float> Iyz(0);
     enum RWL0_power_state_enum : uint16_t {
         PowerOff = 0,
-        PowerOn = 1,
-        PowerNoChange = 2,
-        PowerAuto = 3,
-        PowerOnPass = 4,
-        PowerOffUpgrade = 5
+PowerOn = 1,
+PowerNoChange = 2,
+PowerAuto = 3,
+PowerOnPass = 4,
+PowerOffUpgrade = 5
     };
     inline Parameter<RWL0_power_state_enum> RWL0_power_state(PowerOff);
     inline Parameter<RWL0_power_state_enum> RWL1_power_state(PowerOff);
@@ -494,29 +494,29 @@ namespace ADCSParameters {
     inline Parameter<RWL0_power_state_enum> Str0Power(PowerOff);
     enum RwlFailId_enum : uint8_t {
         RwlFailNone = 0,
-        RwlFail0 = 1,
-        RwlFail1 = 2,
-        RwlFail2 = 3,
-        RwlFail3 = 4
+RwlFail0 = 1,
+RwlFail1 = 2,
+RwlFail2 = 3,
+RwlFail3 = 4
     };
     inline Parameter<RwlFailId_enum> RwlFailId(RwlFailNone);
     enum MountStackX_enum : uint8_t {
         AxisNotUsed = 0,
-        AxisPosX = 1,
-        AxisNegX = 2,
-        AxisPosY = 3,
-        AxisNegY = 4,
-        AxisPosZ = 5,
-        AxisNegZ = 6,
-        AxisThdA = 7,
-        AxisThdB = 8,
-        AxisThdC = 9,
-        AxisThdD = 10,
-        AxisPmdA = 11,
-        AxisPmdB = 12,
-        AxisPmdC = 13,
-        AxisPmdD = 14,
-        AxisSkew = 15
+AxisPosX = 1,
+AxisNegX = 2,
+AxisPosY = 3,
+AxisNegY = 4,
+AxisPosZ = 5,
+AxisNegZ = 6,
+AxisThdA = 7,
+AxisThdB = 8,
+AxisThdC = 9,
+AxisThdD = 10,
+AxisPmdA = 11,
+AxisPmdB = 12,
+AxisPmdC = 13,
+AxisPmdD = 14,
+AxisSkew = 15
     };
     inline Parameter<MountStackX_enum> MountStackX(AxisNegY);
     inline Parameter<MountStackX_enum> MountStackY(AxisNegX);
@@ -544,13 +544,13 @@ namespace ADCSParameters {
     inline Parameter<int16_t> MountStr0Gamma(0);
     enum EstModeMainDefault_enum : uint8_t {
         EstNone = 0,
-        EstGyro = 1,
-        EstMagRkf = 2,
-        EstPitchRkf = 3,
-        EstTriad = 4,
-        EstFullEkf = 5,
-        EstGyroEkf = 6,
-        EstUser = 100
+EstGyro = 1, 
+EstMagRkf = 2,
+EstPitchRkf = 3, 
+EstTriad = 4, 
+EstFullEkf = 5,
+EstGyroEkf = 6,
+EstUser = 100
     };
     inline Parameter<EstModeMainDefault_enum> EstModeMainDefault(EstGyro);
     inline Parameter<EstModeMainDefault_enum> EstModeBackupDefault(EstGyro);
@@ -580,10 +580,10 @@ namespace ADCSParameters {
     inline Parameter<uint16_t> Str0AngVelY(0);
     inline Parameter<uint16_t> Str0AngVelZ(0);
     enum OrbMode_enum : uint8_t {
-        OrbTle = 0,
-        OrbTleGnss = 1,
-        OrbAsgp4 = 2,
-        OrbAsgp4Gnss = 3
+        OrbTle = 0, 
+OrbTleGnss = 1,
+OrbAsgp4 = 2,
+OrbAsgp4Gnss = 3
     };
     inline Parameter<OrbMode_enum> OrbMode(OrbTle);
     inline Parameter<uint16_t> BatchSize(0);
@@ -616,38 +616,38 @@ namespace ADCSParameters {
     inline Parameter<int16_t> SatVelEciZ(0);
     enum ConModeSelect_enum : uint8_t {
         ConNone = 0,
-        ConBdot = 1,
-        ConYspin = 2,
-        ConBdot3 = 3,
-        ConDetumble = 4,
-        ConSunYspin = 5,
-        ConZspin = 6,
-        ConSunZspin = 7,
-        ConGGboom = 8,
-        ConGGsun = 9,
-        ConYwheelInit = 10,
-        ConYwheel = 11,
-        ConXYZwheel = 12,
-        ConSunTrack = 13,
-        ConTgtTrack = 14,
-        ConTgtSteer = 15,
-        ConGndTrack = 16,
-        ConIrcTrack = 17,
-        ConMoonTrack = 18,
-        ConSatTrack = 19,
-        ConYawSun = 20,
-        ConYawTarget = 21,
-        ConRollSun = 22,
-        ConRollTarget = 23,
-        ConYawTargetBest = 24,
-        ConFmcTarget = 25,
-        ConYawSunSpin = 26,
-        ConSunDetumble = 27,
-        ConAstroSteer = 28,
-        ConSunPayload = 29,
-        ConStopRW = 50,
-        ConHxyzRW = 51,
-        ConUser = 100
+ConBdot = 1,
+ConYspin = 2,
+ConBdot3 = 3,
+ConDetumble = 4,
+ConSunYspin = 5,
+ConZspin = 6,
+ConSunZspin = 7,
+ConGGboom = 8,
+ConGGsun = 9,
+ConYwheelInit = 10,
+ConYwheel = 11,
+ConXYZwheel = 12,
+ConSunTrack = 13,
+ConTgtTrack = 14,
+ConTgtSteer = 15,
+ConGndTrack = 16,
+ConIrcTrack = 17,
+ConMoonTrack = 18,
+ConSatTrack = 19,
+ConYawSun = 20,
+ConYawTarget = 21,
+ConRollSun = 22,
+ConRollTarget = 23,
+ConYawTargetBest = 24,
+ConFmcTarget = 25,
+ConYawSunSpin = 26,
+ConSunDetumble = 27,
+ConAstroSteer = 28,
+ConSunPayload = 29,
+ConStopRW = 50,
+ConHxyzRW = 51,
+ConUser = 100
     };
     inline Parameter<ConModeSelect_enum> ConModeSelect(ConNone);
     inline Parameter<ConModeSelect_enum> ConModeDefault(ConNone);
@@ -679,7 +679,7 @@ namespace ADCSParameters {
     inline Parameter<int16_t> ModelSunOrcX(0);
     inline Parameter<int16_t> ModelSunOrcY(0);
     inline Parameter<int16_t> ModelSunOrcZ(0);
-} // namespace ADCSParameters
+}
 namespace EPSParameters {
     enum ParameterID : uint16_t {
         MODEID = 52432,
@@ -1873,5 +1873,5 @@ namespace EPSParameters {
     inline Parameter<int16_t> ADC_MCU_TEMP_V25T30(0);
     inline Parameter<int16_t> ADC_MCU_TEMP_V25T85(0);
     inline Parameter<int16_t> VIP_CURR_VD6_ENG(0);
-} // namespace EPSParameters
+}
 #pragma GCC diagnostic pop

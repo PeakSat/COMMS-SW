@@ -867,6 +867,7 @@ void ParameterService::initializeParameterMap() {
         {COMMSParameters::GNSS_FIX_QUALITYID, COMMSParameters::GNSS_FIX_QUALITY},
         {COMMSParameters::GNSS_TM_DATA_PERIODID, COMMSParameters::GNSS_TM_DATA_PERIOD},
         {COMMSParameters::COMMIT_HASHID, COMMSParameters::COMMIT_HASH},
-        {COMMSParameters::EMMC_USAGEID, COMMSParameters::EMMC_USAGE}};
+        {COMMSParameters::EMMC_USAGEID, COMMSParameters::EMMC_USAGE}
+    };
 }
 #endif
