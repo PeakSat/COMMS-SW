@@ -126,7 +126,7 @@ namespace COMMSParameters {
         SATELITES_TRACKEDID = 13745,
         GNSS_FIX_QUALITYID = 13761,
         GNSS_TM_DATA_PERIODID = 13776,
-        COMMIT_HASHID = 13794,
+        COMMIT_HASHID = 13796,
         EMMC_USAGEID = 14488
     };
     inline Parameter<float> UHF_POWER_AMP_TEMP(0);
@@ -156,7 +156,7 @@ namespace COMMSParameters {
     inline Parameter<int8_t> SATELITES_TRACKED(0);
     inline Parameter<int8_t> GNSS_FIX_QUALITY(0);
     inline Parameter<uint8_t> GNSS_TM_DATA_PERIOD(10);
-    inline Parameter<uint16_t> COMMIT_HASH(0);
+    inline Parameter<uint32_t> COMMIT_HASH(0);
     inline Parameter<float> EMMC_USAGE(0);
 } // namespace COMMSParameters
 namespace PAYParameters {
