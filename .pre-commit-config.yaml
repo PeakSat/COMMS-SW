@@ -8,4 +8,7 @@ repos:
           (?x)^(
               ^(Core/|Lib/|cmake/).*\.(c|cpp|h|hpp)$ |
               ^Drivers/(CMSIS/|STM32H7xx_HAL_Driver/).*\.(c|cpp|h|hpp)$ |   
+              ^app/Platform/Src/PlatformParameters.cpp$ |
+              ^app/Platform/Inc/PlatformParameters.hpp$ |
+              ^app/Platform/parameter_database.xlsx$ |
           )$

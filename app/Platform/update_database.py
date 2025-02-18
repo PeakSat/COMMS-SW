@@ -9,7 +9,7 @@ spreadsheet_id = "12m4Sq4CMnLB9nn6INxKUdSNSIlTJes_uTbg19RE9-X0"
 xlsx_export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=xlsx"
 
 # Output file
-output_file = "parameter_database.xlsx"
+output_file = "app/Platform/parameter_database.xlsx"
 
 try:
     # Send GET request
@@ -60,9 +60,9 @@ def encode_id(numeric_id, variable_type):
     return (numeric_id << 4) | type_code
 
 # Paths to the Excel file and output directories
-excel_file = "parameter_database.xlsx"
-src_folder = "Src"
-inc_folder = "Inc"
+excel_file = "app/Platform/parameter_database.xlsx"
+src_folder = "app/Platform/Src"
+inc_folder = "app/Platform/Inc"
 output_cpp_file = os.path.join(src_folder, "PlatformParameters.cpp")
 output_hhp_file = os.path.join(inc_folder, "PlatformParameters.hpp")
 
