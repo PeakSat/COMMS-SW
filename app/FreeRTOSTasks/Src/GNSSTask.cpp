@@ -249,16 +249,17 @@ void GNSSTask::initQueuesToAcceptPointers() {
 
                         if (GNSSReceiver::isDataValid(compact.year, compact.month, compact.day) == true) {
                             std::tm time{};
-                            time.tm_year = compact.year + 2000;
+                            time.tm_year = compact.year + 100;
                             time.tm_mon = compact.month - 1;
                             time.tm_mday = static_cast<uint8_t>(compact.day);
                             time.tm_hour = static_cast<uint8_t>(compact.hours);
                             time.tm_min = static_cast<uint8_t>(compact.minutes);
                             time.tm_sec = static_cast<uint8_t>(compact.seconds);
                             uint64_t timeFromEpoch = std::mktime(&time);
+                            LOG_DEBUG << "seconds from epoch: " << timeFromEpoch;
                             timeFromEpoch *= 1000000;
                             timeFromEpoch += static_cast<uint64_t>(compact.microseconds);
-                            LOG_DEBUG << "Time from epoch: " << timeFromEpoch;
+                            LOG_DEBUG << "us from epoch: " << timeFromEpoch;
 
                             uint8_t numberOfSatelites = compact.satellites_tracked;
                             if (numberOfSatelites > 0x1F) {

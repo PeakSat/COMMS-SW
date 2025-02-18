@@ -17,7 +17,7 @@ void TestTask::execute() {
     vTaskDelay(5000);
     GNSSDefinitions::StoredGNSSData data{};
 
-    // for (int i=0; i<eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize; i++) {
+    // for (int i=0; i<2600; i++) {
     //     auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&data), eMMC::memoryPageSize, i, 1);
     // }
 
@@ -33,7 +33,7 @@ void TestTask::execute() {
         int32_t altitudeI;
         uint64_t timeFromEpoch;
         uint8_t numberOfSatellites;
-        GNSSReceiver::sendGNSSData(10, 50, 5);
+        GNSSReceiver::sendGNSSData(250, 150, 5);
 
         uint16_t numberOfData = ((uint16_t) GNSS_TMbuffer[0]) << 8 | static_cast<uint16_t>(GNSS_TMbuffer[1]);
         for (int i = 0; i < numberOfData; i++) {
