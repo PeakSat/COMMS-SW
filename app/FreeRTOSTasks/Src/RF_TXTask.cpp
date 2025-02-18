@@ -59,8 +59,11 @@ void RF_TXTask::ensureTxMode() {
 [[noreturn]] void RF_TXTask::execute() {
     TXQueue = xQueueCreateStatic(outgoingTXQueueSize, sizeof(CAN::StoredPacket), outgoingTXQueueStorageArea,
                                             &outgoingTXQueueBuffer);
-    vQueueAddToRegistry(TXQueue, "TM outgoing queue");
-    vTaskDelay(6000);
+    if (TXQueue != nullptr) {
+        LOG_DEBUG << "[TX QUEUE] SUCCESS";
+    }
+    vQueueAddToRegistry(TXQueue, "TX outgoing queue");
+    vTaskDelay(9000);
     uint8_t state = 0;
     uint32_t receivedEventsTransmit;
     uint32_t tx_counter = 0;
@@ -78,10 +81,10 @@ void RF_TXTask::ensureTxMode() {
                     else
                         LOG_ERROR << "[TX] ERROR: memory";
                 }
-                if (receivedEventsTransmit & TM_OBC) {
-                    LOG_DEBUG << "Received TM from OBC... preparing the transmission";
-                    CAN::Application::getStoredMessage(&TX_PACKET, TX_BUFF, TX_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
-                }
+                // if (receivedEventsTransmit & TM_OBC) {
+                //     LOG_DEBUG << "Received TM from OBC... preparing the transmission";
+                //     CAN::Application::getStoredMessage(&TX_PACKET, TX_BUFF, TX_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
+                // }
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     xSemaphoreGive(transceiver_handler.resources_mtx);

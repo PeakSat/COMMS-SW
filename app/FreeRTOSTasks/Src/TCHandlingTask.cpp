@@ -24,6 +24,8 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
 
 
 [[noreturn]] void TCHandlingTask::execute() {
+    /// TODO: Be sure that the memory is available (eMMC)
+    vTaskDelay(6000);
     tc_buf_dma_pointer = TC_BUF;
     startReceiveFromUARTwithIdle(tc_buf_dma_pointer, 512);
     uint32_t received_events;
@@ -56,7 +58,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
             }
             if (received_events & TC_UART) {
                 LOG_INFO << "parsing of the incoming TC from UART side...";
-                if (xQueueReceive(TCUARTQueueHandle, &tc_buf_from_queue_pointer, pdMS_TO_TICKS(100)) == pdTRUE) {
+                if (xQueueReceive(TCUARTQueueHandle, &tc_buf_from_queue_pointer, pdMS_TO_TICKS(1000)) == pdTRUE) {
                     if (tc_buf_from_queue_pointer != nullptr) {
                         LOG_DEBUG << "RECEIVED TC FROM UART-YAMCS, size: " << size;
                         for (uint16_t i = 0; i < size; i++) {
@@ -71,7 +73,11 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                                 eMMCPacketTailPointer += 2;
                                 PacketToBeStored.size = size;
                                 xQueueSendToBack(TXQueue, &PacketToBeStored, 0);
-                                xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
+                                if (rf_txtask->taskHandle != nullptr) {
+                                    xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
+                                }
+                                else
+                                    LOG_ERROR << "TASK HANDLE NULL";
                             }
                             else {
                                 LOG_ERROR << "MEMORY ERROR ON TC";
@@ -82,7 +88,15 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                             LOG_DEBUG << "RECEIVED COMMS_APPLICATION_ID";
                         }
                     }
+                    else {
+                        LOG_ERROR << "TC_BUF NULL POINTER";
+                    }
+                }else {
+                    LOG_ERROR << "TIMEOUT";
                 }
+            }
+            else {
+                LOG_ERROR << "OTHER EVENT";
             }
         }
     }
