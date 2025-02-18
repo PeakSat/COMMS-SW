@@ -61,8 +61,8 @@ def encode_id(numeric_id, variable_type):
 
 # Paths to the Excel file and output directories
 excel_file = "parameter_database.xlsx"
-src_folder = "Src"
-inc_folder = "Inc"
+src_folder = "app/Platform/Src"
+inc_folder = "app/Platform/Inc"
 output_cpp_file = os.path.join(src_folder, "PlatformParameters.cpp")
 output_hhp_file = os.path.join(inc_folder, "PlatformParameters.hpp")
 
