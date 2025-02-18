@@ -147,20 +147,23 @@ void RF_RXTask::ensureRxMode() {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                     }
                     /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
-                    /// TODO: if the packet is TC
-                    auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
-                    if (status.has_value()) {
-                        PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                        PacketToBeStored.size = received_length - MAGIC_NUMBER;
-                        eMMCPacketTailPointer += 1;
-                        xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
-                        xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
+                    if (RX_BUFF[1] == Message::PacketType::TM) {
+                        LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
                     }
-                    else {
-                        LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
+                    else if (RX_BUFF[1] == Message::PacketType::TC) {
+                        auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
+                        if (status.has_value()) {
+                            PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                            PacketToBeStored.size = received_length - MAGIC_NUMBER;
+                            eMMCPacketTailPointer += 1;
+                            xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
+                            xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
+                        }
+                        else {
+                            LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
+                        }
                     }
                     /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
-                    ///
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
                 else {

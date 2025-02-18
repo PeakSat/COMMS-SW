@@ -61,7 +61,7 @@ void app_main(void) {
     uartGatekeeperTask->createTask();
     rf_rxtask->createTask();
     rf_txtask->createTask();
-    // eMMCTask->createTask();
+    eMMCTask->createTask();
     // gnssTask->createTask();
     // testTask->createTask();
     // ina3221Task->createTask();
