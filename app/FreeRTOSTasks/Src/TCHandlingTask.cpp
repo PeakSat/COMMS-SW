@@ -63,18 +63,23 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                             LOG_DEBUG << "Received TC data: " << tc_buf_from_queue_pointer[i];
                             ECSS_TC_BUF[i] = tc_buf_from_queue_pointer[i];
                         }
-                        /// TODO: parse the TC and check if is destined for COMMS or for OBC...If it is for COMMS then, forward it to COMMS TC_Execution task
-                        auto status = storeItem(eMMC::memoryMap[eMMC::UART_TC], ECSS_TC_BUF, 1024, eMMCPacketTailPointer, 2);
-                        if (status.has_value()) {
-                            CAN::StoredPacket PacketToBeStored;
-                            PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                            eMMCPacketTailPointer += 2;
-                            PacketToBeStored.size = size;
-                            xQueueSendToBack(TXQueue, &PacketToBeStored, 0);
-                            xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
+                        if (ECSS_TC_BUF[2] == OBC_APPLICATION_ID) {
+                            auto status = storeItem(eMMC::memoryMap[eMMC::UART_TC], ECSS_TC_BUF, 1024, eMMCPacketTailPointer, 2);
+                            if (status.has_value()) {
+                                CAN::StoredPacket PacketToBeStored;
+                                PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                                eMMCPacketTailPointer += 2;
+                                PacketToBeStored.size = size;
+                                xQueueSendToBack(TXQueue, &PacketToBeStored, 0);
+                                xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
+                            }
+                            else {
+                                LOG_ERROR << "MEMORY ERROR ON TC";
+                            }
                         }
-                        else {
-                            LOG_ERROR << "MEMORY ERROR ON TC";
+                        else if (ECSS_TC_BUF[2] == COMMS_APPLICATION_ID) {
+                            /// TODO: Forward the TC to the COMMS Execution Task
+                            LOG_DEBUG << "RECEIVED COMMS_APPLICATION_ID";
                         }
                     }
                 }

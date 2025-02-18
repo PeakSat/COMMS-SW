@@ -62,15 +62,15 @@ void app_main(void) {
     rf_rxtask->createTask();
     rf_txtask->createTask();
     eMMCTask->createTask();
-    gnssTask->createTask();
-    testTask->createTask();
-    ina3221Task->createTask();
-    canGatekeeperTask->createTask();
+    // gnssTask->createTask();
+    // testTask->createTask();
+    // ina3221Task->createTask();
+    // canGatekeeperTask->createTask();
     tmp117Task->createTask();
-    canParserTask->createTask();
+    // canParserTask->createTask();
     tcHandlingTask->createTask();
     tmhandlingTask->createTask();
-    heartbeatTask->createTask();
+    // heartbeatTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     /* Start the scheduler. */
