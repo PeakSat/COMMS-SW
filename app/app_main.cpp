@@ -70,7 +70,7 @@ void app_main(void) {
     heartbeatTask->createTask();
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
-    // LOG_INFO << "eMMC usage = " << COMMSParameters::emmc_usage.getValue() << "%";
+    LOG_INFO << "eMMC usage = " << COMMSParameters::EMMC_USAGE.getValue() << "%";
     /* Start the scheduler. */
     can_ack_handler.initialize_semaphore();
     CAN_TRANSMIT_Handler.initialize_semaphore();
