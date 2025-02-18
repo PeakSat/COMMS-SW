@@ -10,6 +10,6 @@ STM32H743VITx_FLASH.ld
 
 build/
 
-app/Platform/parameter_database.xlsx/
+app/Platform/parameter_database.xlsx
 
 app/Platform/myenv/*
