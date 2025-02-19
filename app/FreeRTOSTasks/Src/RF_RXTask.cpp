@@ -85,7 +85,7 @@ void RF_RXTask::ensureRxMode() {
     vTaskDelay(20);
     HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
     transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
-    const int MAX_RETRIES = 3;
+    constexpr int MAX_RETRIES = 3;
     int attempt = 0;
     bool success = false;
     while (attempt < MAX_RETRIES) {
@@ -151,17 +151,20 @@ void RF_RXTask::ensureRxMode() {
                         LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
                     }
                     else if (RX_BUFF[1] == Message::PacketType::TC) {
-                        auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
+                        auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 1024, eMMCPacketTailPointer, 2);
                         if (status.has_value()) {
                             PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
                             PacketToBeStored.size = received_length - MAGIC_NUMBER;
-                            eMMCPacketTailPointer += 1;
+                            eMMCPacketTailPointer += 2;
                             xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
                             xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
                         }
                         else {
                             LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
                         }
+                    }
+                    else {
+                        LOG_DEBUG << "[RX AGC] Neither TC nor TM";
                     }
                     /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
                     xSemaphoreGive(transceiver_handler.resources_mtx);
@@ -172,6 +175,7 @@ void RF_RXTask::ensureRxMode() {
                     LOG_DEBUG << "[RX DROP] c: " << drop_counter;
                     LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
                 }
+                xSemaphoreGive(transceiver_handler.resources_mtx);
             }
         }
         else {
@@ -180,7 +184,6 @@ void RF_RXTask::ensureRxMode() {
                     case READY: {
                         trx_state = transceiver.get_state(RF09, error);
                         if (trx_state != RF_RX) {
-                            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                             ensureRxMode();
                         }
                         break;
@@ -189,42 +192,41 @@ void RF_RXTask::ensureRxMode() {
                         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(1000)) == pdTRUE) {
                             if (receivedEvents & TXFE) {
                                 ensureRxMode();
-                                LOG_INFO << "[RX] TXFE";
+                                LOG_INFO << "[RX] TXFE RECEIVED";
                             }
                         }
                         else {
                             LOG_ERROR << "[RX] TXFE NOT RECEIVED";
-                            // DEADLOCK HANDLING
-                            transceiver.print_error(error);
                             transceiver.print_state(RF09, error);
                             transceiver.set_state(RF09, RF_TRXOFF, error);
                             transceiver.chip_reset(error);
-                            transceiver.print_error(error);
                             transceiver.tx_ongoing = false;
                             ensureRxMode();
                         }
-                        txamp = GPIO_PIN_SET;
-                        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, txamp);
+                        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                         break;
                     }
                     case RX_ONG: {
+                        LOG_DEBUG << "[RX] RX_ONG";
                         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(1000))) {
                             if (receivedEvents &  RXFE_RX) {
+                                LOG_INFO << "[RX] RXFE RECEIVED";
                                 trx_state = transceiver.get_state(RF09, error);
                                 if (trx_state != RF_RX) {
                                     ensureRxMode();
                                 }
                             }
                         }
-                        trx_state = transceiver.get_state(RF09, error);
-                        if (trx_state != RF_RX) {
+                        else {
+                            transceiver.set_state(RF09, RF_TRXOFF, error);
+                            transceiver.chip_reset(error);
                             ensureRxMode();
+                            LOG_ERROR << "[RX] RXFE NOT RECEIVED";
                         }
-                        LOG_DEBUG << "[RX] RX_ONG";
                         break;
                     }
                     case RX_TX_ONG: {
-                        LOG_DEBUG << "[RX] RXONG AND TXONG";
+                        LOG_ERROR << "[RX] RXONG AND TXONG";
                         break;
                     }
                     default: {
@@ -232,6 +234,7 @@ void RF_RXTask::ensureRxMode() {
                         break;
                     }
                 }
+                xSemaphoreGive(transceiver_handler.resources_mtx);
             }
             if (transceiver.TransceiverError_flag) {
                 transceiver.TransceiverError_flag = false;

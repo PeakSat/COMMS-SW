@@ -59,9 +59,6 @@ void RF_TXTask::ensureTxMode() {
 [[noreturn]] void RF_TXTask::execute() {
     TXQueue = xQueueCreateStatic(outgoingTXQueueSize, sizeof(CAN::StoredPacket), outgoingTXQueueStorageArea,
                                             &outgoingTXQueueBuffer);
-    if (TXQueue != nullptr) {
-        LOG_DEBUG << "[TX QUEUE] SUCCESS";
-    }
     vQueueAddToRegistry(TXQueue, "TX outgoing queue");
     vTaskDelay(6000);
     uint8_t state = 0;
