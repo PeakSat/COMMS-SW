@@ -119,11 +119,11 @@ namespace COMMSParameters {
         GNSS_ALTID = 13637,
         GNSS_TIMEID = 13656,
         GNSS_ACK_TIMEOUTID = 13666,
-        GNSS_CMD_RETIESID = 13680,
+        GNSS_CMD_RETRIESID = 13680,
         GNSS_ERROR_TIMEOUTID = 13698,
         ERROR_TIMEOUT_CNT_THRHDID = 13714,
         GNSS_DELAY_CMDSID = 13730,
-        SATELITES_TRACKEDID = 13745,
+        SATELLITES_TRACKEDID = 13745,
         GNSS_FIX_QUALITYID = 13761,
         GNSS_TM_DATA_PERIODID = 13776,
         COMMIT_HASHID = 13796,
@@ -149,11 +149,11 @@ namespace COMMSParameters {
     inline Parameter<int32_t> GNSS_ALT(0);
     inline Parameter<float> GNSS_TIME(0);
     inline Parameter<uint16_t> GNSS_ACK_TIMEOUT(0);
-    inline Parameter<uint8_t> GNSS_CMD_RETIES(0);
+    inline Parameter<uint8_t> GNSS_CMD_RETRIES(0);
     inline Parameter<uint16_t> GNSS_ERROR_TIMEOUT(0);
     inline Parameter<uint16_t> ERROR_TIMEOUT_CNT_THRHD(0);
     inline Parameter<uint16_t> GNSS_DELAY_CMDS(0);
-    inline Parameter<int8_t> SATELITES_TRACKED(0);
+    inline Parameter<int8_t> SATELLITES_TRACKED(0);
     inline Parameter<int8_t> GNSS_FIX_QUALITY(0);
     inline Parameter<uint8_t> GNSS_TM_DATA_PERIOD(10);
     inline Parameter<uint32_t> COMMIT_HASH(0);
