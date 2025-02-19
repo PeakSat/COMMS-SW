@@ -6,20 +6,28 @@
 #include "etl/optional.h"
 #include <Frame.hpp>
 
-#define MaxPacketLength 128
+
+struct TX_PACKET_HANDLER {
+    uint8_t* pointer_to_data;
+    uint16_t data_length;
+};
+
+inline TX_PACKET_HANDLER tx_handler;
 
 inline QueueHandle_t TXQueue;
-inline StaticQueue_t outgoingTXQueueBuffer;
-constexpr uint8_t outgoingTXQueueSize = 50;
-inline uint8_t outgoingTXQueueStorageArea[outgoingTXQueueSize * sizeof(CAN::StoredPacket)] __attribute__((section(".dtcmram_outgoingTMQueueStorageArea")));
+inline StaticQueue_t TXQueueBuffer;
+constexpr uint8_t TXQueueItemNum = 50;
+constexpr size_t TXItemSize_StoredPacketeMMC = sizeof(CAN::StoredPacket);
+constexpr size_t TXItemSize  = sizeof(tx_handler);
+inline uint8_t TXQueueStorageArea[TXQueueItemNum * TXItemSize] __attribute__((section(".dtcmram_outgoingTMQueueStorageArea")));
 inline uint8_t TX_BUFF[1024] __attribute__((section(".dtcmram_tx_buff"), aligned(4)));
 using namespace AT86RF215;
-
 
 
 class RF_TXTask : public Task {
 public:
     RF_TXTask() : Task("RF-TX Task") {}
+
     void print_state();
     [[noreturn]]void execute();
     void ensureTxMode();

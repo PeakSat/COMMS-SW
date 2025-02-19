@@ -34,8 +34,6 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     LOG_INFO << "TCHandlingTask::execute()";
     CAN::StoredPacket TC_PACKET;
     uint8_t* tc_buf_from_queue_pointer;
-    uint8_t ECSS_TC_BUF[1024] = {};
-    uint8_t TC_BUFFER[1024] = {};
     uint32_t eMMCPacketTailPointer = 0;
     uint16_t new_size = 0;
     while (true) {
@@ -45,11 +43,11 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                 LOG_INFO << "parsing of the incoming TC from RX side...";
                 while (uxQueueMessagesWaiting(incomingTCQueue)) {
                     xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
-                    getItem(eMMC::memoryMap[eMMC::RX_TC], TC_BUFFER, 1024, TC_PACKET.pointerToeMMCItemData, 2);
+                    getItem(eMMC::memoryMap[eMMC::RX_TC], TC_BUF, 1024, TC_PACKET.pointerToeMMCItemData, 2);
                     CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
                     /// TODO: we have to find the correct CCSDS headers and abort the magic number solution
                     for (int i = 6; i < TC_PACKET.size; i++) {
-                        ECSS_TC_BUF[i-6] = TC_BUFFER[i];
+                        ECSS_TC_BUF[i-6] = TC_BUF[i];
                     }
                     auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, TC_PACKET.size - 6);
                     CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
@@ -103,22 +101,14 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                             LOG_DEBUG << output.c_str();
                             if (message.applicationId == OBC_APPLICATION_ID) {
                                 LOG_DEBUG << "Received TC from UART destined for OBC";
-                                auto status = storeItem(eMMC::memoryMap[eMMC::UART_TC], ECSS_TC_BUF, 1024, eMMCPacketTailPointer, 2);
-                                if (status.has_value()) {
-                                    CAN::StoredPacket PacketToBeStored;
-                                    PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                                    eMMCPacketTailPointer += 2;
-                                    PacketToBeStored.size = new_size;
-                                    xQueueSendToBack(TXQueue, &PacketToBeStored, 0);
-                                    if (rf_txtask->taskHandle != nullptr) {
-                                        xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
-                                    }
-                                    else
-                                        LOG_ERROR << "TASK HANDLE NULL";
+                                tx_handler.pointer_to_data = ECSS_TC_BUF;
+                                tx_handler.data_length = new_size;
+                                xQueueSendToBack(TXQueue, &tx_handler, 0);
+                                if (rf_txtask->taskHandle != nullptr) {
+                                    xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
                                 }
-                                else {
-                                    LOG_ERROR << "MEMORY ERROR ON TC";
-                                }
+                                else
+                                    LOG_ERROR << "TASK HANDLE NULL";
                             }
                             else if (message.applicationId == COMMS_APPLICATION_ID) {
                                 /// TODO: Forward the TC to the COMMS Execution Task

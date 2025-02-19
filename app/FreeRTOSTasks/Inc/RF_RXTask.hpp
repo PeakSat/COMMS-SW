@@ -9,7 +9,7 @@
 #include "main.h"
 #include <Frame.hpp>
 
-
+#define MAGIC_NUMBER 4
 
 inline uint8_t RX_BUFF[1024] __attribute__((section(".dtcmram_incomingTMBuffer"), aligned(4)));
 inline QueueHandle_t incomingTCQueue;

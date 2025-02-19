@@ -7,7 +7,6 @@
 #include <TCHandlingTask.hpp>
 #include <TMHandlingTask.hpp>
 #include <eMMC.hpp>
-#define MAGIC_NUMBER 4
 using namespace AT86RF215;
 
 void RF_RXTask::ensureRxMode() {
@@ -70,7 +69,7 @@ void RF_RXTask::ensureRxMode() {
 }
 
 [[noreturn]] void RF_RXTask::execute() {
-    vTaskDelay(5000);
+    vTaskDelay(2000);
     LOG_INFO << "[RF RX TASK]";
     incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
                                             &incomingTCQueueBuffer);
@@ -92,7 +91,7 @@ void RF_RXTask::ensureRxMode() {
         if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
             auto status = transceiver.check_transceiver_connection(error);
             if (status.has_value()) {
-                success = true;  // Connection successful
+                success = true;
                 LOG_INFO << "[SPI CONNECTION ESTABLISHED]";
             } else {
                 LOG_ERROR << "CONNECTION ##ERROR## WITH CODE: " << status.error();
@@ -127,7 +126,6 @@ void RF_RXTask::ensureRxMode() {
     uint32_t receivedEvents = 0;
     uint32_t eMMCPacketTailPointer = 0;
     State trx_state;
-    GPIO_PinState txamp;
     CAN::StoredPacket PacketToBeStored;
     ensureRxMode();
     while (true) {
@@ -135,15 +133,16 @@ void RF_RXTask::ensureRxMode() {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                 auto result = transceiver.get_received_length(RF09, error);
                 received_length = result.value();
+                int16_t corrected_received_length = received_length - MAGIC_NUMBER;
                 int8_t rssi = transceiver.get_rssi(RF09, error);
                 if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
-                if (received_length) {
-                    LOG_DEBUG << "[RX AGC] LENGTH: " << received_length - MAGIC_NUMBER;
+                if (corrected_received_length > 0) {
+                    LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                     drop_counter = 0;
-                    for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
+                    for (int i = 0; i < corrected_received_length; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                     }
                     /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
@@ -154,7 +153,7 @@ void RF_RXTask::ensureRxMode() {
                         auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 1024, eMMCPacketTailPointer, 2);
                         if (status.has_value()) {
                             PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                            PacketToBeStored.size = received_length - MAGIC_NUMBER;
+                            PacketToBeStored.size = corrected_received_length;
                             eMMCPacketTailPointer += 2;
                             xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
                             xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
@@ -220,6 +219,7 @@ void RF_RXTask::ensureRxMode() {
                         else {
                             transceiver.set_state(RF09, RF_TRXOFF, error);
                             transceiver.chip_reset(error);
+                            transceiver.rx_ongoing = false;
                             ensureRxMode();
                             LOG_ERROR << "[RX] RXFE NOT RECEIVED";
                         }

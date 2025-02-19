@@ -12,8 +12,10 @@ extern DMA_HandleTypeDef hdma_uart4_rx;
 
 inline StaticQueue_t incomingTCUARTQueueBuffer{};
 constexpr uint8_t TCUARTQueueSize = 1;
-inline uint8_t  TC_BUF[512]{};
+inline uint8_t  TC_BUF[1024]{};
 inline uint8_t incomingTCUARTQueueStorageArea[TCUARTQueueSize * sizeof(uint8_t*)]{};
+
+inline uint8_t ECSS_TC_BUF[1024]{};
 
 class TCHandlingTask : public Task {
 public:
