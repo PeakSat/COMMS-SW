@@ -65,9 +65,9 @@ void app_main(void) {
     // gnssTask->createTask();
     // testTask->createTask();
     // ina3221Task->createTask();
-    // canGatekeeperTask->createTask();
+    canGatekeeperTask->createTask();
     tmp117Task->createTask();
-    // canParserTask->createTask();
+    canParserTask->createTask();
     tcHandlingTask->createTask();
     tmhandlingTask->createTask();
     // heartbeatTask->createTask();

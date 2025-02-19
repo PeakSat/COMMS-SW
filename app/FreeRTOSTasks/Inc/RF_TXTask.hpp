@@ -20,7 +20,8 @@ constexpr uint8_t TXQueueItemNum = 50;
 constexpr size_t TXItemSize_StoredPacketeMMC = sizeof(CAN::StoredPacket);
 constexpr size_t TXItemSize  = sizeof(tx_handler);
 inline uint8_t TXQueueStorageArea[TXQueueItemNum * TXItemSize] __attribute__((section(".dtcmram_outgoingTMQueueStorageArea")));
-inline uint8_t TX_BUFF[1024] __attribute__((section(".dtcmram_tx_buff"), aligned(4)));
+inline uint8_t outgoing_TX_BUFF[1024] __attribute__((section(".dtcmram_tx_buff"), aligned(4)));
+inline uint8_t TX_BUF_CAN[1024];
 using namespace AT86RF215;
 
 

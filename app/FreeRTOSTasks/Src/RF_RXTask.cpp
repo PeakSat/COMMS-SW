@@ -144,6 +144,7 @@ void RF_RXTask::ensureRxMode() {
                     drop_counter = 0;
                     for (int i = 0; i < corrected_received_length; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
+                        LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
                     }
                     /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
                     if (RX_BUFF[1] == Message::PacketType::TM) {
@@ -155,8 +156,17 @@ void RF_RXTask::ensureRxMode() {
                             PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
                             PacketToBeStored.size = corrected_received_length;
                             eMMCPacketTailPointer += 2;
-                            xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
-                            xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
+                            if (incomingTCQueue != nullptr) {
+                                xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
+                            }
+                            else
+                                LOG_ERROR << "[RX AGC] Incoming TC queue NULL.";
+                            if (tcHandlingTask->taskHandle != nullptr) {
+                                xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
+                            }
+                            else {
+                                LOG_ERROR << "[RX] TC_HANDLING not started yet";
+                            }
                         }
                         else {
                             LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
@@ -166,7 +176,6 @@ void RF_RXTask::ensureRxMode() {
                         LOG_DEBUG << "[RX AGC] Neither TC nor TM";
                     }
                     /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
-                    xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
                 else {
                     drop_counter++;
@@ -257,7 +266,6 @@ void RF_RXTask::ensureRxMode() {
                 LOG_INFO << "[RX] Transceiver FRAME END";
                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
             }
-            xSemaphoreGive(transceiver_handler.resources_mtx);
         }
     }
 }

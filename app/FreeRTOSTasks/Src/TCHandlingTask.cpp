@@ -23,11 +23,11 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
 
 [[noreturn]] void TCHandlingTask::execute() {
     /// TODO: Be sure that the memory is available (eMMC)
-    vTaskDelay(6000);
-    tc_buf_dma_pointer = TC_BUF;
+    vTaskDelay(2200);
+    tc_buf_dma_pointer = TC_UART_BUF;
     startReceiveFromUARTwithIdle(tc_buf_dma_pointer, 512);
     uint32_t received_events;
-    TCUARTQueueHandle = xQueueCreateStatic(TCUARTQueueSize, sizeof(uint8_t*), incomingTCUARTQueueStorageArea,
+    TCUARTQueueHandle = xQueueCreateStatic(TCUARTQueueSize, TCUARTItemSize, incomingTCUARTQueueStorageArea,
                                         &incomingTCQueueBuffer);
     vQueueAddToRegistry(TCUARTQueueHandle, "TC UART queue");
 
@@ -40,29 +40,36 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_INCOMING_TC, pdFALSE, pdTRUE, &received_events, portMAX_DELAY) == pdTRUE) {
             if (received_events & TC_RF_RX) {
                 /// TODO: parse and check if it is for our spacecraft before sending it to the OBC...For example check the spacecraft id and the hmac and the length of the packet (because AT may has received less or more bytes than expected)
-                LOG_INFO << "parsing of the incoming TC from RX side...";
+                LOG_INFO << "Parsing of the incoming TC from RX side...";
                 while (uxQueueMessagesWaiting(incomingTCQueue)) {
                     xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
-                    getItem(eMMC::memoryMap[eMMC::RX_TC], TC_BUF, 1024, TC_PACKET.pointerToeMMCItemData, 2);
+                    uint8_t local_tc_rx_bf[512]{};
+                    getItem(eMMC::memoryMap[eMMC::RX_TC], local_tc_rx_bf, 512, TC_PACKET.pointerToeMMCItemData, 1);
                     CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
                     /// TODO: we have to find the correct CCSDS headers and abort the magic number solution
+                    new_size = 0;
                     for (int i = 6; i < TC_PACKET.size; i++) {
-                        ECSS_TC_BUF[i-6] = TC_BUF[i];
+                        ECSS_TC_BUF[i-6] = local_tc_rx_bf[i];
+                        new_size++;
                     }
-                    auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, TC_PACKET.size - 6);
+                    auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, new_size);
+                    LOG_INFO << "Transmitting the TC to the OBC through CAN...";
                     CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
                 }
+                xQueueReset(incomingTCQueue);
             }
             if (received_events & TC_UART) {
                 LOG_INFO << "parsing of the incoming TC from UART side...";
-                if (xQueueReceive(TCUARTQueueHandle, &tc_buf_from_queue_pointer, pdMS_TO_TICKS(1000)) == pdTRUE) {
-                    if (tc_buf_from_queue_pointer != nullptr) {
+                uint8_t local_tc_uart_bf[512]{};
+                if (xQueueReceive(TCUARTQueueHandle, local_tc_uart_bf, pdMS_TO_TICKS(1000)) == pdTRUE) {
+                    if (local_tc_uart_bf != nullptr) {
                         new_size = 0;
                         for (uint16_t i = 1; i < size-1; i++) {
-                            LOG_DEBUG << "Received TC data: " << tc_buf_from_queue_pointer[i];
-                            ECSS_TC_BUF[i-1] = tc_buf_from_queue_pointer[i];
-                            new_size++;
+                            LOG_DEBUG << "Received TC data: " << local_tc_uart_bf[i];
+                            ECSS_TC_BUF[i-1] = local_tc_uart_bf[i];
+                            new_size = 0;
                         }
+
                         // For some reason the script puts a 5 on the 4th pos, so we make it zero
                         ECSS_TC_BUF[4] = 0;
                         LOG_DEBUG << "RECEIVED TC FROM UART-YAMCS, size: " << new_size;
@@ -78,7 +85,6 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                             auto messageApplicationId = String<128>("");
                             etl::to_string(message.serviceType, serviceType, formatSpec, false);
                             etl::to_string(message.messageType, messageType, formatSpec, false);
-                            // etl::to_string(message.sourceId, messageSourceId, formatSpec, false);
                             etl::to_string(message.dataSize, messageLength, formatSpec, false);
                             etl::to_string(message.applicationId, messageApplicationId, formatSpec, false);
 
@@ -96,8 +102,6 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                             output.append(messageLength);
                             output.append(", API: ");
                             output.append(messageApplicationId);
-                            // output.append(", from sourceId: ");
-                            // output.append(messageSourceId);
                             LOG_DEBUG << output.c_str();
                             if (message.applicationId == OBC_APPLICATION_ID) {
                                 LOG_DEBUG << "Received TC from UART destined for OBC";
@@ -122,6 +126,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                     else {
                         LOG_ERROR << "TC_BUF NULL POINTER";
                     }
+                    xQueueReset(TCUARTQueueHandle);
                 }
             }
         }

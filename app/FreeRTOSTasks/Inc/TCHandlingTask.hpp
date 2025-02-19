@@ -11,9 +11,10 @@ extern UART_HandleTypeDef huart4;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 
 inline StaticQueue_t incomingTCUARTQueueBuffer{};
-constexpr uint8_t TCUARTQueueSize = 1;
-inline uint8_t  TC_BUF[1024]{};
-inline uint8_t incomingTCUARTQueueStorageArea[TCUARTQueueSize * sizeof(uint8_t*)]{};
+constexpr uint8_t TCUARTQueueSize = 20;
+inline uint8_t TC_UART_BUF[128];
+inline constexpr uint8_t TCUARTItemSize = sizeof(TC_UART_BUF)/sizeof(TC_UART_BUF[0]);
+inline uint8_t incomingTCUARTQueueStorageArea[TCUARTQueueSize * TCUARTItemSize]{};
 
 inline uint8_t ECSS_TC_BUF[1024]{};
 
