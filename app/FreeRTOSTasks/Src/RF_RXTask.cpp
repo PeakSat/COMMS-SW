@@ -149,7 +149,6 @@ void RF_RXTask::ensureRxMode() {
                     /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
                     if (RX_BUFF[1] == Message::PacketType::TM) {
                         LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
-
                     }
                     else if (RX_BUFF[1] == Message::PacketType::TC) {
                         auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
