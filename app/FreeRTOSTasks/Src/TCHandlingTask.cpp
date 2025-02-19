@@ -45,16 +45,41 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                     xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
                     uint8_t local_tc_rx_bf[512]{};
                     getItem(eMMC::memoryMap[eMMC::RX_TC], local_tc_rx_bf, 512, TC_PACKET.pointerToeMMCItemData, 1);
-                    CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
-                    /// TODO: we have to find the correct CCSDS headers and abort the magic number solution
                     new_size = 0;
-                    for (int i = 6; i < TC_PACKET.size; i++) {
-                        ECSS_TC_BUF[i-6] = local_tc_rx_bf[i];
+                    for (int i = 0; i < TC_PACKET.size; i++) {
+                        ECSS_TC_BUF[i] = local_tc_rx_bf[i];
                         new_size++;
                     }
-                    auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, new_size);
+                    Message message = MessageParser::parse(ECSS_TC_BUF, new_size);
+                    etl::format_spec formatSpec;
+                    auto serviceType = String<128>("");
+                    auto messageType = String<128>("");
+                    auto messageSourceId = String<128>("");
+                    auto messageLength = String<128>("");
+                    auto messageAPI = String<128>("");
+                    auto messageApplicationId = String<128>("");
+                    etl::to_string(message.serviceType, serviceType, formatSpec, false);
+                    etl::to_string(message.messageType, messageType, formatSpec, false);
+                    etl::to_string(message.dataSize, messageLength, formatSpec, false);
+                    etl::to_string(message.applicationId, messageApplicationId, formatSpec, false);
+
+                    auto output = String<ECSSMaxMessageSize>("[RX SIDE] New ");
+                    if (message.packetType == Message::TM) {
+                        output.append("TM[");
+                    } else {
+                        output.append("TC[");
+                    }
+                    output.append(serviceType);
+                    output.append(",");
+                    output.append(messageType);
+                    output.append("] message!");
+                    output.append(", payload length: ");
+                    output.append(messageLength);
+                    output.append(", API: ");
+                    output.append(messageApplicationId);
+                    LOG_DEBUG << output.c_str();
+                    // TODO
                     LOG_INFO << "Transmitting the TC to the OBC through CAN...";
-                    CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
                 }
                 xQueueReset(incomingTCQueue);
             }

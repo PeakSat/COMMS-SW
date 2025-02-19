@@ -34,7 +34,7 @@ public:
     }
 
 private:
-    constexpr static uint16_t TaskStackDepth = 5000;
+    constexpr static uint16_t TaskStackDepth = 10000;
     StackType_t taskStack[TaskStackDepth]{};
 };
 
