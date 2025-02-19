@@ -66,7 +66,7 @@ void CANGatekeeperTask::execute() {
         // xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, portMAX_DELAY);
 
         while (uxQueueMessagesWaiting(incomingFrameQueue)) {
-            if (eMMCPacketTailPointer + 2 > eMMC::memoryMap[eMMC::CANMessages].size / 512) {
+            if (eMMCPacketTailPointer + 2 > eMMC::memoryMap[eMMC::CANMessages].size / eMMC::memoryPageSize) {
                 eMMCPacketTailPointer = 0;
             }
             // Get the message pointer from the queue
