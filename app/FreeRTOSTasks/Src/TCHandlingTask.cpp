@@ -68,7 +68,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                         // For some reason the script puts a 5 on the 4th pos, so we make it zero
                         ECSS_TC_BUF[4] = 0;
                         LOG_DEBUG << "RECEIVED TC FROM UART-YAMCS, size: " << new_size;
-                        if(new_size >= 9) {
+                        if(ECSS_TC_BUF[1] == Message::TC) {
                             // Parse the message
                             Message message = MessageParser::parse(ECSS_TC_BUF, new_size);
                             etl::format_spec formatSpec;
@@ -94,14 +94,14 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                             output.append(",");
                             output.append(messageType);
                             output.append("] message!");
-                            output.append(", with paylod length:");
+                            output.append(", payload length: ");
                             output.append(messageLength);
-                            output.append(", for API: ");
+                            output.append(", API: ");
                             output.append(messageApplicationId);
                             // output.append(", from sourceId: ");
                             // output.append(messageSourceId);
                             LOG_DEBUG << output.c_str();
-                            if (ECSS_TC_BUF[1] == OBC_APPLICATION_ID) {
+                            if (message.applicationId == OBC_APPLICATION_ID) {
                                 LOG_DEBUG << "Received TC from UART destined for OBC";
                                 auto status = storeItem(eMMC::memoryMap[eMMC::UART_TC], ECSS_TC_BUF, 1024, eMMCPacketTailPointer, 2);
                                 if (status.has_value()) {
@@ -120,21 +120,19 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                                     LOG_ERROR << "MEMORY ERROR ON TC";
                                 }
                             }
-                            else if (ECSS_TC_BUF[1] == COMMS_APPLICATION_ID) {
+                            else if (message.applicationId == COMMS_APPLICATION_ID) {
                                 /// TODO: Forward the TC to the COMMS Execution Task
                                 LOG_DEBUG << "Received TC from UART destined for COMMS";
                             }
+                        }
+                        else {
+                            LOG_ERROR << "Message is not a TC message";
                         }
                     }
                     else {
                         LOG_ERROR << "TC_BUF NULL POINTER";
                     }
-                }else {
-                    LOG_ERROR << "TIMEOUT";
                 }
-            }
-            else {
-                LOG_ERROR << "OTHER EVENT";
             }
         }
     }
