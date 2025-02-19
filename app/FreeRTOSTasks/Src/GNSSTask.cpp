@@ -38,7 +38,7 @@ void GNSSTask::GNSSprint(const GNSSData& c) {
     // LOG_INFO << "quality indicator " << c.fix_quality;
     LOG_INFO << "quality indicator " << COMMSParameters::GNSS_FIX_QUALITY.getValue();
     // LOG_INFO << "satellites tracked " << c.satellites_tracked;
-    LOG_INFO << "satellites tracked: " << COMMSParameters::SATELITES_TRACKED.getValue();
+    LOG_INFO << "satellites tracked: " << COMMSParameters::SATELLITES_TRACKED.getValue();
 }
 
 
@@ -82,7 +82,7 @@ void GNSSTask::setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gg
     COMMSParameters::GNSS_FIX_QUALITY.setValue(compact.fix_quality);
     // satellites tracked
     compact.satellites_tracked = static_cast<int8_t>(frame_gga.satellites_tracked);
-    COMMSParameters::SATELITES_TRACKED.setValue(compact.satellites_tracked);
+    COMMSParameters::SATELLITES_TRACKED.setValue(compact.satellites_tracked);
 }
 
 
@@ -219,7 +219,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
 [[noreturn]] void GNSSTask::execute() {
     vTaskDelay(10000);
     COMMSParameters::GNSS_ACK_TIMEOUT.setValue(gnss_handler.ACK_TIMOUT_MS);
-    COMMSParameters::GNSS_CMD_RETIES.setValue(gnss_handler.CMD_RETRIES);
+    COMMSParameters::GNSS_CMD_RETRIES.setValue(gnss_handler.CMD_RETRIES);
     COMMSParameters::GNSS_DELAY_CMDS.setValue(gnss_handler.DELAY_BTW_CMDS_MS);
     COMMSParameters::GNSS_ERROR_TIMEOUT.setValue(gnss_handler.ERROR_TIMEOUT_MS);
     COMMSParameters::ERROR_TIMEOUT_CNT_THRHD.setValue(gnss_handler.ERROR_TIMEOUT_COUNTER_THRD);
