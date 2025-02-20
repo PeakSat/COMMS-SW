@@ -69,7 +69,7 @@ void RF_RXTask::ensureRxMode() {
 }
 
 [[noreturn]] void RF_RXTask::execute() {
-    vTaskDelay(2000);
+    vTaskDelay(4000);
     LOG_INFO << "[RF RX TASK]";
     incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
                                             &incomingTCQueueBuffer);
@@ -138,7 +138,7 @@ void RF_RXTask::ensureRxMode() {
                 int8_t rssi = transceiver.get_rssi(RF09, error);
                 if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
-                if (corrected_received_length > 0) {
+                if (corrected_received_length > 0 && corrected_received_length <= 1024) {
                     LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
@@ -152,6 +152,7 @@ void RF_RXTask::ensureRxMode() {
                         LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
                     }
                     else if (RX_BUFF[1] == Message::PacketType::TC) {
+                        LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
                         rf_rx_tx_queue_handler.size = corrected_received_length;
                         auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
                         // auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 1024, eMMCPacketTailPointer, 2);
@@ -159,12 +160,17 @@ void RF_RXTask::ensureRxMode() {
                             // PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
                             // PacketToBeStored.size = corrected_received_length;
                             // eMMCPacketTailPointer += 2;
-                            xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
-                            if (tcHandlingTask->taskHandle != nullptr) {
-                                xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
+                            if (rf_rx_tcQueue != nullptr) {
+                                xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
+                                if (tcHandlingTask->taskHandle != nullptr) {
+                                    xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
+                                }
+                                else {
+                                    LOG_ERROR << "[RX] TC_HANDLING not started yet";
+                                }
                             }
                             else {
-                                LOG_ERROR << "[RX] TC_HANDLING not started yet";
+                                LOG_ERROR << "[RX AGC] RF TX QUEUE EMPTY";
                             }
                         }
                         else {

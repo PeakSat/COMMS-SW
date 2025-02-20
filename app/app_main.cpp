@@ -191,7 +191,7 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
             xHigherPriorityTaskWoken = pdFALSE;
             xQueueSendFromISR(tcHandlingTask->TCUARTQueueHandle, &tcHandlingTask->send_to_tc_queue, &xHigherPriorityTaskWoken);
             xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_UART, eSetBits, &xHigherPriorityTaskWoken);
+            xTaskNotifyIndexedFromISR(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 18), eSetBits, &xHigherPriorityTaskWoken);
             TCHandlingTask::startReceiveFromUARTwithIdle(tcHandlingTask->tc_buf_dma_pointer, 512);
         }
     }
