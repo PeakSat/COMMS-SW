@@ -12,3 +12,4 @@ MEMORY_ITEM(test2, 1234)
 
 // MEMORY_QUEUE(name, sizeOfItem, numberOfItems)
 MEMORY_QUEUE(testData, 520, 10)
+MEMORY_QUEUE(rf_rx_tc, 1024, 10)

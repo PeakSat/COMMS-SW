@@ -127,6 +127,7 @@ void RF_RXTask::ensureRxMode() {
     uint32_t eMMCPacketTailPointer = 0;
     State trx_state;
     CAN::StoredPacket PacketToBeStored;
+    memoryQueueItemHandler rf_rx_tx_queue_handler{};
     ensureRxMode();
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
@@ -151,16 +152,14 @@ void RF_RXTask::ensureRxMode() {
                         LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
                     }
                     else if (RX_BUFF[1] == Message::PacketType::TC) {
-                        auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 1024, eMMCPacketTailPointer, 2);
+                        rf_rx_tx_queue_handler.size = corrected_received_length;
+                        auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
+                        // auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 1024, eMMCPacketTailPointer, 2);
                         if (status.has_value()) {
-                            PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                            PacketToBeStored.size = corrected_received_length;
-                            eMMCPacketTailPointer += 2;
-                            if (incomingTCQueue != nullptr) {
-                                xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
-                            }
-                            else
-                                LOG_ERROR << "[RX AGC] Incoming TC queue NULL.";
+                            // PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                            // PacketToBeStored.size = corrected_received_length;
+                            // eMMCPacketTailPointer += 2;
+                            xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
                             if (tcHandlingTask->taskHandle != nullptr) {
                                 xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
                             }

@@ -41,10 +41,11 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
             if (received_events & TC_RF_RX) {
                 /// TODO: parse and check if it is for our spacecraft before sending it to the OBC...For example check the spacecraft id and the hmac and the length of the packet (because AT may has received less or more bytes than expected)
                 LOG_INFO << "Parsing of the incoming TC from RX side...";
-                while (uxQueueMessagesWaiting(incomingTCQueue)) {
-                    xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
-                    uint8_t local_tc_rx_bf[512]{};
-                    getItem(eMMC::memoryMap[eMMC::RX_TC], local_tc_rx_bf, 512, TC_PACKET.pointerToeMMCItemData, 1);
+                while (uxQueueMessagesWaiting(rf_rx_tcQueue)) {
+                    memoryQueueItemHandler rf_rx_tx_queue_handler{};
+                    xQueueReceive(rf_rx_tcQueue, &rf_rx_tx_queue_handler, portMAX_DELAY);
+                    uint8_t local_tc_rx_bf[1024]{};
+                    eMMC::getItemFromQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], rf_rx_tx_queue_handler, local_tc_rx_bf, rf_rx_tx_queue_handler.size);
                     new_size = 0;
                     for (int i = 0; i < TC_PACKET.size; i++) {
                         ECSS_TC_BUF[i] = local_tc_rx_bf[i];
