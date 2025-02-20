@@ -9,3 +9,6 @@ MEMORY_ITEM(UART_TC, 131072)
 MEMORY_ITEM(RECEIVED_TM, 131072)
 MEMORY_ITEM(test2, 1234)
 // Add more items here...
+
+// MEMORY_QUEUE(name, sizeOfItem, numberOfItems)
+MEMORY_QUEUE(testData, 520, 10)
