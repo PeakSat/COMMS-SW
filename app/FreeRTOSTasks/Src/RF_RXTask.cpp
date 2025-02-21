@@ -130,6 +130,7 @@ void RF_RXTask::ensureRxMode() {
     CAN::StoredPacket PacketToBeStored;
     memoryQueueItemHandler rf_rx_tx_queue_handler{};
     ensureRxMode();
+
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -137,16 +138,19 @@ void RF_RXTask::ensureRxMode() {
                 received_length = result.value();
                 int16_t corrected_received_length = received_length - MAGIC_NUMBER;
                 int8_t rssi = transceiver.get_rssi(RF09, error);
+                uint8_t RX_BUFF[1024]{};
+                LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                 if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
-                if (corrected_received_length > 0 && corrected_received_length <= 1024) {
+                if (corrected_received_length > 0 && corrected_received_length <= 128) {
                     LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                     drop_counter = 0;
                     for (int i = 0; i < corrected_received_length; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                        LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
+                        if (error != NO_ERRORS)
+                            LOG_ERROR << "ERROR" ;
                     }
                     /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
                     if (RX_BUFF[1] == Message::PacketType::TM) {
@@ -157,16 +161,16 @@ void RF_RXTask::ensureRxMode() {
                         // rf_rx_tx_queue_handler.size = corrected_received_length;
                         // auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
                         // if (status.has_value()) {
-                        //     if (rf_rx_tcQueue != nullptr) {
-                        //         xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
-                        //         if (tcHandlingTask->taskHandle != nullptr) {
-                        //             tcHandlingTask->tc_rf_rx_var = true;
-                        //             xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
-                        //         }
-                        //         else {
-                        //             LOG_ERROR << "[RX] TC_HANDLING not started yet";
-                        //         }
-                        //     }
+                        //     // if (rf_rx_tcQueue != nullptr) {
+                        //     //     xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
+                        //     //     if (tcHandlingTask->taskHandle != nullptr) {
+                        //     //         tcHandlingTask->tc_rf_rx_var = true;
+                        //     //         xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
+                        //     //     }
+                        //     //     else {
+                        //     //         LOG_ERROR << "[RX] TC_HANDLING not started yet";
+                        //     //     }
+                        //     // }
                         // }
                         // else {
                         //     LOG_ERROR << "[RX AGC] Failed to store MMC packet.";

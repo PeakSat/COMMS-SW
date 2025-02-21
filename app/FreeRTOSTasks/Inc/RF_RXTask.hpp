@@ -11,7 +11,6 @@
 
 #define MAGIC_NUMBER 4
 
-inline uint8_t RX_BUFF[1024] __attribute__((section(".dtcmram_incomingTMBuffer"), aligned(4)));
 inline QueueHandle_t incomingTCQueue;
 inline StaticQueue_t incomingTCQueueBuffer;
 constexpr uint8_t TCQueueSize = 50;
