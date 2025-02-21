@@ -85,7 +85,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                 }
                 xQueueReset(incomingTCQueue);
             }
-// #ifdef ENABLE_UART_TC // Or use BOARD_X if specific to a board
+#ifdef ENABLE_UART_TC // Or use BOARD_X if specific to a board
     if ((received_events_tc & TC_UART) && tc_uart_var) {
         tc_uart_var = false;
         uint8_t local_tc_uart_bf[1024]{};
@@ -159,7 +159,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
         }
         received_events_tc &= ~TC_UART;
     }
-// #endif // ENABLE_UART_TC
+#endif // ENABLE_UART_TC
 
         }
     }

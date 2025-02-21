@@ -69,7 +69,7 @@ void RF_RXTask::ensureRxMode() {
 }
 
 [[noreturn]] void RF_RXTask::execute() {
-    vTaskDelay(4000);
+    vTaskDelay(2000);
     LOG_INFO << "[RF RX TASK]";
     incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
                                             &incomingTCQueueBuffer);
@@ -109,7 +109,6 @@ void RF_RXTask::ensureRxMode() {
             if (success) {
                 break;  // Exit loop if successful
             }
-
             attempt++;
             LOG_ERROR << "Retrying connection attempt " << attempt << "/" << MAX_RETRIES;
             vTaskDelay(pdMS_TO_TICKS(100));  // Small delay before retrying
@@ -136,54 +135,39 @@ void RF_RXTask::ensureRxMode() {
                 received_length = result.value();
                 int16_t corrected_received_length = received_length - MAGIC_NUMBER;
                 int8_t rssi = transceiver.get_rssi(RF09, error);
-                if (rssi != 127)
-                    LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
                 if (corrected_received_length > 0 && corrected_received_length <= 1024) {
+                    LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
                     LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                     drop_counter = 0;
                     for (int i = 0; i < corrected_received_length; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                        LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
+                        if (error != NO_ERRORS)
+                            LOG_ERROR << "[RX AGC] ERROR: " << error;
+                        // LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
                     }
                     /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
-                    if (RX_BUFF[1] == Message::PacketType::TM) {
-                        LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
-                    }
-                    else if (RX_BUFF[1] == Message::PacketType::TC) {
-                        LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
-                        rf_rx_tx_queue_handler.size = corrected_received_length;
-                        auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
-                        // auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 1024, eMMCPacketTailPointer, 2);
-                        if (status.has_value()) {
-                            // PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                            // PacketToBeStored.size = corrected_received_length;
-                            // eMMCPacketTailPointer += 2;
-                            if (rf_rx_tcQueue != nullptr) {
-                                xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
-                                if (tcHandlingTask->taskHandle != nullptr) {
-                                    tcHandlingTask->tc_rf_rx_var = true;
-                                    xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
-                                }
-                                else {
-                                    LOG_ERROR << "[RX] TC_HANDLING not started yet";
-                                }
-                            }
-                            else {
-                                LOG_ERROR << "[RX AGC] RF TX QUEUE EMPTY";
-                            }
-                        }
-                        else {
-                            LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
-                        }
-                    }
-                    else {
-                        LOG_DEBUG << "[RX AGC] Neither TC nor TM";
-                    }
-                    /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
-                }
-                else {
+                    // if (RX_BUFF[1] == Message::PacketType::TM) {
+                    //     LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
+                    // }
+                    // else if (RX_BUFF[1] == Message::PacketType::TC) {
+                    //     LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
+                        // rf_rx_tx_queue_handler.size = corrected_received_length;
+                        // auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
+                        // if (status.has_value()) {
+                        //     if (rf_rx_tcQueue != nullptr) {
+                        //         xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
+                        //         if (tcHandlingTask->taskHandle != nullptr) {
+                        //             tcHandlingTask->tc_rf_rx_var = true;
+                        //             xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
+                        //         }
+                        //     }
+                        // }
+                        // else {
+                        //     LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
+                        // }
+                }else {
                     drop_counter++;
                     rx_total_drop_packets++;
                     LOG_DEBUG << "[RX DROP] c: " << drop_counter;
@@ -196,6 +180,7 @@ void RF_RXTask::ensureRxMode() {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                 switch (uint8_t rf_state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
                     case READY: {
+                        transceiver.print_error(error);
                         trx_state = transceiver.get_state(RF09, error);
                         if (trx_state != RF_RX) {
                             ensureRxMode();
@@ -249,28 +234,28 @@ void RF_RXTask::ensureRxMode() {
                         break;
                     }
                 }
+                if (transceiver.TransceiverError_flag) {
+                    transceiver.TransceiverError_flag = false;
+                    LOG_ERROR << "[RX] Transceiver Error";
+                }
+                if (transceiver.FrameBufferLevelIndication_flag) {
+                    transceiver.FrameBufferLevelIndication_flag = false;
+                    LOG_ERROR << "[RX] FrameBuffer Level Indication";
+                }
+                if (transceiver.IFSynchronization_flag) {
+                    transceiver.IFSynchronization_flag = false;
+                    LOG_ERROR << "[RX] IF Synchronization";
+                }
+                if (transceiver.Voltage_Drop) {
+                    transceiver.Voltage_Drop = false;
+                    LOG_ERROR << "[RX] Voltage Drop";
+                }
+                if (transceiver.TransmitterFrameEnd_flag) {
+                    transceiver.TransmitterFrameEnd_flag = false;
+                    LOG_INFO << "[RX] Transceiver FRAME END";
+                    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+                }
                 xSemaphoreGive(transceiver_handler.resources_mtx);
-            }
-            if (transceiver.TransceiverError_flag) {
-                transceiver.TransceiverError_flag = false;
-                LOG_ERROR << "[RX] Transceiver Error";
-            }
-            if (transceiver.FrameBufferLevelIndication_flag) {
-                transceiver.FrameBufferLevelIndication_flag = false;
-                LOG_ERROR << "[RX] FrameBuffer Level Indication";
-            }
-            if (transceiver.IFSynchronization_flag) {
-                transceiver.IFSynchronization_flag = false;
-                LOG_ERROR << "[RX] IF Synchronization";
-            }
-            if (transceiver.Voltage_Drop) {
-                transceiver.Voltage_Drop = false;
-                LOG_ERROR << "[RX] Voltage Drop";
-            }
-            if (transceiver.TransmitterFrameEnd_flag) {
-                transceiver.TransmitterFrameEnd_flag = false;
-                LOG_INFO << "[RX] Transceiver FRAME END";
-                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
             }
         }
     }

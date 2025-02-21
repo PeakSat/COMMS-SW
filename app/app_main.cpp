@@ -71,14 +71,14 @@ void app_main(void) {
     tcHandlingTask->createTask();
     tmhandlingTask->createTask();
     // heartbeatTask->createTask();
-    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     LOG_INFO << "eMMC usage = " << COMMSParameters::EMMC_USAGE.getValue() << "%";
     /* Start the scheduler. */
     can_ack_handler.initialize_semaphore();
     CAN_TRANSMIT_Handler.initialize_semaphore();
     transceiver_handler.initialize_semaphore();
-
+    HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     vTaskStartScheduler();
 
     /* Should not get here. */
@@ -162,17 +162,17 @@ extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t 
     }
 }
 extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t Size) {
-    // Declare a variable to track if a higher priority task is woken up
-    BaseType_t xHigherPriorityTaskWoken;
-    // Initialize xHigherPriorityTaskWoken to pdFALSE (no higher-priority task woken yet)
-    xHigherPriorityTaskWoken = pdFALSE;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
     if (huart->Instance == UART5) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
-            // Size = 9 have the messages with main ID and Size = 10 have the messages with Sub ID
-            if (gnssTask->gnss_handler.CONTROL && (Size == gnssTask->gnss_handler.SIZE_ID_LENGTH || Size == gnssTask->gnss_handler.SIZE_SUB_ID_LENGTH)) {
+            if (gnssTask->gnss_handler.CONTROL &&
+                (Size == gnssTask->gnss_handler.SIZE_ID_LENGTH || Size == gnssTask->gnss_handler.SIZE_SUB_ID_LENGTH)) {
+
                 gnssTask->gnss_handler.CONTROL = false;
-                if (huart5.pRxBuffPtr[4] == gnssTask->gnss_handler.ACK)
+                if (huart5.pRxBuffPtr[4] == gnssTask->gnss_handler.ACK) {
                     xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_ACK, GNSS_ACK, eSetBits, &xHigherPriorityTaskWoken);
+                }
             } else {
                 gnssTask->size_message = Size;
                 gnssTask->sendToQueue = huart5.pRxBuffPtr;
@@ -184,9 +184,11 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
     }
+
+#ifdef ENABLE_UART4
     if (huart->Instance == UART4) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
-            if (Size >= 5 && Size <= 1024) {
+            if (Size >= 8 && Size <= 1024) {
                 tcHandlingTask->tc_uart_var = true;
                 tcHandlingTask->send_to_tc_queue = huart4.pRxBuffPtr;
                 tcHandlingTask->size = Size;
@@ -199,7 +201,9 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
             TCHandlingTask::startReceiveFromUARTwithIdle(tcHandlingTask->tc_buf_dma_pointer, 1024);
         }
     }
+#endif
 }
+
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
     BaseType_t xHigherPriorityTaskWoken = false;
