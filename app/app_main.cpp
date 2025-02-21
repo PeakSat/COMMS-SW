@@ -186,13 +186,17 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     }
     if (huart->Instance == UART4) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
-            tcHandlingTask->send_to_tc_queue = huart4.pRxBuffPtr;
-            tcHandlingTask->size = Size;
-            xHigherPriorityTaskWoken = pdFALSE;
-            xQueueSendFromISR(tcHandlingTask->TCUARTQueueHandle, &tcHandlingTask->send_to_tc_queue, &xHigherPriorityTaskWoken);
-            xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 18), eSetBits, &xHigherPriorityTaskWoken);
-            TCHandlingTask::startReceiveFromUARTwithIdle(tcHandlingTask->tc_buf_dma_pointer, 512);
+            if (Size >= 5 && Size <= 1024) {
+                tcHandlingTask->tc_uart_var = true;
+                tcHandlingTask->send_to_tc_queue = huart4.pRxBuffPtr;
+                tcHandlingTask->size = Size;
+                xHigherPriorityTaskWoken = pdFALSE;
+                xQueueSendFromISR(tcHandlingTask->TCUARTQueueHandle, &tcHandlingTask->send_to_tc_queue, &xHigherPriorityTaskWoken);
+                xHigherPriorityTaskWoken = pdFALSE;
+                xTaskNotifyIndexedFromISR(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 18), eSetBits, &xHigherPriorityTaskWoken);
+                portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            }
+            TCHandlingTask::startReceiveFromUARTwithIdle(tcHandlingTask->tc_buf_dma_pointer, 1024);
         }
     }
 }

@@ -163,6 +163,7 @@ void RF_RXTask::ensureRxMode() {
                             if (rf_rx_tcQueue != nullptr) {
                                 xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
                                 if (tcHandlingTask->taskHandle != nullptr) {
+                                    tcHandlingTask->tc_rf_rx_var = true;
                                     xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
                                 }
                                 else {

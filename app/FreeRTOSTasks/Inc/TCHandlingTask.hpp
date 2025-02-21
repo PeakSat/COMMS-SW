@@ -22,6 +22,8 @@ class TCHandlingTask : public Task {
 public:
     uint8_t* tc_buf_dma_pointer = nullptr;
     uint16_t size = 0;
+    bool tc_uart_var = false;
+    bool tc_rf_rx_var = false;
     QueueHandle_t TCUARTQueueHandle{};
     uint8_t* send_to_tc_queue{};
     static void startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size);

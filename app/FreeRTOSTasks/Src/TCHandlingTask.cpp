@@ -25,7 +25,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     /// TODO: Be sure that the memory is available (eMMC)
     vTaskDelay(2200);
     tc_buf_dma_pointer = TC_UART_BUF;
-    startReceiveFromUARTwithIdle(tc_buf_dma_pointer, 512);
+    startReceiveFromUARTwithIdle(tc_buf_dma_pointer, 1024);
     uint32_t received_events_tc = 0;
     TCUARTQueueHandle = xQueueCreateStatic(TCUARTQueueSize, TCUARTItemSize, incomingTCUARTQueueStorageArea,
                                         &incomingTCQueueBuffer);
@@ -37,7 +37,8 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     uint16_t new_size = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_INCOMING_TC, pdFALSE, pdTRUE, &received_events_tc, portMAX_DELAY) == pdTRUE) {
-            if (received_events_tc & TC_RF_RX) {
+            if ((received_events_tc & TC_RF_RX) && tc_rf_rx_var) {
+                tc_rf_rx_var = false;
                 /// TODO: parse and check if it is for our spacecraft before sending it to the OBC...For example check the spacecraft id and the hmac and the length of the packet (because AT may has received less or more bytes than expected)
                 LOG_INFO << "Parsing of the incoming TC from RX side...";
                 while (uxQueueMessagesWaiting(rf_rx_tcQueue)) {
@@ -84,8 +85,9 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                 }
                 xQueueReset(incomingTCQueue);
             }
-#ifdef ENABLE_UART_TC // Or use BOARD_X if specific to a board
-    if (received_events_tc & TC_UART) {
+// #ifdef ENABLE_UART_TC // Or use BOARD_X if specific to a board
+    if ((received_events_tc & TC_UART) && tc_uart_var) {
+        tc_uart_var = false;
         uint8_t local_tc_uart_bf[1024]{};
         LOG_INFO << "parsing of the incoming TC from UART side...";
         if (xQueueReceive(TCUARTQueueHandle, local_tc_uart_bf, pdMS_TO_TICKS(1000)) == pdTRUE) {
@@ -157,7 +159,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
         }
         received_events_tc &= ~TC_UART;
     }
-#endif // ENABLE_UART_TC
+// #endif // ENABLE_UART_TC
 
         }
     }
