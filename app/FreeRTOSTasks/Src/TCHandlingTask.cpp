@@ -81,6 +81,13 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                     LOG_DEBUG << output.c_str();
                     // TODO
                     LOG_INFO << "Transmitting the TC to the OBC through CAN...";
+                    new_size = 0;
+                    for (int i = 5; i < rf_rx_tx_queue_handler.size; i++) {
+                        ECSS_TC_BUF[i-5] = local_tc_rx_bf[i];
+                        new_size++;
+                    }
+                    auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, new_size);
+                    CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
                     received_events_tc &= ~TC_RF_RX;
                 }
                 xQueueReset(incomingTCQueue);
