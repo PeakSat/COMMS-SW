@@ -78,9 +78,13 @@ void app_main(void) {
     can_ack_handler.initialize_semaphore();
     CAN_TRANSMIT_Handler.initialize_semaphore();
     transceiver_handler.initialize_semaphore();
+    HAL_NVIC_DisableIRQ(DMA1_Stream2_IRQn);
+    #ifdef ENABLE_UART4_RX
+        HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 5, 0);
+        HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
+    #endif
 
     vTaskStartScheduler();
-
     /* Should not get here. */
     for (;;)
         ;

@@ -28,7 +28,7 @@ public:
     [[noreturn]] void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,
-                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 2,
+                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 3,
                                              this->taskStack, &(this->taskBuffer));
     }
 

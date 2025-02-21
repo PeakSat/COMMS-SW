@@ -119,6 +119,7 @@ void RF_RXTask::ensureRxMode() {
         LOG_ERROR << "Failed to establish connection after " << MAX_RETRIES << " attempts.";
     }
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
+
     uint16_t received_length = 0;
     uint32_t drop_counter = 0;
     uint32_t rx_total_packets = 0;
@@ -153,30 +154,23 @@ void RF_RXTask::ensureRxMode() {
                     }
                     else if (RX_BUFF[1] == Message::PacketType::TC) {
                         LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
-                        rf_rx_tx_queue_handler.size = corrected_received_length;
-                        auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
-                        // auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 1024, eMMCPacketTailPointer, 2);
-                        if (status.has_value()) {
-                            // PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                            // PacketToBeStored.size = corrected_received_length;
-                            // eMMCPacketTailPointer += 2;
-                            if (rf_rx_tcQueue != nullptr) {
-                                xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
-                                if (tcHandlingTask->taskHandle != nullptr) {
-                                    tcHandlingTask->tc_rf_rx_var = true;
-                                    xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
-                                }
-                                else {
-                                    LOG_ERROR << "[RX] TC_HANDLING not started yet";
-                                }
-                            }
-                            else {
-                                LOG_ERROR << "[RX AGC] RF TX QUEUE EMPTY";
-                            }
-                        }
-                        else {
-                            LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
-                        }
+                        // rf_rx_tx_queue_handler.size = corrected_received_length;
+                        // auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
+                        // if (status.has_value()) {
+                        //     if (rf_rx_tcQueue != nullptr) {
+                        //         xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
+                        //         if (tcHandlingTask->taskHandle != nullptr) {
+                        //             tcHandlingTask->tc_rf_rx_var = true;
+                        //             xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
+                        //         }
+                        //         else {
+                        //             LOG_ERROR << "[RX] TC_HANDLING not started yet";
+                        //         }
+                        //     }
+                        // }
+                        // else {
+                        //     LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
+                        // }
                     }
                     else {
                         LOG_DEBUG << "[RX AGC] Neither TC nor TM";
@@ -249,28 +243,28 @@ void RF_RXTask::ensureRxMode() {
                         break;
                     }
                 }
+                if (transceiver.TransceiverError_flag) {
+                    transceiver.TransceiverError_flag = false;
+                    LOG_ERROR << "[RX] Transceiver Error";
+                }
+                if (transceiver.FrameBufferLevelIndication_flag) {
+                    transceiver.FrameBufferLevelIndication_flag = false;
+                    LOG_ERROR << "[RX] FrameBuffer Level Indication";
+                }
+                if (transceiver.IFSynchronization_flag) {
+                    transceiver.IFSynchronization_flag = false;
+                    LOG_ERROR << "[RX] IF Synchronization";
+                }
+                if (transceiver.Voltage_Drop) {
+                    transceiver.Voltage_Drop = false;
+                    LOG_ERROR << "[RX] Voltage Drop";
+                }
+                if (transceiver.TransmitterFrameEnd_flag) {
+                    transceiver.TransmitterFrameEnd_flag = false;
+                    LOG_INFO << "[RX] Transceiver FRAME END";
+                    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+                }
                 xSemaphoreGive(transceiver_handler.resources_mtx);
-            }
-            if (transceiver.TransceiverError_flag) {
-                transceiver.TransceiverError_flag = false;
-                LOG_ERROR << "[RX] Transceiver Error";
-            }
-            if (transceiver.FrameBufferLevelIndication_flag) {
-                transceiver.FrameBufferLevelIndication_flag = false;
-                LOG_ERROR << "[RX] FrameBuffer Level Indication";
-            }
-            if (transceiver.IFSynchronization_flag) {
-                transceiver.IFSynchronization_flag = false;
-                LOG_ERROR << "[RX] IF Synchronization";
-            }
-            if (transceiver.Voltage_Drop) {
-                transceiver.Voltage_Drop = false;
-                LOG_ERROR << "[RX] Voltage Drop";
-            }
-            if (transceiver.TransmitterFrameEnd_flag) {
-                transceiver.TransmitterFrameEnd_flag = false;
-                LOG_INFO << "[RX] Transceiver FRAME END";
-                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
             }
         }
     }
