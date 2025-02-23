@@ -81,16 +81,22 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                     LOG_DEBUG << output.c_str();
                     // TODO
                     LOG_INFO << "Transmitting the TC to the OBC through CAN...";
+                    new_size = 0;
+                    for (int i = 5; i < rf_rx_tx_queue_handler.size; i++) {
+                        ECSS_TC_BUF[i-5] = local_tc_rx_bf[i];
+                        new_size++;
+                    }
+                    auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, new_size);
+                    CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
                     received_events_tc &= ~TC_RF_RX;
                 }
                 xQueueReset(incomingTCQueue);
             }
-#ifdef ENABLE_UART_TC // Or use BOARD_X if specific to a board
-    if ((received_events_tc & TC_UART) && tc_uart_var) {
-        tc_uart_var = false;
-        uint8_t local_tc_uart_bf[1024]{};
-        LOG_INFO << "parsing of the incoming TC from UART side...";
-        if (xQueueReceive(TCUARTQueueHandle, local_tc_uart_bf, pdMS_TO_TICKS(1000)) == pdTRUE) {
+            if ((received_events_tc & TC_UART) && tc_uart_var) {
+            tc_uart_var = false;
+            uint8_t local_tc_uart_bf[1024]{};
+            LOG_INFO << "parsing of the incoming TC from UART side...";
+            if (xQueueReceive(TCUARTQueueHandle, local_tc_uart_bf, pdMS_TO_TICKS(1000)) == pdTRUE) {
             if (size >= 5 && size <= 1024) {
                 new_size = 0;
                 for (uint16_t i = 1; i < size-1; i++) {
@@ -98,7 +104,6 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                     ECSS_TC_BUF[i-1] = local_tc_uart_bf[i];
                     new_size = 0;
                 }
-
                 // For some reason the script puts a 5 on the 4th pos, so we make it zero
                 ECSS_TC_BUF[4] = 0;
                 LOG_DEBUG << "RECEIVED TC FROM UART-YAMCS, size: " << new_size;
@@ -156,10 +161,10 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                 LOG_ERROR << "Unacceptable TC packet from the UART";
             }
             xQueueReset(TCUARTQueueHandle);
-        }
-        received_events_tc &= ~TC_UART;
-    }
-#endif // ENABLE_UART_TC
+            }
+            received_events_tc &= ~TC_UART;
+            }
+// #endif // ENABLE_UART_TC
 
         }
     }

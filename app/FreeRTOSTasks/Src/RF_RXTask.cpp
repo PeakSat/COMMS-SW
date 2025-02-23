@@ -69,7 +69,7 @@ void RF_RXTask::ensureRxMode() {
 }
 
 [[noreturn]] void RF_RXTask::execute() {
-    vTaskDelay(2000);
+    vTaskDelay(4000);
     LOG_INFO << "[RF RX TASK]";
     incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
                                             &incomingTCQueueBuffer);
@@ -109,6 +109,7 @@ void RF_RXTask::ensureRxMode() {
             if (success) {
                 break;  // Exit loop if successful
             }
+
             attempt++;
             LOG_ERROR << "Retrying connection attempt " << attempt << "/" << MAX_RETRIES;
             vTaskDelay(pdMS_TO_TICKS(100));  // Small delay before retrying
@@ -118,6 +119,7 @@ void RF_RXTask::ensureRxMode() {
         LOG_ERROR << "Failed to establish connection after " << MAX_RETRIES << " attempts.";
     }
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
+
     uint16_t received_length = 0;
     uint32_t drop_counter = 0;
     uint32_t rx_total_packets = 0;
@@ -128,6 +130,7 @@ void RF_RXTask::ensureRxMode() {
     CAN::StoredPacket PacketToBeStored;
     memoryQueueItemHandler rf_rx_tx_queue_handler{};
     ensureRxMode();
+
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -135,8 +138,11 @@ void RF_RXTask::ensureRxMode() {
                 received_length = result.value();
                 int16_t corrected_received_length = received_length - MAGIC_NUMBER;
                 int8_t rssi = transceiver.get_rssi(RF09, error);
-                if (corrected_received_length > 0 && corrected_received_length <= 1024) {
+                uint8_t RX_BUFF[1024]{};
+                LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
+                if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
+                if (corrected_received_length > 0 && corrected_received_length <= 128) {
                     LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
@@ -144,30 +150,38 @@ void RF_RXTask::ensureRxMode() {
                     for (int i = 0; i < corrected_received_length; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                         if (error != NO_ERRORS)
-                            LOG_ERROR << "[RX AGC] ERROR: " << error;
-                        // LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
+                            LOG_ERROR << "ERROR" ;
                     }
                     /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
-                    // if (RX_BUFF[1] == Message::PacketType::TM) {
-                    //     LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
-                    // }
-                    // else if (RX_BUFF[1] == Message::PacketType::TC) {
-                    //     LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
-                        // rf_rx_tx_queue_handler.size = corrected_received_length;
-                        // auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
-                        // if (status.has_value()) {
-                        //     if (rf_rx_tcQueue != nullptr) {
-                        //         xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
-                        //         if (tcHandlingTask->taskHandle != nullptr) {
-                        //             tcHandlingTask->tc_rf_rx_var = true;
-                        //             xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
-                        //         }
-                        //     }
-                        // }
-                        // else {
-                        //     LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
-                        // }
-                }else {
+                    if (RX_BUFF[1] == Message::PacketType::TM) {
+                        LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
+                    }
+                    else if (RX_BUFF[1] == Message::PacketType::TC) {
+                        LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
+                        rf_rx_tx_queue_handler.size = corrected_received_length;
+                        auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
+                        if (status.has_value()) {
+                            if (rf_rx_tcQueue != nullptr) {
+                                xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
+                                if (tcHandlingTask->taskHandle != nullptr) {
+                                    tcHandlingTask->tc_rf_rx_var = true;
+                                    xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
+                                }
+                                else {
+                                    LOG_ERROR << "[RX] TC_HANDLING not started yet";
+                                }
+                            }
+                        }
+                        else {
+                            LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
+                        }
+                    }
+                    else {
+                        LOG_DEBUG << "[RX AGC] Neither TC nor TM";
+                    }
+                    /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
+                }
+                else {
                     drop_counter++;
                     rx_total_drop_packets++;
                     LOG_DEBUG << "[RX DROP] c: " << drop_counter;
@@ -180,7 +194,6 @@ void RF_RXTask::ensureRxMode() {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                 switch (uint8_t rf_state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
                     case READY: {
-                        transceiver.print_error(error);
                         trx_state = transceiver.get_state(RF09, error);
                         if (trx_state != RF_RX) {
                             ensureRxMode();
