@@ -296,7 +296,6 @@ void GNSSTask::initQueuesToAcceptPointers() {
                         } else {
                             GNSSprint(compact);
                         }
-
                         gnss_error_timout_counter = 0;
                     }
                 }

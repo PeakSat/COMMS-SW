@@ -72,7 +72,7 @@ void app_main(void) {
     canParserTask->createTask();
     tcHandlingTask->createTask();
     heartbeatTask->createTask();
-    // HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+    //HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     COMMSParameters::COMMIT_HASH.setValue(static_cast<uint32_t>(std::stoul(kGitHash, nullptr, 16)));
     LOG_INFO << "eMMC usage = " << COMMSParameters::EMMC_USAGE.getValue() << "%";
@@ -195,11 +195,11 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
             // Size = 9 have the messages with main ID and Size = 10 have the messages with Sub ID
             if (gnssTask->gnss_handler.CONTROL && (currentSize == gnssTask->gnss_handler.SIZE_ID_LENGTH || currentSize == gnssTask->gnss_handler.SIZE_SUB_ID_LENGTH)) {
                 gnssTask->gnss_handler.CONTROL = false;
-                if ((huart5.pRxBuffPtr + previousGNSSMessageSize)[4] == gnssTask->gnss_handler.ACK)
+                if (huart5.pRxBuffPtr[4] == gnssTask->gnss_handler.ACK)
                     xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_ACK, GNSS_ACK, eSetBits, &xHigherPriorityTaskWoken);
             } else {
                 gnssTask->size_message = currentSize;
-                gnssTask->sendToQueue = &huart5.pRxBuffPtr[0];
+                gnssTask->sendToQueue = huart5.pRxBuffPtr;
                 xHigherPriorityTaskWoken = pdFALSE;
                 xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_MESSAGE, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
                 xQueueSendFromISR(gnssTask->gnssQueueHandle, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);

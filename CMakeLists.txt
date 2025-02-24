@@ -95,11 +95,13 @@ set(Python3_EXECUTABLE "python3")
 # Try to find Python again
 find_package(Python3 REQUIRED)
 
+
 # Find Python 3 and specify the version you want
 find_package(Python3 3.6 REQUIRED)
 
 # Display the Python version found by CMake
 message(STATUS "Found Python: ${Python3_EXECUTABLE} (${Python3_VERSION})")
+
 
 # Set up the virtual environment path
 set(VENV_PATH "${CMAKE_SOURCE_DIR}/.venv")
