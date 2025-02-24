@@ -40,7 +40,7 @@ void GNSSTask::GNSSprint(const GNSSData& c) {
     // LOG_INFO << "quality indicator " << c.fix_quality;
     LOG_INFO << "quality indicator " << COMMSParameters::GNSS_FIX_QUALITY.getValue();
     // LOG_INFO << "satellites tracked " << c.satellites_tracked;
-    LOG_INFO << "satellites tracked: " << COMMSParameters::SATELITES_TRACKED.getValue();
+    LOG_INFO << "satellites tracked: " << COMMSParameters::SATELLITES_TRACKED.getValue();
 }
 
 
@@ -84,7 +84,7 @@ void GNSSTask::setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gg
     COMMSParameters::GNSS_FIX_QUALITY.setValue(compact.fix_quality);
     // satellites tracked
     compact.satellites_tracked = static_cast<int8_t>(frame_gga.satellites_tracked);
-    COMMSParameters::SATELITES_TRACKED.setValue(compact.satellites_tracked);
+    COMMSParameters::SATELLITES_TRACKED.setValue(compact.satellites_tracked);
 }
 
 
@@ -97,7 +97,7 @@ void GNSSTask::initGNSS() {
     controlGNSS(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
     etl::vector<uint8_t, 12> interval_vec;
     interval_vec.resize(12, 0);
-    uint8_t seconds = 1;
+    uint8_t seconds = 5;
     // 4 is for RMC, 2 for GSV, 0 is for GGA
     interval_vec[0] = seconds;
     //    interval_vec[2] = seconds;
@@ -110,7 +110,7 @@ void GNSSTask::initGNSS() {
 
 void GNSSTask::parser(uint8_t* buf, GNSSData& compact) {
     etl::string<1024> GNSSMessageString = "";
-    GNSSMessageString.assign(buf, buf + GNSSPayloadSize);
+    GNSSMessageString.assign(buf, buf + gnssTask->size_message);
     minmea_sentence_rmc frame_rmc{};
     minmea_sentence_gga frame_gga{};
     // LOG_INFO << GNSSMessageString.c_str();
@@ -222,7 +222,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
     vTaskDelay(1000);
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     COMMSParameters::GNSS_ACK_TIMEOUT.setValue(gnss_handler.ACK_TIMOUT_MS);
-    COMMSParameters::GNSS_CMD_RETIES.setValue(gnss_handler.CMD_RETRIES);
+    COMMSParameters::GNSS_CMD_RETRIES.setValue(gnss_handler.CMD_RETRIES);
     COMMSParameters::GNSS_DELAY_CMDS.setValue(gnss_handler.DELAY_BTW_CMDS_MS);
     COMMSParameters::GNSS_ERROR_TIMEOUT.setValue(gnss_handler.ERROR_TIMEOUT_MS);
     COMMSParameters::ERROR_TIMEOUT_CNT_THRHD.setValue(gnss_handler.ERROR_TIMEOUT_COUNTER_THRD);
@@ -230,7 +230,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
     uint8_t* rx_buf_p_from_queue;
     startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
     initGNSS();
-    GNSSData compact{};
+
     uint16_t gnss_error_timout_counter = 0;
     Logger::format.precision(Precision);
     uint32_t receivedEvents = 0;
@@ -245,7 +245,12 @@ void GNSSTask::initQueuesToAcceptPointers() {
                 // Receive a message on the created queue.Block for 100ms if the message is not immediately available
                 if (xQueueReceive(gnssQueueHandle, &rx_buf_p_from_queue, pdMS_TO_TICKS(100)) == pdTRUE) {
                     if (rx_buf_p_from_queue != nullptr) {
-                        parser(rx_buf_p_from_queue, compact);
+                        GNSSData compact{};
+                        uint8_t tempBuffer[1024];
+                        for (int i = 0; i < gnssTask->size_message; i++) {
+                            tempBuffer[i] = rx_buf_p_from_queue[i];
+                        }
+                        parser(tempBuffer, compact);
 
                         if (GNSSReceiver::isDataValid(compact.year, compact.month, compact.day) == true) {
                             std::tm time{};
@@ -289,6 +294,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
                             GNSSprint(compact);
                         } else {
                             __NOP();
+                            GNSSprint(compact);
                         }
 
                         gnss_error_timout_counter = 0;

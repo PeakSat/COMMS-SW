@@ -27,7 +27,7 @@ public:
     /**
     * Depth of the stack allocated for the task, in 16-bit words.
     */
-    static constexpr uint16_t TaskStackDepth = 4000;
+    static constexpr uint16_t TaskStackDepth = 15000;
 
     /**
     * Array representing the stack memory for the task.
@@ -39,7 +39,7 @@ public:
     * Buffer for storing raw GNSS data received via UART.
     * Initialized to zeros and has a fixed size of 1024 bytes.
     */
-    uint8_t rx_buf[1024] = {0};
+    uint8_t rx_buf[2048] = {0};
 
     /**
     * Pointer to the `rx_buf` array
