@@ -164,8 +164,6 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
             }
             received_events_tc &= ~TC_UART;
             }
-// #endif // ENABLE_UART_TC
-
         }
     }
 }

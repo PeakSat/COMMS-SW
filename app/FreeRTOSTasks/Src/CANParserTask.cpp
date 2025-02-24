@@ -3,6 +3,7 @@
 #include "CANGatekeeperTask.hpp"
 
 #include <TCHandlingTask.hpp>
+#include <TMHandlingTask.hpp>
 #include <TPProtocol.hpp>
 #include <eMMC.hpp>
 
@@ -39,12 +40,19 @@ void CANParserTask::execute() {
                 if (messageID == CAN::Application::CCSDSPacket) {
                     for (int i = 0 ; i < StoredPacket.size ; i++) {
                         TX_BUF_CAN[i] = messageBuff[i];
+                        // LOG_DEBUG << "[CAN-PARSER] TM DATA: " << messageBuff[i];
                     }
-                    tx_handler.pointer_to_data = TX_BUF_CAN;
-                    tx_handler.data_length = StoredPacket.size;
-                    xQueueSendToBack(TXQueue, &tx_handler, NULL);
-                    xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_OBC, eSetBits);
-                    LOG_DEBUG << "New TM received: " ;
+                    // tx_handler.pointer_to_data = TX_BUF_CAN;
+                    // tx_handler.data_length = StoredPacket.size;
+
+                    tm_handler.pointer_to_data = TX_BUF_CAN;
+                    tm_handler.data_length = StoredPacket.size;
+                    // xQueueSendToBack(TXQueue, &tx_handler, NULL);
+                    xQueueSendToBack(TMQueue, &tm_handler, NULL);
+                    // xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_OBC, eSetBits);
+                    if (tmhandlingTask->taskHandle != nullptr) {
+                        xTaskNotifyIndexed(tmhandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TM, TM_OBC, eSetBits);
+                    }
                 } else {
                     CAN::TPMessage message;
                     message.appendUint8(StoredPacket.Identifier);

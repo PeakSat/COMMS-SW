@@ -9,11 +9,12 @@
 extern UART_HandleTypeDef huart4;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 
-inline QueueHandle_t incomingTMQueue;
-inline StaticQueue_t incomingTMQueueBuffer;
-constexpr uint8_t incomingTMQueueSize = 50;
-inline uint8_t incomingTMQueueStorageArea[incomingTMQueueSize * sizeof(CAN::StoredPacket)];
-
+inline QueueHandle_t TMQueue;
+inline StaticQueue_t TMQueueBuffer;
+constexpr uint8_t TMQueueItemNum = 50;
+constexpr size_t TMItemSize  = sizeof(tm_handler);
+inline uint8_t TMQueueStorageArea[TMQueueItemNum * TMItemSize];
+inline uint8_t TM_BUFF[1024];
 class TMHandling : public Task {
 public:
    TMHandling() : Task("TM Parsing Task"){}
@@ -25,7 +26,7 @@ public:
     }
 
 private:
-    constexpr static uint16_t TaskStackDepth = 5000;
+    constexpr static uint16_t TaskStackDepth = 10000;
     StackType_t taskStack[TaskStackDepth]{};
 };
 

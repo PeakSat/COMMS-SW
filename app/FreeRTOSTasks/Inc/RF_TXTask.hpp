@@ -13,6 +13,7 @@ struct TX_PACKET_HANDLER {
 };
 
 inline TX_PACKET_HANDLER tx_handler;
+inline TX_PACKET_HANDLER tm_handler;
 
 inline QueueHandle_t TXQueue;
 inline StaticQueue_t TXQueueBuffer;
