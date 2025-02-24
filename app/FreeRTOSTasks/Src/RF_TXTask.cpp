@@ -75,6 +75,7 @@ void RF_TXTask::ensureTxMode() {
                     }
                 }
                 if (receivedEventsTransmit & TM_OBC) {
+                    // TODO: Do that inside of the TMHandlingTask
                     LOG_DEBUG << "[TX] New TM received with size: " << tx_handler.data_length;
                     for (int i = 0; i < tx_handler.data_length; i++) {
                         LOG_DEBUG << "[TX] TM DATA: " << tx_handler.pointer_to_data[i];
@@ -82,14 +83,11 @@ void RF_TXTask::ensureTxMode() {
                     }
                 }
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
+                    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
-                    xSemaphoreGive(transceiver_handler.resources_mtx);
-                }
-                // Open the TX Amplifier
-                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
-                switch (state) {
-                    case READY: {
-                        if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
+                    switch (state) {
+                        case READY: {
+                            LOG_DEBUG << "[TX] READY";
                             if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                 ensureTxMode();
                                 LOG_DEBUG << "[TX] TX PACKET SIZE: " << tx_handler.data_length;
@@ -97,50 +95,57 @@ void RF_TXTask::ensureTxMode() {
                                 tx_counter++;
                                 LOG_INFO << "[TX] TX counter: " << tx_counter;
                             }
-                            xSemaphoreGive(transceiver_handler.resources_mtx);
+                            // TODO: Okay what if you send it and you don´t receive TXFE
+                            break;
                         }
-                        break;
-                    }
-                    case TX_ONG: {
-                        uint32_t receivedEventsTXFE;
-                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TXFE_TX, pdFALSE, pdTRUE, &receivedEventsTXFE, pdTICKS_TO_MS(1000)) == pdTRUE) {
-                            if (receivedEventsTXFE & TXFE) {
-                                if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-                                    if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
-                                        ensureTxMode();
-                                        transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
-                                        tx_counter++;
-                                        LOG_INFO << "[TXFE] TX counter: " << tx_counter;
-                                    }
-                                    xSemaphoreGive(transceiver_handler.resources_mtx);
+                        case TX_ONG: {
+                            LOG_DEBUG << "[TX] TX_ONG";
+                            if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(500))) {
+                                if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
+                                    ensureTxMode();
+                                    transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
+                                    tx_counter++;
+                                    LOG_INFO << "[TXFE] TX counter: " << tx_counter;
                                 }
                             }
+                            else {
+                                LOG_ERROR << "[TX] TXFE NOT RECEIVED";
+                                transceiver.set_state(RF09, RF_TRXOFF, error);
+                                transceiver.chip_reset(error);
+                                transceiver.tx_ongoing = false;
+                                // TODO: Send it again
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    case RX_ONG: {
-                        uint32_t receivedEventsRXFE;
-                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_TX, pdFALSE, pdTRUE, &receivedEventsRXFE, pdTICKS_TO_MS(1000)) == pdTRUE) {
-                            if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
+                        case RX_ONG: {
+                            LOG_DEBUG << "[TX] RX_ONG";
+                            if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_tx, pdMS_TO_TICKS(500))) {
                                 if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                     ensureTxMode();
                                     transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
                                     tx_counter++;
                                     LOG_INFO << "[RXFE] TX counter: " << tx_counter;
                                 }
-                                xSemaphoreGive(transceiver_handler.resources_mtx);
                             }
+                            else {
+                                LOG_ERROR << "[TX] RXFE NOT RECEIVED";
+                                transceiver.set_state(RF09, RF_TRXOFF, error);
+                                transceiver.chip_reset(error);
+                                transceiver.rx_ongoing = false;
+                                // TODO: Send it again
+                            }
+                            break;
+                        }
+                        case RX_TX_ONG: {
+                            LOG_ERROR << "[TX] RXONG TXONG";
+                            break;
+                        }
+                        default: {
+                            LOG_ERROR << "[TX] Unknown state!";
+                            break;
                         }
                     }
-                    break;
-                    case RX_TX_ONG: {
-                        LOG_ERROR << "[TX] RXONG TXONG";
-                        break;
-                    }
-                    default: {
-                        LOG_ERROR << "[TX] Unknown state!";
-                        break;
-                    }
+                    xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
             }
         }

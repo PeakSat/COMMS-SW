@@ -201,11 +201,11 @@ void RF_RXTask::ensureRxMode() {
                         break;
                     }
                     case TX_ONG: {
-                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(1000)) == pdTRUE) {
-                            if (receivedEvents & TXFE) {
-                                ensureRxMode();
-                                LOG_INFO << "[RX] TXFE RECEIVED";
-                            }
+                        LOG_DEBUG << "[RX] TX_ONG";
+                        if (xSemaphoreTake(transceiver_handler.txfeSemaphore_rx, pdMS_TO_TICKS(500))) {
+                            ensureRxMode();
+                            LOG_INFO << "[RX] TXFE RECEIVED";
+
                         }
                         else {
                             LOG_ERROR << "[RX] TXFE NOT RECEIVED";
@@ -220,21 +220,20 @@ void RF_RXTask::ensureRxMode() {
                     }
                     case RX_ONG: {
                         LOG_DEBUG << "[RX] RX_ONG";
-                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(1000))) {
-                            if (receivedEvents &  RXFE_RX) {
-                                LOG_INFO << "[RX] RXFE RECEIVED";
-                                trx_state = transceiver.get_state(RF09, error);
-                                if (trx_state != RF_RX) {
-                                    ensureRxMode();
-                                }
+                        if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_rx, pdMS_TO_TICKS(500))) {
+                            LOG_INFO << "[RX] RXFE RECEIVED";
+                            trx_state = transceiver.get_state(RF09, error);
+                            if (trx_state != RF_RX) {
+                                ensureRxMode();
                             }
+
                         }
                         else {
+                            LOG_ERROR << "[RX] RXFE NOT RECEIVED";
                             transceiver.set_state(RF09, RF_TRXOFF, error);
                             transceiver.chip_reset(error);
                             transceiver.rx_ongoing = false;
                             ensureRxMode();
-                            LOG_ERROR << "[RX] RXFE NOT RECEIVED";
                         }
                         break;
                     }
