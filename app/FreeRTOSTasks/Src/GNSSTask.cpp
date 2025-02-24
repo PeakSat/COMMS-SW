@@ -247,12 +247,13 @@ void GNSSTask::initQueuesToAcceptPointers() {
                     if (rx_buf_p_from_queue != nullptr) {
                         GNSSData compact{};
                         uint8_t tempBuffer[1024];
+                        uint32_t tempSize = gnssTask->size_message;
                         for (int i = 0; i < gnssTask->size_message; i++) {
                             tempBuffer[i] = rx_buf_p_from_queue[i];
                         }
-                        parser(tempBuffer, compact);
+                        parser(rx_buf_p_from_queue, compact);
 
-                        if (GNSSReceiver::isDataValid(compact.year, compact.month, compact.day) == true) {
+                        if (GNSSReceiver::isDataValid(compact.year, compact.month, compact.day) == true) { // todo: change to quality indicator check
                             std::tm time{};
                             time.tm_year = compact.year + 100;
                             time.tm_mon = compact.month - 1;
@@ -293,7 +294,6 @@ void GNSSTask::initQueuesToAcceptPointers() {
                             NumberOfMeasurementsInStruct++;
                             GNSSprint(compact);
                         } else {
-                            __NOP();
                             GNSSprint(compact);
                         }
 

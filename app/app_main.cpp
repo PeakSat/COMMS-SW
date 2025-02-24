@@ -29,9 +29,7 @@
 
 ParameterService parameterMap;
 uint32_t previousGNSSMessageSize = 0;
-uint8_t localGNSSBuffer[1024];
 uint32_t currentSize = 0;
-uint32_t debug1 = 0;
 
 void app_main(void) {
 
@@ -170,33 +168,30 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     BaseType_t xHigherPriorityTaskWoken;
     // Initialize xHigherPriorityTaskWoken to pdFALSE (no higher-priority task woken yet)
     xHigherPriorityTaskWoken = pdFALSE;
+
+    // UART5 -> GNSS
     if (huart->Instance == UART5) {
+
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
             currentSize = Size - previousGNSSMessageSize;
-
+            // move data to the beginning of the buffer
             if (currentSize < 1024) {
+                if (previousGNSSMessageSize > 1024) {
+                    __NOP();
+                }
                 for (int i = 0; i < currentSize; i++) {
                     huart5.pRxBuffPtr[i] = huart5.pRxBuffPtr[i + previousGNSSMessageSize];
                 }
-                debug1 = 0;
             } else {
                 currentSize = huart5.RxXferSize - previousGNSSMessageSize;
                 currentSize += Size;
-                for (int i = 0; i < 1024; i++) {
-                    localGNSSBuffer[i] = huart5.pRxBuffPtr[i];
-                }
-
-                for (uint32_t i = 0; i < Size; i++) {
-                    huart5.pRxBuffPtr[i + (huart5.RxXferSize - previousGNSSMessageSize)] = huart5.pRxBuffPtr[i];
+                for (int i = Size; i > 0; i--) {
+                    huart5.pRxBuffPtr[static_cast<uint32_t>(i) + (huart5.RxXferSize - previousGNSSMessageSize)] = huart5.pRxBuffPtr[i];
                 }
                 for (uint32_t i = previousGNSSMessageSize; i < huart5.RxXferSize; i++) {
                     huart5.pRxBuffPtr[i - previousGNSSMessageSize] = huart5.pRxBuffPtr[i];
                 }
-                debug1 = 1;
-                __NOP();
             }
-
-            // if (currentSize<1024) {
             // Size = 9 have the messages with main ID and Size = 10 have the messages with Sub ID
             if (gnssTask->gnss_handler.CONTROL && (currentSize == gnssTask->gnss_handler.SIZE_ID_LENGTH || currentSize == gnssTask->gnss_handler.SIZE_SUB_ID_LENGTH)) {
                 gnssTask->gnss_handler.CONTROL = false;
@@ -204,32 +199,17 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
                     xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_ACK, GNSS_ACK, eSetBits, &xHigherPriorityTaskWoken);
             } else {
                 gnssTask->size_message = currentSize;
-                // for (int i=0; i< currentSize; i++) {
-                //     huart5.pRxBuffPtr[i] = huart5.pRxBuffPtr[i+previousGNSSMessageSize];
-                // }
                 gnssTask->sendToQueue = &huart5.pRxBuffPtr[0];
                 xHigherPriorityTaskWoken = pdFALSE;
                 xTaskNotifyIndexedFromISR(gnssTask->taskHandle, GNSS_INDEX_MESSAGE, GNSS_MESSAGE_READY, eSetBits, &xHigherPriorityTaskWoken);
                 xQueueSendFromISR(gnssTask->gnssQueueHandle, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
             }
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-            // }
-            previousGNSSMessageSize = Size;
+            previousGNSSMessageSize = static_cast<uint32_t>(Size);
         }
-
-
-        // uint32_t NDTR = DMA1_Stream0 ->NDTR;
-        // DMA1_Stream0->NDTR =0 ;
-
-        // __HAL_DMA_DISABLE(huart5.hdmarx);  // Temporarily disable DMA
-        // huart5.RxXferCount = huart5.RxXferSize;  // Reset counter
-        // __HAL_DMA_ENABLE(huart5.hdmarx);  // Re-enable DMA
-        __NOP();
-
-
-        // GNSSTask::startReceiveFromUARTwithIdle(gnssTask->rx_buf_pointer, 1024);
     }
+
+    // UART4 -> Logger
     if (huart->Instance == UART4) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
             tcHandlingTask->send_to_tc_queue = huart4.pRxBuffPtr;
