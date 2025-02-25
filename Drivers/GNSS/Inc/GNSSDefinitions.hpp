@@ -11,8 +11,12 @@
 #define GNSS_INDEX_ACK 2
 #define GNSS_MEASUREMENTS_PER_STRUCT 25
 
-
-inline uint32_t eMMCDataTailPointer;
+/**
+ * If there are no data in the emmc  eMMCGNSSDataTailPointer=0
+ * else eMMCGNSSDataTailPointer points to where the next data will be stored,
+ * so last available data are at eMMCGNSSDataTailPointer - 1
+ */
+inline uint32_t eMMCGNSSDataTailPointer;
 
 namespace GNSSDefinitions {
 

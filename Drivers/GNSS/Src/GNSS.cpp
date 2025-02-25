@@ -28,6 +28,7 @@ uint32_t GNSSReceiver::findTailPointer() {
 
     for (int i = 1; i < numOfBlocks; i++) {
         status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, i, 1);
+        // lastData.valid should be set to 0xAA by the GNSSTask when it wrote the data to it. If not, there are no data in this page
         if (lastData.valid == 0xAA) {
 
             uint64_t lasttimestamp = lastData.usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT - 1] >> 5;
@@ -62,12 +63,15 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
  */
 
     uint16_t NofData = static_cast<uint16_t>(numberOfData);
+    // set number of data
     GNSS_TMbuffer[0] = static_cast<uint8_t>((NofData >> 8) & 0xFF);
     GNSS_TMbuffer[1] = static_cast<uint8_t>(NofData & 0xFF);
+    // set MSBs for us from epoch and number of satellites
     GNSS_TMbuffer[2] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[0] >> (64 - 8)) & 0xFF);
     GNSS_TMbuffer[3] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[0] >> (64 - 16)) & 0xFF);
     GNSS_TMbuffer[4] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[0] >> (64 - 24)) & 0xFF);
 
+    // set LSBs for us from epoch and number of satellites
     for (uint32_t i = 0; i < numberOfData; i++) {
         if (numberOfData < GNSS_MEASUREMENTS_PER_STRUCT) {
             GNSS_TMbuffer[9 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 32)) & 0xFF);
@@ -94,6 +98,7 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
     uint8_t* LonStartBytesStoredDataPointer2 = reinterpret_cast<uint8_t*>(storedData2->longitudeI);
     uint8_t* AltStartBytesStoredDataPointer2 = reinterpret_cast<uint8_t*>(storedData2->altitudeI);
 
+    // set latitude, longitude and altitude
     for (uint32_t i = 0; i < numberOfData * sizeof(uint32_t); i++) {
         if ((numberOfData / sizeof(uint32_t)) < GNSS_MEASUREMENTS_PER_STRUCT) {
             LatStartByteBufferPointer[i] = LatStartBytesStoredDataPointer1[i];
@@ -105,6 +110,19 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
             AltStartByteBufferPointer[i] = AltStartBytesStoredDataPointer2[i - (GNSS_MEASUREMENTS_PER_STRUCT * sizeof(uint32_t))];
         }
     }
+
+    /**
+     * The size of the resulting TM is:
+     *
+     *      2 bytes for the number of data
+     *   +  3 the usFromEpoch_NofSat MSBs
+     *   +  5 * number usFromEpoch_NofSat LSB data points
+     *   +  4 * number of latitude data points
+     *   +  4 * number of longitude data points
+     *   +  4 * number of alttitude data points
+     *   -------------------------------------------------
+     *   =  5 + (numberOfData * 17)
+     */
     uint32_t TMMessageSize = 5 + (numberOfData * 17);
     __NOP();
     // todo: add to TM queue
@@ -112,21 +130,39 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
 
 void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t numberOfSamples) {
     GNSSDefinitions::StoredGNSSData storedData{};
+    // define two StoredGNSSData structs because MAX_sizeof(TMMessage) = 2 * sizeof(StoredGNSSData)
     GNSSDefinitions::StoredGNSSData dataToBeSent1{};
     GNSSDefinitions::StoredGNSSData dataToBeSent2{};
-    uint32_t localTailPointer = eMMCDataTailPointer;
     uint32_t sampleCounter = 0;
-    if (eMMCDataTailPointer == 0) {
+
+    /**
+     * If eMMCGNSSDataTailPointer=0 there might not be any data in the eMMC, so check that
+     * else eMMCGNSSDataTailPointer points to where the next data will be stored,
+     * so last available data are at eMMCGNSSDataTailPointer - 1
+     */
+    uint32_t localTailPointer = eMMCGNSSDataTailPointer;
+    uint32_t lastGNSSDataPointer = localTailPointer - 1;
+
+    if (eMMCGNSSDataTailPointer == 0) {
         auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
         if (storedData.valid == 0xAA) {
+            localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
+            status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+            if (storedData.valid != 0xAA) {
+                // todo: handle error, no GNSS data
+                LOG_ERROR << "Requested GNSS data but there are no data in memory";
+                return;
+            }
+        } else {
             // todo: handle error, no GNSS data
             LOG_ERROR << "Requested GNSS data but there are no data in memory";
+            return;
         }
     } else {
-        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer - 1, 1);
+        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, lastGNSSDataPointer, 1);
     }
 
-    //shift to secondsPrior
+    // find where in the eMMC is the GNSS data point with a timestamp of (most recent data - secondsPrior)
     uint64_t newerTimestamp = storedData.usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT - 1] >> 5;
     int32_t structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
     uint64_t priorTimestamp = newerTimestamp;
@@ -136,6 +172,7 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
         structIterator--;
         if (structIterator < 0) {
             structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+            // localTailPointer == 0 means either that there are no more data or that the buffer(FIFO) filled up and looped back to the beginning
             if (localTailPointer == 0) {
                 localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
             } else {
@@ -153,12 +190,12 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
 
     structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
     uint32_t dataToBeSentIterator = 0;
-    uint32_t newerTimeMSBs = static_cast<uint32_t>(newerTimestamp >> 35);
+    auto newerTimeMSBs = static_cast<uint32_t>(newerTimestamp >> 35);
     while (sampleCounter < numberOfSamples) {
         uint64_t olderTimestamp = storedData.usFromEpoch_NofSat[structIterator] >> 5;
 
         if ((newerTimestamp / 1000000) - (olderTimestamp / 1000000) >= period) { // /1000000 to get to seconds
-            uint32_t olderTimeMSBs = static_cast<uint32_t>(olderTimestamp >> 35);
+            auto olderTimeMSBs = static_cast<uint32_t>(olderTimestamp >> 35);
             if (olderTimeMSBs != newerTimeMSBs && dataToBeSentIterator > 0) {
                 // MSBs changed. Construct another TM
                 constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator);
@@ -166,6 +203,7 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
                 newerTimeMSBs = olderTimeMSBs;
             } else {
                 newerTimeMSBs = olderTimeMSBs;
+                // if one of the structs is filled, start add next sample to the 2nd struct
                 if (dataToBeSentIterator < GNSS_MEASUREMENTS_PER_STRUCT) {
                     dataToBeSent1.altitudeI[dataToBeSentIterator] = storedData.altitudeI[dataToBeSentIterator];
                     dataToBeSent1.latitudeI[dataToBeSentIterator] = storedData.latitudeI[dataToBeSentIterator];
@@ -176,10 +214,10 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
                     dataToBeSent2.latitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.latitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
                     dataToBeSent2.longitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.longitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
                     dataToBeSent2.usFromEpoch_NofSat[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.usFromEpoch_NofSat[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                    // if both structs are full, send these and reset the counter
                     if (dataToBeSentIterator >= GNSS_MEASUREMENTS_PER_STRUCT * 2) {
-                        //send to TM queue
+                        //construct the TM with the data stored in the two structs
                         constructGNSSTM(&dataToBeSent1, &dataToBeSent2, GNSS_MEASUREMENTS_PER_STRUCT * 2);
-
                         dataToBeSentIterator = 0;
                     }
                 }
@@ -210,10 +248,6 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
         constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator);
         //send the last data
     }
-}
-
-
-uint32_t GNSSReceiver::timeOfDaytoMinutes(uint32_t ToD) {
 }
 
 GNSSMessage GNSSReceiver::configureNMEATalkerID(TalkerIDType type, Attributes attributes) {

@@ -18,7 +18,6 @@ public:
     static uint32_t findTailPointer();
     static void sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t numberOfSamples);
     static void constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1, GNSSDefinitions::StoredGNSSData* storedData2, uint32_t numberOfData);
-    static uint32_t timeOfDaytoMinutes(uint32_t ToD);
 
     // Tested Functions
 

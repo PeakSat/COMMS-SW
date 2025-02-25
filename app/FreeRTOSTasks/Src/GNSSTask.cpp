@@ -237,7 +237,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
 
     int32_t NumberOfMeasurementsInStruct = 0;
 
-    eMMCDataTailPointer = GNSSReceiver::findTailPointer();
+    eMMCGNSSDataTailPointer = GNSSReceiver::findTailPointer();
 
     while (true) {
         if (xTaskNotifyWaitIndexed(GNSS_INDEX_MESSAGE, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(gnss_handler.ERROR_TIMEOUT_MS)) == pdTRUE) {
@@ -281,16 +281,16 @@ void GNSSTask::initQueuesToAcceptPointers() {
                             //send data to eMMC
                             if (NumberOfMeasurementsInStruct >= GNSS_MEASUREMENTS_PER_STRUCT - 1) {
                                 GNSSDataForEMMC.valid = 0xAA;
-                                if (eMMCDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
-                                    eMMCDataTailPointer = 0;
+                                if (eMMCGNSSDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
+                                    eMMCGNSSDataTailPointer = 0;
                                 }
-                                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMC::memoryPageSize, eMMCDataTailPointer, 1);
+                                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMC::memoryPageSize, eMMCGNSSDataTailPointer, 1);
 
-                                eMMCDataTailPointer++;
+                                eMMCGNSSDataTailPointer++;
 
                                 NumberOfMeasurementsInStruct = -1;
                             }
-                            LOG_DEBUG << "eMMC tail pointer for GNSS = " << eMMCDataTailPointer;
+                            LOG_DEBUG << "eMMC tail pointer for GNSS = " << eMMCGNSSDataTailPointer;
                             NumberOfMeasurementsInStruct++;
                             GNSSprint(compact);
                         } else {
