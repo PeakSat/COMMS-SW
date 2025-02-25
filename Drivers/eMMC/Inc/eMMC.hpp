@@ -26,6 +26,8 @@ namespace eMMC {
 
     struct eMMCTransactionHandler {
         SemaphoreHandle_t eMMC_semaphore;
+        SemaphoreHandle_t eMMC_writeCompleteSemaphore;
+        SemaphoreHandle_t eMMC_readCompleteSemaphore;
         bool WriteComplete = false;
         bool ReadComplete = false;
         bool ErrorOccured = false;
@@ -74,9 +76,9 @@ namespace eMMC {
     struct memoryItemHandler {
         // memoryItemData();
         // explicit memoryItemData(uint32_t newSize);
-        uint32_t size;
-        uint32_t startAddress;
-        uint32_t endAddress;
+        uint64_t size;
+        uint64_t startAddress;
+        uint64_t endAddress;
         memoryItemHandler() : size(0), startAddress(0), endAddress(0) {}
         explicit memoryItemHandler(uint32_t newSize)
             : size(newSize), startAddress(0), endAddress(0) {}

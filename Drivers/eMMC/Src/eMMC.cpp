@@ -13,14 +13,14 @@ namespace eMMC {
     std::array<memoryItemHandler, memoryItemCount> memoryMap;
     struct eMMCTransactionHandler eMMCTransactionHandler;
 } // namespace eMMC
-
-
 /**
  *
  */
 void eMMC::eMMCMemoryInit() {
 
     eMMCTransactionHandler.eMMC_semaphore = xSemaphoreCreateMutex();
+    eMMCTransactionHandler.eMMC_writeCompleteSemaphore = xSemaphoreCreateBinary();
+    eMMCTransactionHandler.eMMC_readCompleteSemaphore = xSemaphoreCreateBinary();
 
     // Initialize the memoryMap array using the sizes from MemoryItems.def
 #define MEMORY_ITEM(name, size) memoryMap[name] = memoryItemHandler(size);
@@ -169,27 +169,17 @@ etl::expected<void, Error> eMMC::writeBlockEMMC(uint8_t* write_data, uint32_t bl
         return etl::unexpected<Error>(Error::EMMC_WRITE_FAILURE);
     }
 
-    uint32_t startTime = xTaskGetTickCount();
-    while (true) {
-        vTaskDelay(1);
-        if (eMMCTransactionHandler.WriteComplete) {
-            xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
-            return {};
-        }
-
-        // Transaction timeout
-        if (xTaskGetTickCount() > ((eMMCTransactionHandler.transactionTimeoutPerBlock * numberOfBlocks) + startTime)) {
-            xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
-            return etl::unexpected<Error>(Error::EMMC_TRANSACTION_TIMED_OUT);
-        }
-
-        // Error callback was called
-        if (eMMCTransactionHandler.ErrorOccured) {
-            /// TODO: handle the error, check eMMCTransactionHandler.hmmcSnapshot for error messages.
-            xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
-            return etl::unexpected<Error>(Error::EMMC_WRITE_FAILURE);
-        }
+    if (xSemaphoreTake(eMMCTransactionHandler.eMMC_writeCompleteSemaphore, eMMCTransactionHandler.transactionTimeoutPerBlock) == pdFALSE) {
+        xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
+        LOG_ERROR << "eMMC transaction timed out";
+        return etl::unexpected<Error>(Error::EMMC_TRANSACTION_TIMED_OUT);
     }
+    xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
+    if (eMMCTransactionHandler.WriteComplete == true) {
+        return {};
+    }
+    // TODO: handle the error, check eMMCTransactionHandler.hmmcSnapshot for error messages.
+    return etl::unexpected<Error>(Error::EMMC_WRITE_FAILURE);
 }
 
 /**
@@ -213,27 +203,17 @@ etl::expected<void, Error> eMMC::readBlockEMMC(uint8_t* read_data, uint32_t bloc
         return etl::unexpected<Error>(Error::EMMC_READ_FAILURE);
     }
 
-    uint32_t startTime = xTaskGetTickCount();
-    while (true) {
-        vTaskDelay(1);
-        if (eMMCTransactionHandler.ReadComplete) {
-            xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
-            return {};
-        }
-
-        // Transaction timeout
-        if (xTaskGetTickCount() > ((eMMCTransactionHandler.transactionTimeoutPerBlock * numberOfBlocks) + startTime)) {
-            xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
-            return etl::unexpected<Error>(Error::EMMC_TRANSACTION_TIMED_OUT);
-        }
-
-        // Error callback was called
-        if (eMMCTransactionHandler.ErrorOccured) {
-            /// TODO: handle the error, check eMMCTransactionHandler.hmmcSnapshot for error messages.
-            xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
-            return etl::unexpected<Error>(Error::EMMC_READ_FAILURE);
-        }
+    if (xSemaphoreTake(eMMCTransactionHandler.eMMC_readCompleteSemaphore, eMMCTransactionHandler.transactionTimeoutPerBlock) == pdFALSE) {
+        xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
+        LOG_ERROR << "eMMC transaction timed out";
+        return etl::unexpected<Error>(Error::EMMC_TRANSACTION_TIMED_OUT);
     }
+    xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
+    if (eMMCTransactionHandler.ReadComplete == true) {
+        return {};
+    }
+    // TODO: handle the error, check eMMCTransactionHandler.hmmcSnapshot for error messages.
+    return etl::unexpected<Error>(Error::EMMC_READ_FAILURE);
 }
 
 /**
