@@ -15,10 +15,10 @@ bool GNSSReceiver::isDataValid(int8_t year, int8_t month, int8_t day) {
 
 uint32_t GNSSReceiver::findTailPointer() {
 
-    uint32_t numOfBlocks = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
+    uint32_t numOfBlocks = eMMC::memoryMap[eMMC::GNSSData].size / EMMC_PAGE_SIZE;
 
     GNSSDefinitions::StoredGNSSData lastData{};
-    auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, 0, 1);
+    auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), EMMC_PAGE_SIZE, 0, 1);
     if (lastData.valid != 0xAA) {
         return 0;
     }
@@ -27,7 +27,7 @@ uint32_t GNSSReceiver::findTailPointer() {
 
 
     for (int i = 1; i < numOfBlocks; i++) {
-        status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, i, 1);
+        status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), EMMC_PAGE_SIZE, i, 1);
         // lastData.valid should be set to 0xAA by the GNSSTask when it wrote the data to it. If not, there are no data in this page
         if (lastData.valid == 0xAA) {
 
@@ -144,10 +144,10 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
     uint32_t lastGNSSDataPointer = localTailPointer - 1;
 
     if (eMMCGNSSDataTailPointer == 0) {
-        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, localTailPointer, 1);
         if (storedData.valid == 0xAA) {
-            localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
-            status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+            localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / EMMC_PAGE_SIZE;
+            status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, localTailPointer, 1);
             if (storedData.valid != 0xAA) {
                 // todo: handle error, no GNSS data
                 LOG_ERROR << "Requested GNSS data but there are no data in memory";
@@ -159,7 +159,7 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
             return;
         }
     } else {
-        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, lastGNSSDataPointer, 1);
+        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, lastGNSSDataPointer, 1);
     }
 
     // find where in the eMMC is the GNSS data point with a timestamp of (most recent data - secondsPrior)
@@ -174,11 +174,11 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
             structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
             // localTailPointer == 0 means either that there are no more data or that the buffer(FIFO) filled up and looped back to the beginning
             if (localTailPointer == 0) {
-                localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
+                localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / EMMC_PAGE_SIZE;
             } else {
                 localTailPointer--;
             }
-            auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+            auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, localTailPointer, 1);
             if (storedData.valid != 0xAA) {
                 //todo: handle error
                 LOG_ERROR << "Requested GNSS data but there are no data for " << secondsPrior << " seconds prior";
@@ -231,11 +231,11 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
         if (structIterator < 0) {
             structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
             if (localTailPointer == 0) {
-                localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
+                localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / EMMC_PAGE_SIZE;
             } else {
                 localTailPointer--;
             }
-            auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+            auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, localTailPointer, 1);
             if (storedData.valid != 0xAA) {
                 //No more data. Send the stored ones
                 constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator);

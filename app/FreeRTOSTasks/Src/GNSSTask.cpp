@@ -281,10 +281,10 @@ void GNSSTask::initQueuesToAcceptPointers() {
                             //send data to eMMC
                             if (NumberOfMeasurementsInStruct >= GNSS_MEASUREMENTS_PER_STRUCT - 1) {
                                 GNSSDataForEMMC.valid = 0xAA;
-                                if (eMMCGNSSDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
+                                if (eMMCGNSSDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / EMMC_PAGE_SIZE) {
                                     eMMCGNSSDataTailPointer = 0;
                                 }
-                                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMC::memoryPageSize, eMMCGNSSDataTailPointer, 1);
+                                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), EMMC_PAGE_SIZE, eMMCGNSSDataTailPointer, 1);
 
                                 eMMCGNSSDataTailPointer++;
 

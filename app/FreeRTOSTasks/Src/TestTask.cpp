@@ -18,7 +18,7 @@ void TestTask::execute() {
     GNSSDefinitions::StoredGNSSData data{};
 
     // for (int i=0; i<2600; i++) {
-    //     auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&data), eMMC::memoryPageSize, i, 1);
+    //     auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&data), EMMC_PAGE_SIZE, i, 1);
     // }
 
     while (true) {

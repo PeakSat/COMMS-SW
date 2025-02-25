@@ -4,9 +4,10 @@
 #include "CANDriver.hpp"
 #include "Logger.hpp"
 
+#include <ECSS_Definitions.hpp>
 #include <optional>
 struct localPacketHandler {
-    uint8_t Buffer[1024];
+    uint8_t Buffer[ECSSMaxMessageSize];
     uint32_t TailPointer = 0;
     uint16_t PacketSize = 0;
     uint8_t PacketID = 0;
