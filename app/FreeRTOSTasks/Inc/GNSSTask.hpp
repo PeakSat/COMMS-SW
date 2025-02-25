@@ -17,6 +17,7 @@
 extern UART_HandleTypeDef huart5;
 extern DMA_HandleTypeDef hdma_uart5_rx;
 inline StoredGNSSData GNSSDataForEMMC;
+inline uint32_t previousGNSSBufferTailPointer = 0;
 
 class GNSSTask : public Task {
 public:
@@ -27,7 +28,7 @@ public:
     /**
     * Depth of the stack allocated for the task, in 16-bit words.
     */
-    static constexpr uint16_t TaskStackDepth = 15000;
+    static constexpr uint16_t TaskStackDepth = 7000;
 
     /**
     * Array representing the stack memory for the task.

@@ -28,8 +28,6 @@
 #include <stm32h7xx_it.h>
 
 ParameterService parameterMap;
-uint32_t previousGNSSMessageSize = 0;
-uint32_t currentSize = 0;
 
 void app_main(void) {
 
@@ -171,25 +169,26 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
 
     // UART5 -> GNSS
     if (huart->Instance == UART5) {
+        auto currentsGNSSBufferTailPointer = static_cast<uint32_t>(Size);
 
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
-            currentSize = Size - previousGNSSMessageSize;
+            uint32_t currentSize = currentsGNSSBufferTailPointer - previousGNSSBufferTailPointer;
             // move data to the beginning of the buffer
-            if (currentSize < 1024) {
-                if (previousGNSSMessageSize > 1024) {
+            if (currentsGNSSBufferTailPointer > previousGNSSBufferTailPointer) {
+                if (previousGNSSBufferTailPointer > 1024) {
                     __NOP();
                 }
                 for (int i = 0; i < currentSize; i++) {
-                    huart5.pRxBuffPtr[i] = huart5.pRxBuffPtr[i + previousGNSSMessageSize];
+                    huart5.pRxBuffPtr[i] = huart5.pRxBuffPtr[i + previousGNSSBufferTailPointer];
                 }
             } else {
-                currentSize = huart5.RxXferSize - previousGNSSMessageSize;
-                currentSize += Size;
-                for (int i = Size; i > 0; i--) {
-                    huart5.pRxBuffPtr[static_cast<uint32_t>(i) + (huart5.RxXferSize - previousGNSSMessageSize)] = huart5.pRxBuffPtr[i];
+                currentSize = huart5.RxXferSize - previousGNSSBufferTailPointer;
+                currentSize += currentsGNSSBufferTailPointer;
+                for (int i = static_cast<int>(currentsGNSSBufferTailPointer); i > 0; i--) {
+                    huart5.pRxBuffPtr[static_cast<uint32_t>(i) + (huart5.RxXferSize - previousGNSSBufferTailPointer)] = huart5.pRxBuffPtr[i];
                 }
-                for (uint32_t i = previousGNSSMessageSize; i < huart5.RxXferSize; i++) {
-                    huart5.pRxBuffPtr[i - previousGNSSMessageSize] = huart5.pRxBuffPtr[i];
+                for (uint32_t i = previousGNSSBufferTailPointer; i < huart5.RxXferSize; i++) {
+                    huart5.pRxBuffPtr[i - previousGNSSBufferTailPointer] = huart5.pRxBuffPtr[i];
                 }
             }
             // Size = 9 have the messages with main ID and Size = 10 have the messages with Sub ID
@@ -205,7 +204,7 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
                 xQueueSendFromISR(gnssTask->gnssQueueHandle, &gnssTask->sendToQueue, &xHigherPriorityTaskWoken);
             }
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            previousGNSSMessageSize = static_cast<uint32_t>(Size);
+            previousGNSSBufferTailPointer = static_cast<uint32_t>(currentsGNSSBufferTailPointer);
         }
     }
 

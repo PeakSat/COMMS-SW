@@ -84,12 +84,10 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
         }
     }
     uint8_t* LatStartByteBufferPointer = &GNSS_TMbuffer[5 + (5 * numberOfData)];
-    uint32_t* latPointerDebug = reinterpret_cast<uint32_t*>(LatStartByteBufferPointer);
     uint8_t* LonStartByteBufferPointer = &GNSS_TMbuffer[5 + (5 * numberOfData) + (numberOfData * sizeof(uint32_t))];
     uint8_t* AltStartByteBufferPointer = &GNSS_TMbuffer[5 + (5 * numberOfData) + (numberOfData * sizeof(uint32_t) * 2)];
 
     uint8_t* LatStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(storedData1->latitudeI);
-    uint32_t* latPointerDebug1 = reinterpret_cast<uint32_t*>(LatStartBytesStoredDataPointer1);
     uint8_t* LonStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(storedData1->longitudeI);
     uint8_t* AltStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(storedData1->altitudeI);
     uint8_t* LatStartBytesStoredDataPointer2 = reinterpret_cast<uint8_t*>(storedData2->latitudeI);
