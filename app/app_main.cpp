@@ -94,12 +94,17 @@ extern "C" [[maybe_unused]] void EXTI1_IRQHandler(void) {
 
 /* Callback in non blocking modes (DMA) */
 extern "C" [[maybe_unused]] void HAL_MMC_TxCpltCallback(MMC_HandleTypeDef* hmmc) {
-    struct eMMC::eMMCTransactionHandler* test = &eMMC::eMMCTransactionHandler;
-    test->WriteComplete = true;
+    eMMC::eMMCTransactionHandler.WriteComplete = true;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    xSemaphoreGiveFromISR(eMMC::eMMCTransactionHandler.eMMC_writeCompleteSemaphore, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     // __NOP();
 }
 extern "C" [[maybe_unused]] void HAL_MMC_RxCpltCallback(MMC_HandleTypeDef* hmmc) {
     eMMC::eMMCTransactionHandler.ReadComplete = true;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    xSemaphoreGiveFromISR(eMMC::eMMCTransactionHandler.eMMC_readCompleteSemaphore, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     // __NOP();
 }
 extern "C" [[maybe_unused]] void HAL_MMC_ErrorCallback(MMC_HandleTypeDef* hmmc) {

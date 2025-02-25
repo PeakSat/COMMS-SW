@@ -26,6 +26,8 @@ namespace eMMC {
 
     struct eMMCTransactionHandler {
         SemaphoreHandle_t eMMC_semaphore;
+        SemaphoreHandle_t eMMC_writeCompleteSemaphore;
+        SemaphoreHandle_t eMMC_readCompleteSemaphore;
         bool WriteComplete = false;
         bool ReadComplete = false;
         bool ErrorOccured = false;
