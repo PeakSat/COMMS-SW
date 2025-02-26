@@ -69,7 +69,7 @@ void RF_RXTask::ensureRxMode() {
     vTaskDelay(5000);
     LOG_INFO << "[RF RX TASK]";
     incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
-                                            &incomingTCQueueBuffer);
+                                         &incomingTCQueueBuffer);
     vQueueAddToRegistry(incomingTCQueue, "TC queue");
     /// Set the Up-link frequency
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
@@ -89,7 +89,7 @@ void RF_RXTask::ensureRxMode() {
         if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
             auto status = transceiver.check_transceiver_connection(error);
             if (status.has_value()) {
-                success = true;  // Connection successful
+                success = true; // Connection successful
                 LOG_INFO << "[SPI CONNECTION ESTABLISHED]";
             } else {
                 LOG_ERROR << "CONNECTION ##ERROR## WITH CODE: " << status.error();
@@ -105,12 +105,12 @@ void RF_RXTask::ensureRxMode() {
             xSemaphoreGive(transceiver_handler.resources_mtx);
 
             if (success) {
-                break;  // Exit loop if successful
+                break; // Exit loop if successful
             }
 
             attempt++;
             LOG_ERROR << "Retrying connection attempt " << attempt << "/" << MAX_RETRIES;
-            vTaskDelay(pdMS_TO_TICKS(100));  // Small delay before retrying
+            vTaskDelay(pdMS_TO_TICKS(100)); // Small delay before retrying
         }
     }
     if (!success) {
@@ -131,40 +131,38 @@ void RF_RXTask::ensureRxMode() {
     uint8_t counter_tx_ong;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
-                if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-                    auto result = transceiver.get_received_length(RF09, error);
-                    received_length = result.value();
-                    int8_t rssi = transceiver.get_rssi(RF09, error);
-                    if (rssi != 127)
-                        LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
-                    transceiver.print_error(error);
-                    if (received_length) {
-                        LOG_DEBUG << "[RX AGC] LENGTH: " << received_length - MAGIC_NUMBER;
-                        rx_total_packets++;
-                        LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
-                        drop_counter = 0;
-                        for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
-                            RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                        }
-                        auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
-                        if (status.has_value()) {
-                            PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                            PacketToBeStored.size = received_length - MAGIC_NUMBER;
-                            eMMCPacketTailPointer += 1;
-                            xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
-                            xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
-                        }
+            if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
+                auto result = transceiver.get_received_length(RF09, error);
+                received_length = result.value();
+                int8_t rssi = transceiver.get_rssi(RF09, error);
+                if (rssi != 127)
+                    LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi;
+                transceiver.print_error(error);
+                if (received_length) {
+                    LOG_DEBUG << "[RX AGC] LENGTH: " << received_length - MAGIC_NUMBER;
+                    rx_total_packets++;
+                    LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
+                    drop_counter = 0;
+                    for (int i = 0; i < received_length - MAGIC_NUMBER; i++) {
+                        RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                     }
-                    else {
-                        drop_counter++;
-                        rx_total_drop_packets++;
-                        LOG_DEBUG << "[RX DROP] c: " << drop_counter;
-                        LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
-                    }
-                    xSemaphoreGive(transceiver_handler.resources_mtx);
+                    // auto status = storeItem(eMMC::memoryMap[eMMC::RX_TC], RX_BUFF, 512, eMMCPacketTailPointer, 1);
+                    // if (status.has_value()) {
+                    //     PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                    //     PacketToBeStored.size = received_length - MAGIC_NUMBER;
+                    //     eMMCPacketTailPointer += 1;
+                    //     xQueueSendToBack(incomingTCQueue, &PacketToBeStored, 0);
+                    //     xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_RF_RX, eSetBits);
+                    // }
+                } else {
+                    drop_counter++;
+                    rx_total_drop_packets++;
+                    LOG_DEBUG << "[RX DROP] c: " << drop_counter;
+                    LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
                 }
-        }
-        else {
+                xSemaphoreGive(transceiver_handler.resources_mtx);
+            }
+        } else {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                 switch (uint8_t rf_state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
                     case READY: {
@@ -182,8 +180,7 @@ void RF_RXTask::ensureRxMode() {
                                 ensureRxMode();
                                 LOG_INFO << "[RX] TXFE";
                             }
-                        }
-                        else {
+                        } else {
                             LOG_ERROR << "[RX] TXFE NOT RECEIVED";
                             // DEADLOCK HANDLING
                             transceiver.print_error(error);
@@ -200,7 +197,7 @@ void RF_RXTask::ensureRxMode() {
                     }
                     case RX_ONG: {
                         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(1000))) {
-                            if (receivedEvents &  RXFE_RX) {
+                            if (receivedEvents & RXFE_RX) {
                                 trx_state = transceiver.get_state(RF09, error);
                                 if (trx_state != RF_RX) {
                                     ensureRxMode();

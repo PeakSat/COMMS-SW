@@ -28,7 +28,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     startReceiveFromUARTwithIdle(tc_buf_dma_pointer, 512);
     uint32_t received_events;
     TCUARTQueueHandle = xQueueCreateStatic(TCUARTQueueSize, sizeof(uint8_t*), incomingTCUARTQueueStorageArea,
-                                        &incomingTCQueueBuffer);
+                                           &incomingTCQueueBuffer);
     vQueueAddToRegistry(TCUARTQueueHandle, "TC UART queue");
 
     LOG_INFO << "TCHandlingTask::execute()";
@@ -43,14 +43,14 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                 while (uxQueueMessagesWaiting(incomingTCQueue)) {
                     uint8_t TC_BUFFER[512];
                     xQueueReceive(incomingTCQueue, &TC_PACKET, portMAX_DELAY);
-                    getItem(eMMC::memoryMap[eMMC::RX_TC], TC_BUFFER, 512, TC_PACKET.pointerToeMMCItemData, 1);
-                    auto cobsDecodedMessage = COBSdecode<1024>(TC_BUFFER, TC_PACKET.size);
-                    CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
-                    for (int i = 0; i < TC_PACKET.size; i++) {
-                        message.appendUint8(TC_BUFFER[i]);
-                    }
-                    LOG_INFO << "Received TC from GS with length: " << TC_PACKET.size;
-                    CAN::TPProtocol::createCANTPMessage(message, false);
+                    // getItem(eMMC::memoryMap[eMMC::RX_TC], TC_BUFFER, 512, TC_PACKET.pointerToeMMCItemData, 1);
+                    // auto cobsDecodedMessage = COBSdecode<1024>(TC_BUFFER, TC_PACKET.size);
+                    // CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
+                    // for (int i = 0; i < TC_PACKET.size; i++) {
+                    //     message.appendUint8(TC_BUFFER[i]);
+                    // }
+                    // LOG_INFO << "Received TC from GS with length: " << TC_PACKET.size;
+                    // CAN::TPProtocol::createCANTPMessage(message, false);
                 }
             }
             if (received_events & TC_UART) {
@@ -62,18 +62,18 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                             LOG_DEBUG << "Received TC data: " << tc_buf_from_queue_pointer[i];
                             ECSS_TC_BUF[i] = tc_buf_from_queue_pointer[i];
                         }
-                        auto status = storeItem(eMMC::memoryMap[eMMC::UART_TC], ECSS_TC_BUF, 1024, eMMCPacketTailPointer, 2);
-                        if (status.has_value()) {
-                            CAN::StoredPacket PacketToBeStored;
-                            PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                            eMMCPacketTailPointer += 2;
-                            PacketToBeStored.size = size;
-                            xQueueSendToBack(TXQueue, &PacketToBeStored, 0);
-                            xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
-                        }
-                        else {
-                            LOG_ERROR << "MEMORY ERROR ON TC";
-                        }
+                        // auto status = storeItem(eMMC::memoryMap[eMMC::UART_TC], ECSS_TC_BUF, 1024, eMMCPacketTailPointer, 2);
+                        // if (status.has_value()) {
+                        //     CAN::StoredPacket PacketToBeStored;
+                        //     PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
+                        //     eMMCPacketTailPointer += 2;
+                        //     PacketToBeStored.size = size;
+                        //     xQueueSendToBack(TXQueue, &PacketToBeStored, 0);
+                        //     xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
+                        // }
+                        // else {
+                        //     LOG_ERROR << "MEMORY ERROR ON TC";
+                        // }
                     }
                 }
             }
