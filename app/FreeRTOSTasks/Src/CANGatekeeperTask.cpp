@@ -135,6 +135,14 @@ void CANGatekeeperTask::execute() {
                         }
 
                         // Write message to eMMC
+
+                        //get item ready to be stored to eMMC queue
+                        memoryQueueItemHandler enqueueHandler{};
+                        enqueueHandler.size = sizeof(localPacketHandler);
+                        eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::CANRx], &enqueueHandler, reinterpret_cast<uint8_t*>(CANPacketHandler), enqueueHandler.size);
+                        xQueueSendToBack(CANRxQueue, &enqueueHandler, NULL);
+
+
                         auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::CANMessages], &CANPacketHandler->Buffer[0], 1024, eMMCPacketTailPointer, 2);
                         // Add message to queue
                         CAN::StoredPacket PacketToBeStored;

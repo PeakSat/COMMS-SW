@@ -7,8 +7,11 @@
 #include <semphr.h>
 
 #define EMMC_PAGE_SIZE 508ULL
+#define EMMC_CRC_SIZE 4ULL
 #define EMMC_NUMBER_OF_PAGES 0xE90E80ULL
 #define EMMC_SIZE_IN_BYTES (EMMC_NUMBER_OF_PAGES * EMMC_PAGE_SIZE)
+
+inline uint8_t eMMC_WriteRead_Block_Buffer[EMMC_PAGE_SIZE + EMMC_CRC_SIZE] __attribute__((section(".dtcmram_emmcDriverBuffer")));
 
 struct memoryQueueItemHandler {
     uint32_t size;
@@ -16,9 +19,9 @@ struct memoryQueueItemHandler {
 };
 
 #define MEMORY_ITEM(name, size)
-#define MEMORY_QUEUE(queue_name, sizeOfItem, numberOfItems, queueSize)                                                                        \
-    static inline uint8_t queue_name##QueueStorageArea[sizeof(memoryQueueItemHandler) * queueSize] __attribute__((section(".dtcmram_data"))); \
-    inline QueueHandle_t queue_name##Queue;                                                                                                   \
+#define MEMORY_QUEUE(queue_name, sizeOfItem, numberOfItems, queueSize)                                                                                    \
+    static inline uint8_t queue_name##QueueStorageArea[sizeof(memoryQueueItemHandler) * queueSize] __attribute__((section(".dtcmram_emmcQueuesBuffer"))); \
+    inline QueueHandle_t queue_name##Queue;                                                                                                               \
     static inline StaticQueue_t queue_name##QueueBuffer;
 
 #include "MemoryItems.def"

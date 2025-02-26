@@ -158,6 +158,10 @@ etl::expected<void, Error> eMMC::storeItemInQueue(memoryQueueHandler queueHandle
 etl::expected<void, Error> eMMC::writeBlockEMMC(uint8_t* write_data, uint32_t block_address, uint32_t numberOfBlocks) {
 
     xSemaphoreTake(eMMCTransactionHandler.eMMC_semaphore, portMAX_DELAY);
+    for (int i = 0; i < EMMC_PAGE_SIZE; i++) {
+        eMMC_WriteRead_Block_Buffer[i] = write_data[i];
+    }
+    // todo: set the CRC bytes
     eMMCTransactionHandler.WriteComplete = false;
     eMMCTransactionHandler.ErrorOccured = false;
     eMMCTransactionHandler.transactionAborted = false;
@@ -204,6 +208,10 @@ etl::expected<void, Error> eMMC::readBlockEMMC(uint8_t* read_data, uint32_t bloc
     }
 
     if (xSemaphoreTake(eMMCTransactionHandler.eMMC_readCompleteSemaphore, eMMCTransactionHandler.transactionTimeoutPerBlock) == pdFALSE) {
+        // todo: test the CRC bytes
+        for (int i = 0; i < EMMC_PAGE_SIZE; i++) {
+            read_data[i] = eMMC_WriteRead_Block_Buffer[i];
+        }
         xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
         LOG_ERROR << "eMMC transaction timed out";
         return etl::unexpected<Error>(Error::EMMC_TRANSACTION_TIMED_OUT);

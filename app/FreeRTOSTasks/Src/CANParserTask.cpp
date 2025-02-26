@@ -19,6 +19,13 @@ void CANParserTask::execute() {
             CAN::StoredPacket StoredPacket;
             xQueueReceive(canGatekeeperTask->storedPacketQueue, &StoredPacket, portMAX_DELAY);
 
+            struct localPacketHandler CANPacketHandler;
+
+            memoryQueueItemHandler dequeueHandler{};
+            xQueueReceive(testDataQueue, &dequeueHandler, portMAX_DELAY);
+            eMMC::getItemFromQueue(eMMC::memoryQueueMap[eMMC::testData], dequeueHandler, reinterpret_cast<uint8_t*>(&CANPacketHandler), dequeueHandler.size);
+
+
             if (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue) == 0) {
 
                 // Get packet from eMMC

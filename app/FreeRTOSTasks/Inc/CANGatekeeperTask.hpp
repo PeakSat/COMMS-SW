@@ -8,6 +8,8 @@
 #include <optional>
 struct localPacketHandler {
     uint8_t Buffer[ECSSMaxMessageSize];
+    enum CANInstance CANInstance;
+    uint32_t Identifier;
     uint32_t TailPointer = 0;
     uint16_t PacketSize = 0;
     uint8_t PacketID = 0;
