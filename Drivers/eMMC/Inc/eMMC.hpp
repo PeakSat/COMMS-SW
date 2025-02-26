@@ -98,7 +98,8 @@ namespace eMMC {
         EMMC_INVALID_NUM_OF_BLOCKS,
         EMMC_INVALID_START_ADDRESS_ON_ERASE,
         EMMC_TRANSACTION_TIMED_OUT,
-        EMMC_BUFFER_TOO_SMALL
+        EMMC_BUFFER_TOO_SMALL,
+        EMMC_READ_CRC_ERROR
     };
 
     extern std::array<memoryItemHandler, memoryItemCount> memoryMap;

@@ -4,6 +4,7 @@
 
 using namespace eMMC;
 extern MMC_HandleTypeDef hmmc1;
+extern CRC_HandleTypeDef hcrc;
 
 namespace eMMC {
     // Define the global variables
@@ -26,6 +27,8 @@ void eMMC::eMMCMemoryInit() {
 #define MEMORY_ITEM(name, size) memoryMap[name] = memoryItemHandler(size);
 #define MEMORY_QUEUE(queue_name, sizeOfItem, numberOfItems, queueSize)
 #include "MemoryItems.def"
+
+
 #undef MEMORY_ITEM
 #undef MEMORY_QUEUE
 
@@ -35,6 +38,8 @@ void eMMC::eMMCMemoryInit() {
     vQueueAddToRegistry(queue_name##Queue, " queue_name queue");                                                                                   \
     memoryQueueMap[queue_name] = memoryQueueHandler(sizeOfItem, numberOfItems, &queue_name##Queue);
 #include "MemoryItems.def"
+
+
 #undef MEMORY_ITEM
 #undef MEMORY_QUEUE
 
@@ -162,11 +167,15 @@ etl::expected<void, Error> eMMC::writeBlockEMMC(uint8_t* write_data, uint32_t bl
         eMMC_WriteRead_Block_Buffer[i] = write_data[i];
     }
     // todo: set the CRC bytes
+    uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(write_data), EMMC_PAGE_SIZE / 4);
+    for (int i = 0; i < 4; i++) {
+        eMMC_WriteRead_Block_Buffer[EMMC_PAGE_SIZE + i] = static_cast<uint8_t>((crc_value >> (i * 8)) & 0xFF);
+    }
     eMMCTransactionHandler.WriteComplete = false;
     eMMCTransactionHandler.ErrorOccured = false;
     eMMCTransactionHandler.transactionAborted = false;
 
-    HAL_StatusTypeDef status = HAL_MMC_WriteBlocks_IT(&hmmc1, write_data, block_address, numberOfBlocks);
+    HAL_StatusTypeDef status = HAL_MMC_WriteBlocks_IT(&hmmc1, eMMC_WriteRead_Block_Buffer, block_address, numberOfBlocks);
     if (status != HAL_OK) {
 
         xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
@@ -200,7 +209,9 @@ etl::expected<void, Error> eMMC::readBlockEMMC(uint8_t* read_data, uint32_t bloc
     eMMCTransactionHandler.ErrorOccured = false;
     eMMCTransactionHandler.transactionAborted = false;
 
-    HAL_StatusTypeDef status = HAL_MMC_ReadBlocks_IT(&hmmc1, read_data, block_address, numberOfBlocks);
+
+    HAL_StatusTypeDef status = HAL_MMC_ReadBlocks_IT(&hmmc1, eMMC_WriteRead_Block_Buffer, block_address, numberOfBlocks);
+
     if (status != HAL_OK) {
 
         xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
@@ -209,17 +220,30 @@ etl::expected<void, Error> eMMC::readBlockEMMC(uint8_t* read_data, uint32_t bloc
 
     if (xSemaphoreTake(eMMCTransactionHandler.eMMC_readCompleteSemaphore, eMMCTransactionHandler.transactionTimeoutPerBlock) == pdFALSE) {
         // todo: test the CRC bytes
-        for (int i = 0; i < EMMC_PAGE_SIZE; i++) {
-            read_data[i] = eMMC_WriteRead_Block_Buffer[i];
-        }
         xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
         LOG_ERROR << "eMMC transaction timed out";
         return etl::unexpected<Error>(Error::EMMC_TRANSACTION_TIMED_OUT);
     }
-    xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
+
+    uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(eMMC_WriteRead_Block_Buffer), EMMC_PAGE_SIZE / 4);
     if (eMMCTransactionHandler.ReadComplete == true) {
+        for (int i = 0; i < EMMC_PAGE_SIZE; i++) {
+            read_data[i] = eMMC_WriteRead_Block_Buffer[i];
+        }
+        for (int i = 0; i < 4; i++) {
+            if (eMMC_WriteRead_Block_Buffer[EMMC_PAGE_SIZE + i] != static_cast<uint8_t>((crc_value >> (i * 8)) & 0xFF)) {
+                // error, wrong CRC
+                xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
+                return etl::unexpected<Error>(Error::EMMC_READ_CRC_ERROR);
+            } else if (i == 3) {
+                // correct CRC
+                __NOP();
+            }
+        }
+        xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
         return {};
     }
+    xSemaphoreGive(eMMCTransactionHandler.eMMC_semaphore);
     // TODO: handle the error, check eMMCTransactionHandler.hmmcSnapshot for error messages.
     return etl::unexpected<Error>(Error::EMMC_READ_FAILURE);
 }

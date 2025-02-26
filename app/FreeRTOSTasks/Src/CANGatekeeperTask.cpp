@@ -129,7 +129,12 @@ void CANGatekeeperTask::execute() {
                             __NOP();
                         }
                         eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::CANRx], &enqueueHandler, reinterpret_cast<uint8_t*>(CANPacketHandler), enqueueHandler.size);
-                        xQueueSendToBack(CANRxQueue, &enqueueHandler, NULL);
+                        if (uxQueueSpacesAvailable(CANRxQueue) > 0) {
+                            xQueueSendToBack(CANRxQueue, &enqueueHandler, portMAX_DELAY);
+                        } else {
+                            // Queue is full, handle the error (e.g., drop packet, log, etc.)
+                            LOG_ERROR << "CAN Rx queue is full";
+                        }
                         xTaskNotifyGive(canParserTask->taskHandle);
                         // LOG_DEBUG << "message came at : " << xTaskGetTickCount();
                     } else {

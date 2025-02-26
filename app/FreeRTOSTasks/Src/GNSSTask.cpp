@@ -292,9 +292,10 @@ void GNSSTask::initQueuesToAcceptPointers() {
                             }
                             LOG_DEBUG << "eMMC tail pointer for GNSS = " << eMMCGNSSDataTailPointer;
                             NumberOfMeasurementsInStruct++;
-                            GNSSprint(compact);
+                            // GNSSprint(compact);
                         } else {
-                            GNSSprint(compact);
+                            LOG_DEBUG << "eMMC tail pointer for GNSS = " << eMMCGNSSDataTailPointer;
+                            // GNSSprint(compact);
                         }
                         gnss_error_timout_counter = 0;
                     }
