@@ -26,6 +26,8 @@
 #include "TCHandlingTask.hpp"
 #include "TMHandlingTask.hpp"
 
+#define ENABLE_UART4_RX
+
 ParameterService parameterMap;
 
 void app_main(void) {
@@ -64,7 +66,7 @@ void app_main(void) {
     eMMCTask->createTask();
     // gnssTask->createTask();
     // testTask->createTask();
-    // ina3221Task->createTask();
+    ina3221Task->createTask();
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
     canParserTask->createTask();
