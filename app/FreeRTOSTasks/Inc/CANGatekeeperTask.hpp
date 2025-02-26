@@ -31,7 +31,6 @@ struct incomingFIFO {
 };
 
 extern incomingFIFO incomingFIFO;
-// static inline uint8_t storedPacketQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)] __attribute__((section(".dtcmram_data")));
 static inline uint8_t incomingFrameQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)] __attribute__((section(".dtcmram_data")));
 static const uint8_t PacketQueueSize = 20;
 static inline uint8_t outgoingQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)] __attribute__((section(".dtcmram_data")));
@@ -73,24 +72,6 @@ public:
    * The variable used to hold the queue's data structure.
    */
     static inline StaticQueue_t incomingFrameQueueBuffer;
-
-    /**
-   * Storage area given to freeRTOS to manage the queue items.
-   */
-
-
-    //     /**
-    // * A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
-    // */
-    //     QueueHandle_t storedPacketQueue;
-    //     /**
-    //    * The variable used to hold the queue's data structure.
-    //    */
-    //     static inline StaticQueue_t storedPacketQueueBuffer;
-
-    /**
-   * Storage area given to freeRTOS to manage the queue items.
-   */
 
     const static inline uint16_t TaskStackDepth = 7000;
 
