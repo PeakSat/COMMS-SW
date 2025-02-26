@@ -12,11 +12,12 @@
 #include "ParameterService.hpp"
 
 
-
 #define printing_frequency 1
 
 extern UART_HandleTypeDef huart5;
 extern DMA_HandleTypeDef hdma_uart5_rx;
+inline StoredGNSSData GNSSDataForEMMC;
+inline uint32_t previousGNSSBufferTailPointer = 0;
 
 class GNSSTask : public Task {
 public:
@@ -27,7 +28,7 @@ public:
     /**
     * Depth of the stack allocated for the task, in 16-bit words.
     */
-    static constexpr uint16_t TaskStackDepth = 4000;
+    static constexpr uint16_t TaskStackDepth = 7000;
 
     /**
     * Array representing the stack memory for the task.
@@ -92,19 +93,19 @@ public:
     * Its value can be modified dynamically to track or adjust GNSS-related operations.
     */
 
-   struct GNSS_HANDLER {
-     bool CONTROL = false;
-     uint8_t ACK = 131;
-     uint8_t SIZE_ID_LENGTH = 9;
-     uint8_t SIZE_SUB_ID_LENGTH = 10;
-     uint16_t ACK_TIMOUT_MS = 500;
-     uint16_t DELAY_BTW_CMDS_MS = 200;
-     uint8_t CMD_RETRIES = 3;
-     uint16_t ERROR_TIMEOUT_MS = 20000;
-     uint8_t ERROR_TIMEOUT_COUNTER_THRD = 5;
-   };
+    struct GNSS_HANDLER {
+        bool CONTROL = false;
+        uint8_t ACK = 131;
+        uint8_t SIZE_ID_LENGTH = 9;
+        uint8_t SIZE_SUB_ID_LENGTH = 10;
+        uint16_t ACK_TIMOUT_MS = 500;
+        uint16_t DELAY_BTW_CMDS_MS = 200;
+        uint8_t CMD_RETRIES = 3;
+        uint16_t ERROR_TIMEOUT_MS = 20000;
+        uint8_t ERROR_TIMEOUT_COUNTER_THRD = 5;
+    };
 
-   GNSS_HANDLER gnss_handler;
+    GNSS_HANDLER gnss_handler;
 
     /**
     * Executes the main logic of the GNSS task.
