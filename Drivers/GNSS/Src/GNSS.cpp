@@ -13,12 +13,28 @@ bool GNSSReceiver::isDataValid(int8_t year, int8_t month, int8_t day) {
     return true;
 }
 
+void GNSSReceiver::storeDataToEMMC(uint8_t* data, uint32_t block) {
+    uint8_t localBuffer[EMMC_PAGE_SIZE];
+    for (int i = 0; i < sizeof(StoredGNSSData); i++) {
+        localBuffer[i] = data[i];
+    }
+    auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], localBuffer, EMMC_PAGE_SIZE, block, 1);
+}
+
+void GNSSReceiver::getDataFromEMMC(uint8_t* data, uint32_t block) {
+    uint8_t localBuffer[EMMC_PAGE_SIZE];
+    auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], localBuffer, EMMC_PAGE_SIZE, block, 1);
+    for (int i = 0; i < sizeof(StoredGNSSData); i++) {
+        data[i] = localBuffer[i];
+    }
+}
+
 uint32_t GNSSReceiver::findTailPointer() {
 
     uint32_t numOfBlocks = eMMC::memoryMap[eMMC::GNSSData].size / EMMC_PAGE_SIZE;
 
     GNSSDefinitions::StoredGNSSData lastData{};
-    auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), EMMC_PAGE_SIZE, 0, 1);
+    getDataFromEMMC(reinterpret_cast<uint8_t*>(&lastData), 0);
     if (lastData.valid != 0xAA) {
         return 0;
     }
@@ -27,7 +43,7 @@ uint32_t GNSSReceiver::findTailPointer() {
 
 
     for (int i = 1; i < numOfBlocks; i++) {
-        status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), EMMC_PAGE_SIZE, i, 1);
+        getDataFromEMMC(reinterpret_cast<uint8_t*>(&lastData), i);
         // lastData.valid should be set to 0xAA by the GNSSTask when it wrote the data to it. If not, there are no data in this page
         if (lastData.valid == 0xAA) {
 
@@ -144,10 +160,10 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
     uint32_t lastGNSSDataPointer = localTailPointer - 1;
 
     if (eMMCGNSSDataTailPointer == 0) {
-        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, localTailPointer, 1);
+        getDataFromEMMC(reinterpret_cast<uint8_t*>(&storedData), localTailPointer);
         if (storedData.valid == 0xAA) {
             localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / EMMC_PAGE_SIZE;
-            status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, localTailPointer, 1);
+            getDataFromEMMC(reinterpret_cast<uint8_t*>(&storedData), localTailPointer);
             if (storedData.valid != 0xAA) {
                 // todo: handle error, no GNSS data
                 LOG_ERROR << "Requested GNSS data but there are no data in memory";
@@ -159,7 +175,7 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
             return;
         }
     } else {
-        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, lastGNSSDataPointer, 1);
+        getDataFromEMMC(reinterpret_cast<uint8_t*>(&storedData), lastGNSSDataPointer);
     }
 
     // find where in the eMMC is the GNSS data point with a timestamp of (most recent data - secondsPrior)
@@ -178,7 +194,7 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
             } else {
                 localTailPointer--;
             }
-            auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, localTailPointer, 1);
+            getDataFromEMMC(reinterpret_cast<uint8_t*>(&storedData), localTailPointer);
             if (storedData.valid != 0xAA) {
                 //todo: handle error
                 LOG_ERROR << "Requested GNSS data but there are no data for " << secondsPrior << " seconds prior";
@@ -235,7 +251,7 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
             } else {
                 localTailPointer--;
             }
-            auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), EMMC_PAGE_SIZE, localTailPointer, 1);
+            getDataFromEMMC(reinterpret_cast<uint8_t*>(&storedData), localTailPointer);
             if (storedData.valid != 0xAA) {
                 //No more data. Send the stored ones
                 constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator);

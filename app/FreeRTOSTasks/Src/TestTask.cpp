@@ -33,7 +33,7 @@ void TestTask::execute() {
         int32_t altitudeI;
         uint64_t timeFromEpoch;
         uint8_t numberOfSatellites;
-        GNSSReceiver::sendGNSSData(250, 150, 5);
+        GNSSReceiver::sendGNSSData(1, 10, 5);
 
         uint16_t numberOfData = ((uint16_t) GNSS_TMbuffer[0]) << 8 | static_cast<uint16_t>(GNSS_TMbuffer[1]);
         for (int i = 0; i < numberOfData; i++) {

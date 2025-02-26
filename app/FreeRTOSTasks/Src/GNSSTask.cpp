@@ -97,7 +97,7 @@ void GNSSTask::initGNSS() {
     controlGNSS(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
     etl::vector<uint8_t, 12> interval_vec;
     interval_vec.resize(12, 0);
-    uint8_t seconds = 5;
+    uint8_t seconds = 1;
     // 4 is for RMC, 2 for GSV, 0 is for GGA
     interval_vec[0] = seconds;
     //    interval_vec[2] = seconds;
@@ -284,7 +284,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
                                 if (eMMCGNSSDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / EMMC_PAGE_SIZE) {
                                     eMMCGNSSDataTailPointer = 0;
                                 }
-                                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), EMMC_PAGE_SIZE, eMMCGNSSDataTailPointer, 1);
+                                GNSSReceiver::storeDataToEMMC(reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMCGNSSDataTailPointer);
 
                                 eMMCGNSSDataTailPointer++;
 
