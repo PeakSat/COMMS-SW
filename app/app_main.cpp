@@ -59,8 +59,8 @@ void app_main(void) {
     tcHandlingTask.emplace();
 
     uartGatekeeperTask->createTask();
-    // rf_rxtask->createTask();
-    // rf_txtask->createTask();
+    rf_rxtask->createTask();
+    rf_txtask->createTask();
     eMMCTask->createTask();
     gnssTask->createTask();
     testTask->createTask();
@@ -70,7 +70,7 @@ void app_main(void) {
     canParserTask->createTask();
     tcHandlingTask->createTask();
     heartbeatTask->createTask();
-    //HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
     COMMSParameters::COMMIT_HASH.setValue(static_cast<uint32_t>(std::stoul(kGitHash, nullptr, 16)));
     LOG_INFO << "eMMC usage = " << COMMSParameters::EMMC_USAGE.getValue() << "%";
