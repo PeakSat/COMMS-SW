@@ -24,6 +24,7 @@ namespace AT86RF215 {
     #define TC_UART (1 << 18)
     #define TC_RF_RX (1 << 19)
     #define TC_UART_TC_HANDLING_TASK (1 << 20)
+    #define TM_OBC_TM_HANDLING (1 << 15)
     /// Indexes
     #define NOTIFY_INDEX_TRANSMIT 1
     #define NOTIFY_INDEX_RXFE_RX 2

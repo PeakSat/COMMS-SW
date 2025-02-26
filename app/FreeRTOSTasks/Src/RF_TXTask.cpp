@@ -67,6 +67,7 @@ void RF_TXTask::ensureTxMode() {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, portMAX_DELAY) == pdTRUE) {
             while (uxQueueMessagesWaiting(TXQueue)) {
                 /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
+                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
                 xQueueReceive(TXQueue, &tx_handler, portMAX_DELAY);
                 if (receivedEventsTransmit & TC_UART_TC_HANDLING_TASK) {
                     for (int i = 0 ; i < tx_handler.data_length; i++) {
@@ -83,7 +84,6 @@ void RF_TXTask::ensureTxMode() {
                     }
                 }
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-                    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     switch (state) {
                         case READY: {

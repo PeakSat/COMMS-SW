@@ -80,15 +80,20 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                     output.append(messageApplicationId);
                     LOG_DEBUG << output.c_str();
                     // TODO
-                    LOG_INFO << "Transmitting the TC to the OBC through CAN...";
                     new_size = 0;
-                    for (int i = 5; i < rf_rx_tx_queue_handler.size; i++) {
-                        ECSS_TC_BUF[i-5] = local_tc_rx_bf[i];
-                        new_size++;
+                    if (message.applicationId == OBC_APPLICATION_ID && message.packetType == Message::TC && message.serviceType <= 23 && message.messageType <= 40 && message.dataSize < rf_rx_tx_queue_handler.size) {
+                        for (int i = 5; i < rf_rx_tx_queue_handler.size; i++) {
+                            ECSS_TC_BUF[i-5] = local_tc_rx_bf[i];
+                            new_size++;
+                        }
+                        auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, new_size);
+                        LOG_INFO << "Transmitting the TC to the OBC through CAN...";
+                        CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
+                        received_events_tc &= ~TC_RF_RX;
                     }
-                    auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, new_size);
-                    CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
-                    received_events_tc &= ~TC_RF_RX;
+                    else {
+                        LOG_ERROR << "[TCHANDLING - FROM RX] Received an invalid message type!";
+                    }
                 }
                 xQueueReset(incomingTCQueue);
             }
@@ -99,9 +104,9 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                 while (uxQueueMessagesWaiting(TCUARTQueueHandle)) {
                     if (xQueueReceive(TCUARTQueueHandle, &local_tc_uart_bf, pdMS_TO_TICKS(1000)) == pdTRUE) {
                         new_size = 0;
-                        for (uint16_t i = 0; i < size; i++) {
+                        for (uint16_t i = 1; i < size-1; i++) {
                             LOG_DEBUG << "Received TC data: " << local_tc_uart_bf[i];
-                            ECSS_TC_BUF[i] = local_tc_uart_bf[i+1];
+                            ECSS_TC_BUF[i-1] = local_tc_uart_bf[i];
                             new_size++;
                         }
                         // For some reason the script puts a 5 on the 4th pos, so we make it zero

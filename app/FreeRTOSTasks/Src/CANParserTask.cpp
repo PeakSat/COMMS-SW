@@ -51,7 +51,7 @@ void CANParserTask::execute() {
                     xQueueSendToBack(TMQueue, &tm_handler, NULL);
                     // xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_OBC, eSetBits);
                     if (tmhandlingTask->taskHandle != nullptr) {
-                        xTaskNotifyIndexed(tmhandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TM, TM_OBC, eSetBits);
+                        xTaskNotifyIndexed(tmhandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TM, TM_OBC_TM_HANDLING, eSetBits);
                     }
                 } else {
                     CAN::TPMessage message;

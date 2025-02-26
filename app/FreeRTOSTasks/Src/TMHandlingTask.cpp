@@ -16,7 +16,7 @@
         uint32_t received_events = 0;
         while (true) {
             if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RECEIVED_TM, pdFALSE, pdTRUE, &received_events, portMAX_DELAY) == pdTRUE) {
-                if (received_events & TM_OBC) {
+                if (received_events & TM_OBC_TM_HANDLING) {
                     LOG_INFO << "[TM_Handling] parsing of the TM...";
                     // TODO parse the TM
                     while (uxQueueMessagesWaiting(TMQueue)) {
@@ -59,9 +59,11 @@
                         LOG_DEBUG << output.c_str();
                         tx_handler.pointer_to_data = TX_BUF_CAN;
                         tx_handler.data_length = new_size;
-                        xQueueSendToBack(TXQueue, &tx_handler, NULL);
-                        if (rf_txtask->taskHandle != nullptr) {
-                            xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_OBC, eSetBits);
+                        if (message.applicationId == 1 && message.packetType == Message::TM && message.serviceType <= 23 && message.messageType <= 40 && message.dataSize < tm_handler.data_length) {
+                            xQueueSendToBack(TXQueue, &tx_handler, NULL);
+                            if (rf_txtask->taskHandle != nullptr) {
+                                xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_OBC, eSetBits);
+                            }
                         }
                     }
                     xQueueReset(TMQueue);
