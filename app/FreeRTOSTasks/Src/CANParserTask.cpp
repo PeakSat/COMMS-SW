@@ -23,6 +23,7 @@ void CANParserTask::execute() {
 
                 // Get packet from eMMC
                 uint8_t messageBuff[1024];
+
                 CAN::Application::getStoredMessage(&StoredPacket, messageBuff, StoredPacket.size, sizeof(messageBuff) / sizeof(messageBuff[0]));
                 LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << StoredPacket.size;
 
@@ -38,7 +39,7 @@ void CANParserTask::execute() {
                 if (messageID == CAN::Application::CCSDSPacket) {
                     xQueueSendToBack(TXQueue, &StoredPacket, NULL);
                     xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_OBC, eSetBits);
-                    LOG_DEBUG << "New TM received: " ;
+                    LOG_DEBUG << "New TM received: ";
                 } else {
                     CAN::TPMessage message;
                     message.appendUint8(StoredPacket.Identifier);

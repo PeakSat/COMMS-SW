@@ -16,30 +16,28 @@ namespace OBDHParameters {
         SPACECRAFT_TIME_REFID = 240,
         RECONFIGURATION_TIMERID = 260,
         ON_BOARD_TIMEID = 294,
-        CAN_BUS_LOAD_1ID = 392,
-        CAN_BUS_LOAD_2ID = 408,
         CAN_BUS_ACTIVEID = 416,
         MCU_FDIRID = 432,
-        MCURestartSafeModeThresholdID = 448,
-        NANDFLASHLCLThresholdID = 472,
-        MRAMLCLThresholdID = 488,
-        NANDFLASHONID = 496,
-        MRAMONID = 512,
-        FlashIntID = 532,
-        SRAMIntID = 548,
-        AvailableMRAMID = 564,
-        AvailableNANDID = 580,
-        MemoryPartitionID = 592,
-        NANDFLASHScrubbingFrequencyID = 616,
-        ΜRAMScrubbingFrequencyID = 632,
-        ProgramFlashScrubbingFrequencyID = 648,
+        MCU_RESTART_SAFE_MODE_THRESHOLDID = 448,
+        NAND_FLASH_LCL_THRESHOLDID = 472,
+        MRAM_LCL_THRESHOLDID = 488,
+        NAND_FLASH_ONID = 496,
+        MRAM_ONID = 512,
+        FLASH_INTID = 532,
+        SRAM_INTID = 548,
+        AVAILABLE_MRAMID = 564,
+        AVAILABLE_NANDID = 580,
+        MEMORY_PARTITIONID = 592,
+        NAND_FLASH_SCRUBBING_FREEQUENCYID = 616,
+        ΜRAM_SCRUBBING_FREEQIENCYID = 632,
+        PROGRAM_FLASH_SCRUBBING_FREEQUENCYID = 648,
         COMMIT_HASHID = 706,
         CAN_ACK_TIMEOUTID = 724,
-        CAN_FrameRetransimtCountID = 740,
-        CAN_TransmitFailureCountID = 756,
-        UseRTTID = 768,
-        UseUARTID = 784,
-        UseCANID = 800,
+        CAN_FRAME_RETRANSMIT_COUNTID = 740,
+        CAN_TRANSMIT_FAILURE_COUNTID = 756,
+        USE_RTTID = 768,
+        USE_UARTID = 784,
+        USE_CANID = 800,
         HEARTBEAT_PERIODID = 820,
         LAST_RESET_CAUSEID = 836
     };
@@ -65,8 +63,6 @@ namespace OBDHParameters {
     inline Parameter<SPACECRAFT_TIME_REF_enum> SPACECRAFT_TIME_REF(Spacecraft);
     inline Parameter<uint32_t> RECONFIGURATION_TIMER(0);
     inline Parameter<uint64_t> ON_BOARD_TIME(0);
-    inline Parameter<float> CAN_BUS_LOAD_1(0);
-    inline Parameter<float> CAN_BUS_LOAD_2(0);
     enum CAN_BUS_ACTIVE_enum : uint8_t {
         Main=0,
 Redundant = 1
@@ -77,30 +73,30 @@ Redundant = 1
         ADCS = 1
     };
     inline Parameter<MCU_FDIR_enum> MCU_FDIR(OBC);
-    inline Parameter<uint8_t> MCURestartSafeModeThreshold(0);
-    inline Parameter<float> NANDFLASHLCLThreshold(0);
-    inline Parameter<float> MRAMLCLThreshold(0);
-    inline Parameter<bool> NANDFLASHON(true);
-    inline Parameter<bool> MRAMON(true);
-    inline Parameter<uint32_t> FlashInt(0);
-    inline Parameter<uint32_t> SRAMInt(0);
-    inline Parameter<uint32_t> AvailableMRAM(0);
-    inline Parameter<uint32_t> AvailableNAND(0);
-    enum MemoryPartition_enum : uint8_t {
+    inline Parameter<uint8_t> MCU_RESTART_SAFE_MODE_THRESHOLD(0);
+    inline Parameter<float> NAND_FLASH_LCL_THRESHOLD(0);
+    inline Parameter<float> MRAM_LCL_THRESHOLD(0);
+    inline Parameter<bool> NAND_FLASH_ON(true);
+    inline Parameter<bool> MRAM_ON(true);
+    inline Parameter<uint32_t> FLASH_INT(0);
+    inline Parameter<uint32_t> SRAM_INT(0);
+    inline Parameter<uint32_t> AVAILABLE_MRAM(0);
+    inline Parameter<uint32_t> AVAILABLE_NAND(0);
+    enum MEMORY_PARTITION_enum : uint8_t {
         First = 0,
         Second = 1
     };
-    inline Parameter<MemoryPartition_enum> MemoryPartition(First);
-    inline Parameter<float> NANDFLASHScrubbingFrequency(0);
-    inline Parameter<float> ΜRAMScrubbingFrequency(0);
-    inline Parameter<float> ProgramFlashScrubbingFrequency(0);
+    inline Parameter<MEMORY_PARTITION_enum> MEMORY_PARTITION(First);
+    inline Parameter<float> NAND_FLASH_SCRUBBING_FREEQUENCY(0);
+    inline Parameter<float> ΜRAM_SCRUBBING_FREEQIENCY(0);
+    inline Parameter<float> PROGRAM_FLASH_SCRUBBING_FREEQUENCY(0);
     inline Parameter<uint16_t> COMMIT_HASH(0);
     inline Parameter<uint32_t> CAN_ACK_TIMEOUT(1000);
-    inline Parameter<uint32_t> CAN_FrameRetransimtCount(0);
-    inline Parameter<uint32_t> CAN_TransmitFailureCount(0);
-    inline Parameter<bool> UseRTT(true);
-    inline Parameter<bool> UseUART(true);
-    inline Parameter<bool> UseCAN(false);
+    inline Parameter<uint32_t> CAN_FRAME_RETRANSMIT_COUNT(0);
+    inline Parameter<uint32_t> CAN_TRANSMIT_FAILURE_COUNT(0);
+    inline Parameter<bool> USE_RTT(true);
+    inline Parameter<bool> USE_UART(true);
+    inline Parameter<bool> USE_CAN(false);
     inline Parameter<uint32_t> HEARTBEAT_PERIOD(3000);
     inline Parameter<uint32_t> LAST_RESET_CAUSE(0);
 }
@@ -119,11 +115,11 @@ namespace COMMSParameters {
         GNSS_ALTID = 13637,
         GNSS_TIMEID = 13656,
         GNSS_ACK_TIMEOUTID = 13666,
-        GNSS_CMD_RETIESID = 13680,
+        GNSS_CMD_RETRIESID = 13680,
         GNSS_ERROR_TIMEOUTID = 13698,
         ERROR_TIMEOUT_CNT_THRHDID = 13714,
         GNSS_DELAY_CMDSID = 13730,
-        SATELITES_TRACKEDID = 13745,
+        SATELLITES_TRACKEDID = 13745,
         GNSS_FIX_QUALITYID = 13761,
         GNSS_TM_DATA_PERIODID = 13776,
         COMMIT_HASHID = 13796,
@@ -149,11 +145,11 @@ namespace COMMSParameters {
     inline Parameter<int32_t> GNSS_ALT(0);
     inline Parameter<float> GNSS_TIME(0);
     inline Parameter<uint16_t> GNSS_ACK_TIMEOUT(0);
-    inline Parameter<uint8_t> GNSS_CMD_RETIES(0);
+    inline Parameter<uint8_t> GNSS_CMD_RETRIES(0);
     inline Parameter<uint16_t> GNSS_ERROR_TIMEOUT(0);
     inline Parameter<uint16_t> ERROR_TIMEOUT_CNT_THRHD(0);
     inline Parameter<uint16_t> GNSS_DELAY_CMDS(0);
-    inline Parameter<int8_t> SATELITES_TRACKED(0);
+    inline Parameter<int8_t> SATELLITES_TRACKED(0);
     inline Parameter<int8_t> GNSS_FIX_QUALITY(0);
     inline Parameter<uint8_t> GNSS_TM_DATA_PERIOD(10);
     inline Parameter<uint32_t> COMMIT_HASH(0);

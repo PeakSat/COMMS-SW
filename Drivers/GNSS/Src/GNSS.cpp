@@ -2,6 +2,254 @@
 #include "etl/vector.h"
 #include "etl/string.h"
 
+#include <Logger.hpp>
+#include <eMMC.hpp>
+#include <ctime> // For std::tm and std::mktime
+
+bool GNSSReceiver::isDataValid(int8_t year, int8_t month, int8_t day) {
+    if (year < 20 || year > 79) { return false; }
+    if (month < 0 || month > 12) { return false; }
+    if (day < 0 || day > 32) { return false; }
+    return true;
+}
+
+uint32_t GNSSReceiver::findTailPointer() {
+
+    uint32_t numOfBlocks = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
+
+    GNSSDefinitions::StoredGNSSData lastData{};
+    auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, 0, 1);
+    if (lastData.valid != 0xAA) {
+        return 0;
+    }
+    uint32_t latest_blockPointer = 1;
+    uint64_t latest_timestamp = lastData.usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT - 1] >> 5;
+
+
+    for (int i = 1; i < numOfBlocks; i++) {
+        status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&lastData), eMMC::memoryPageSize, i, 1);
+        // lastData.valid should be set to 0xAA by the GNSSTask when it wrote the data to it. If not, there are no data in this page
+        if (lastData.valid == 0xAA) {
+
+            uint64_t lasttimestamp = lastData.usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT - 1] >> 5;
+
+            if (lasttimestamp >= latest_timestamp) {
+                latest_timestamp = lasttimestamp;
+                latest_blockPointer = i + 1;
+            } else {
+                return latest_blockPointer;
+            }
+        } else {
+            return latest_blockPointer;
+        }
+    }
+    return latest_blockPointer;
+}
+
+void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1, GNSSDefinitions::StoredGNSSData* storedData2, uint32_t numberOfData) {
+    if (numberOfData > GNSS_MEASUREMENTS_PER_STRUCT * 2) {
+        LOG_ERROR << "Incorrect number of data";
+        // todo: handle the error
+        return;
+    }
+    /**
+ *                0 1 2 3 4 ..   .. 9 ..   .. 14 ..
+ * GNSS_TMbuffer: B B B B B B B B B B B B B B B .... B B B B B B B B B .... B B B B B B B B .... B B B B B B B B .... B B B B
+ *            __/2B /  3B  |    5B   |    5B   |    |    5B   |   4B  |    |   4B  |   4B  |    |   4B  |   4B  |    |   4B  |
+ *         __/     /       |         |         |    |         |       |    |       |       |    |       |       |    |       |
+ *        /Number /MSBs for|   LSBs  |   LSBs  |    |   LSBs  |  Lat  |    |  Lat  |  Lon  |    |  Lon  |  Alt  |    |  Alt  |
+ *       /   of  /  every  |   for   |   for   |    |   for   |  for  |    |  for  |  for  |    |  for  |  for  |    |  for  |
+ *      /Data(n)/data point| time[0] | time[1] |    | time[n] |   0   |    |   n   |   0   |    |   n   |   0   |    |   n   |
+ */
+
+    uint16_t NofData = static_cast<uint16_t>(numberOfData);
+    // set number of data
+    GNSS_TMbuffer[0] = static_cast<uint8_t>((NofData >> 8) & 0xFF);
+    GNSS_TMbuffer[1] = static_cast<uint8_t>(NofData & 0xFF);
+    // set MSBs for us from epoch and number of satellites
+    GNSS_TMbuffer[2] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[0] >> (64 - 8)) & 0xFF);
+    GNSS_TMbuffer[3] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[0] >> (64 - 16)) & 0xFF);
+    GNSS_TMbuffer[4] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[0] >> (64 - 24)) & 0xFF);
+
+    // set LSBs for us from epoch and number of satellites
+    for (uint32_t i = 0; i < numberOfData; i++) {
+        if (numberOfData < GNSS_MEASUREMENTS_PER_STRUCT) {
+            GNSS_TMbuffer[9 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 32)) & 0xFF);
+            GNSS_TMbuffer[8 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 40)) & 0xFF);
+            GNSS_TMbuffer[7 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 48)) & 0xFF);
+            GNSS_TMbuffer[6 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i] >> (64 - 56)) & 0xFF);
+            GNSS_TMbuffer[5 + (i * 5)] = static_cast<uint8_t>((storedData1->usFromEpoch_NofSat[i]) & 0xFF);
+        } else {
+            GNSS_TMbuffer[9 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 32)) & 0xFF);
+            GNSS_TMbuffer[8 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 40)) & 0xFF);
+            GNSS_TMbuffer[7 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 48)) & 0xFF);
+            GNSS_TMbuffer[6 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i] >> (64 - 56)) & 0xFF);
+            GNSS_TMbuffer[5 + (i * 5)] = static_cast<uint8_t>((storedData2->usFromEpoch_NofSat[i]) & 0xFF);
+        }
+    }
+    uint8_t* LatStartByteBufferPointer = &GNSS_TMbuffer[5 + (5 * numberOfData)];
+    uint8_t* LonStartByteBufferPointer = &GNSS_TMbuffer[5 + (5 * numberOfData) + (numberOfData * sizeof(uint32_t))];
+    uint8_t* AltStartByteBufferPointer = &GNSS_TMbuffer[5 + (5 * numberOfData) + (numberOfData * sizeof(uint32_t) * 2)];
+
+    uint8_t* LatStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(storedData1->latitudeI);
+    uint8_t* LonStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(storedData1->longitudeI);
+    uint8_t* AltStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(storedData1->altitudeI);
+    uint8_t* LatStartBytesStoredDataPointer2 = reinterpret_cast<uint8_t*>(storedData2->latitudeI);
+    uint8_t* LonStartBytesStoredDataPointer2 = reinterpret_cast<uint8_t*>(storedData2->longitudeI);
+    uint8_t* AltStartBytesStoredDataPointer2 = reinterpret_cast<uint8_t*>(storedData2->altitudeI);
+
+    // set latitude, longitude and altitude
+    for (uint32_t i = 0; i < numberOfData * sizeof(uint32_t); i++) {
+        if ((numberOfData / sizeof(uint32_t)) < GNSS_MEASUREMENTS_PER_STRUCT) {
+            LatStartByteBufferPointer[i] = LatStartBytesStoredDataPointer1[i];
+            LonStartByteBufferPointer[i] = LonStartBytesStoredDataPointer1[i];
+            AltStartByteBufferPointer[i] = AltStartBytesStoredDataPointer1[i];
+        } else {
+            LatStartByteBufferPointer[i] = LatStartBytesStoredDataPointer2[i - (GNSS_MEASUREMENTS_PER_STRUCT * sizeof(uint32_t))];
+            LonStartByteBufferPointer[i] = LonStartBytesStoredDataPointer2[i - (GNSS_MEASUREMENTS_PER_STRUCT * sizeof(uint32_t))];
+            AltStartByteBufferPointer[i] = AltStartBytesStoredDataPointer2[i - (GNSS_MEASUREMENTS_PER_STRUCT * sizeof(uint32_t))];
+        }
+    }
+
+    /**
+     * The size of the resulting TM is:
+     *
+     *      2 bytes for the number of data
+     *   +  3 the usFromEpoch_NofSat MSBs
+     *   +  5 * number usFromEpoch_NofSat LSB data points
+     *   +  4 * number of latitude data points
+     *   +  4 * number of longitude data points
+     *   +  4 * number of alttitude data points
+     *   -------------------------------------------------
+     *   =  5 + (numberOfData * 17)
+     */
+    uint32_t TMMessageSize = 5 + (numberOfData * 17);
+    __NOP();
+    // todo: add to TM queue
+}
+
+void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t numberOfSamples) {
+    GNSSDefinitions::StoredGNSSData storedData{};
+    // define two StoredGNSSData structs because MAX_sizeof(TMMessage) = 2 * sizeof(StoredGNSSData)
+    GNSSDefinitions::StoredGNSSData dataToBeSent1{};
+    GNSSDefinitions::StoredGNSSData dataToBeSent2{};
+    uint32_t sampleCounter = 0;
+
+    /**
+     * If eMMCGNSSDataTailPointer=0 there might not be any data in the eMMC, so check that
+     * else eMMCGNSSDataTailPointer points to where the next data will be stored,
+     * so last available data are at eMMCGNSSDataTailPointer - 1
+     */
+    uint32_t localTailPointer = eMMCGNSSDataTailPointer;
+    uint32_t lastGNSSDataPointer = localTailPointer - 1;
+
+    if (eMMCGNSSDataTailPointer == 0) {
+        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+        if (storedData.valid == 0xAA) {
+            localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
+            status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+            if (storedData.valid != 0xAA) {
+                // todo: handle error, no GNSS data
+                LOG_ERROR << "Requested GNSS data but there are no data in memory";
+                return;
+            }
+        } else {
+            // todo: handle error, no GNSS data
+            LOG_ERROR << "Requested GNSS data but there are no data in memory";
+            return;
+        }
+    } else {
+        auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, lastGNSSDataPointer, 1);
+    }
+
+    // find where in the eMMC is the GNSS data point with a timestamp of (most recent data - secondsPrior)
+    uint64_t newerTimestamp = storedData.usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT - 1] >> 5;
+    int32_t structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+    uint64_t priorTimestamp = newerTimestamp;
+    while (((newerTimestamp / 1000000) - static_cast<uint64_t>(secondsPrior)) < (priorTimestamp / 1000000)) {
+        priorTimestamp = storedData.usFromEpoch_NofSat[structIterator] >> 5;
+
+        structIterator--;
+        if (structIterator < 0) {
+            structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+            // localTailPointer == 0 means either that there are no more data or that the buffer(FIFO) filled up and looped back to the beginning
+            if (localTailPointer == 0) {
+                localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
+            } else {
+                localTailPointer--;
+            }
+            auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+            if (storedData.valid != 0xAA) {
+                //todo: handle error
+                LOG_ERROR << "Requested GNSS data but there are no data for " << secondsPrior << " seconds prior";
+                return;
+            }
+        }
+    }
+
+
+    structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+    uint32_t dataToBeSentIterator = 0;
+    auto newerTimeMSBs = static_cast<uint32_t>(newerTimestamp >> 35);
+    while (sampleCounter < numberOfSamples) {
+        uint64_t olderTimestamp = storedData.usFromEpoch_NofSat[structIterator] >> 5;
+
+        if ((newerTimestamp / 1000000) - (olderTimestamp / 1000000) >= period) { // /1000000 to get to seconds
+            auto olderTimeMSBs = static_cast<uint32_t>(olderTimestamp >> 35);
+            if (olderTimeMSBs != newerTimeMSBs && dataToBeSentIterator > 0) {
+                // MSBs changed. Construct another TM
+                constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator);
+                dataToBeSentIterator = 0;
+                newerTimeMSBs = olderTimeMSBs;
+            } else {
+                newerTimeMSBs = olderTimeMSBs;
+                // if one of the structs is filled, start add next sample to the 2nd struct
+                if (dataToBeSentIterator < GNSS_MEASUREMENTS_PER_STRUCT) {
+                    dataToBeSent1.altitudeI[dataToBeSentIterator] = storedData.altitudeI[dataToBeSentIterator];
+                    dataToBeSent1.latitudeI[dataToBeSentIterator] = storedData.latitudeI[dataToBeSentIterator];
+                    dataToBeSent1.longitudeI[dataToBeSentIterator] = storedData.longitudeI[dataToBeSentIterator];
+                    dataToBeSent1.usFromEpoch_NofSat[dataToBeSentIterator] = storedData.usFromEpoch_NofSat[dataToBeSentIterator];
+                } else {
+                    dataToBeSent2.altitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.altitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                    dataToBeSent2.latitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.latitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                    dataToBeSent2.longitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.longitudeI[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                    dataToBeSent2.usFromEpoch_NofSat[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT] = storedData.usFromEpoch_NofSat[dataToBeSentIterator - GNSS_MEASUREMENTS_PER_STRUCT];
+                    // if both structs are full, send these and reset the counter
+                    if (dataToBeSentIterator >= GNSS_MEASUREMENTS_PER_STRUCT * 2) {
+                        //construct the TM with the data stored in the two structs
+                        constructGNSSTM(&dataToBeSent1, &dataToBeSent2, GNSS_MEASUREMENTS_PER_STRUCT * 2);
+                        dataToBeSentIterator = 0;
+                    }
+                }
+                newerTimestamp = olderTimestamp;
+                sampleCounter++;
+                dataToBeSentIterator++;
+            }
+        }
+
+        structIterator--;
+        if (structIterator < 0) {
+            structIterator = GNSS_MEASUREMENTS_PER_STRUCT - 1;
+            if (localTailPointer == 0) {
+                localTailPointer = eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize;
+            } else {
+                localTailPointer--;
+            }
+            auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&storedData), eMMC::memoryPageSize, localTailPointer, 1);
+            if (storedData.valid != 0xAA) {
+                //No more data. Send the stored ones
+                constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator);
+                sampleCounter = numberOfSamples;
+                dataToBeSentIterator = 0;
+            }
+        }
+    }
+    if (dataToBeSentIterator > 0) {
+        constructGNSSTM(&dataToBeSent1, &dataToBeSent2, dataToBeSentIterator);
+        //send the last data
+    }
+}
+
 GNSSMessage GNSSReceiver::configureNMEATalkerID(TalkerIDType type, Attributes attributes) {
     Payload payload;
     payload.push_back(GNSSDefinitions::GNSSMessages::ConfigureNMEATalkerID);

@@ -5,77 +5,91 @@
 #include "ParameterService.hpp"
 #include "ApplicationLayer.hpp"
 #include "COBS.hpp"
+
+#include <GNSS.hpp>
+#include <GNSSDefinitions.hpp>
 #include <HousekeepingService.hpp>
 #include <RF_TXTask.hpp>
 #include <ServicePool.hpp>
-#include <TPProtocol.hpp>
 
 void TestTask::execute() {
     LOG_DEBUG << "TestTask::execute()";
-    vTaskDelay(12000);
-    constexpr int start_id = 3000; // Starting ID
-    constexpr int end_id = 3017;   // Ending ID
-    constexpr int size = end_id - start_id;
-    // etl::array<uint16_t, CAN::TPMessageMaximumArguments> EPSIDs{};
-    //
-    // for (uint16_t i = 0; i < size; ++i) {
-    //     EPSIDs[i] = start_id + i;
-    // }
-    uint8_t eccsBuffer[1024];
-    uint8_t ecssbuf[9] = {0x23, 0x20, 0x3, 0x1B, 0, 0x1, 0x1, 0, 0};
-    while (true) {
-        //LOG_DEBUG << COMMSParameters::commsUHFBandPATemperature.getValue();
-        // LOG_DEBUG << "REQUESTING TEMP PARAMETERS FROM OBC";
-        // CAN::Application::createRequestParametersMessage(CAN::OBC, false, testPArameters, false);
-        // // Message Generation
-        Message generateOneShotReport(HousekeepingService::ServiceType, HousekeepingService::MessageType::GenerateOneShotHousekeepingReport, Message::TC, 1);
-        uint32_t numbeOfStructs = 1;
-        ParameterReportStructureId structure_ids[numbeOfStructs] = {0}; // TODO: Add correct IDs @tsoupos
+    vTaskDelay(5000);
+    GNSSDefinitions::StoredGNSSData data{};
 
-        generateOneShotReport.appendUint8(numbeOfStructs);
-        for (auto& id: structure_ids) {
-            generateOneShotReport.append<ParameterReportStructureId>(id);
+    // for (int i=0; i<2600; i++) {
+    //     auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&data), eMMC::memoryPageSize, i, 1);
+    // }
+
+    while (true) {
+
+
+        // if (eMMCDataTailPointer > 0) {
+        //     auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&data), 512, eMMCDataTailPointer - 1, 1);
+        // }
+        uint64_t usFromEpoch_NofSat;
+        int32_t latitudeI;
+        int32_t longitudeI;
+        int32_t altitudeI;
+        uint64_t timeFromEpoch;
+        uint8_t numberOfSatellites;
+        GNSSReceiver::sendGNSSData(250, 150, 5);
+
+        uint16_t numberOfData = ((uint16_t) GNSS_TMbuffer[0]) << 8 | static_cast<uint16_t>(GNSS_TMbuffer[1]);
+        for (int i = 0; i < numberOfData; i++) {
+            //get time + num of satellites
+            uint8_t* TimeStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&usFromEpoch_NofSat);
+            uint8_t* dataPointer = (uint8_t*) &GNSS_TMbuffer[5 + (5 * i)];
+            usFromEpoch_NofSat = 0;
+            usFromEpoch_NofSat |= static_cast<uint64_t>(GNSS_TMbuffer[2]);
+            usFromEpoch_NofSat = usFromEpoch_NofSat << 8;
+            usFromEpoch_NofSat |= static_cast<uint64_t>(GNSS_TMbuffer[3]);
+            usFromEpoch_NofSat = usFromEpoch_NofSat << 8;
+            usFromEpoch_NofSat |= static_cast<uint64_t>(GNSS_TMbuffer[4]);
+            usFromEpoch_NofSat = usFromEpoch_NofSat << 8;
+            usFromEpoch_NofSat = usFromEpoch_NofSat << 32;
+            for (int j = 0; j < sizeof(uint64_t) - 3; j++) {
+                TimeStartBytesStoredDataPointer1[j] = dataPointer[j];
+                // usFromEpoch_NofSat=usFromEpoch_NofSat<<8;
+                // usFromEpoch_NofSat |= dataPointer[j];
+            }
+            timeFromEpoch = usFromEpoch_NofSat >> 5;
+            numberOfSatellites = (uint8_t) (usFromEpoch_NofSat & 0x1F);
+
+            //get lat
+            uint8_t* LatStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&latitudeI);
+            dataPointer = (uint8_t*) &GNSS_TMbuffer[5 + (5 * numberOfData)];
+            latitudeI = 0;
+            for (int j = 0; j < sizeof(int32_t); j++) {
+                LatStartBytesStoredDataPointer1[j] = dataPointer[j + (4 * i)];
+                // latitudeI=latitudeI<<8;
+                // latitudeI |= dataPointer[j];
+            }
+
+            //get lon
+            uint8_t* LonStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&longitudeI);
+            dataPointer = (uint8_t*) &GNSS_TMbuffer[(numberOfData * (5 + 4)) + 5];
+            longitudeI = 0;
+            for (int j = 0; j < sizeof(int32_t); j++) {
+                LonStartBytesStoredDataPointer1[j] = dataPointer[j + (4 * i)];
+                // longitudeI=longitudeI<<8;
+                // longitudeI |= dataPointer[j];
+            }
+
+            //get alt
+            uint8_t* AltStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&altitudeI);
+            dataPointer = (uint8_t*) &GNSS_TMbuffer[(numberOfData * (5 + 4 + 4)) + 5];
+            altitudeI = 0;
+            for (int j = 0; j < sizeof(int32_t); j++) {
+                AltStartBytesStoredDataPointer1[j] = dataPointer[j + (4 * i)];
+                // altitudeI=altitudeI<<8;
+                // altitudeI |= dataPointer[j];
+            }
+            __NOP();
         }
 
-        auto cobsEncoded = COBSencode<ECSSMaxMessageSize>(MessageParser::composeECSS(generateOneShotReport, size));
-        // auto x = (MessageParser::composeECSS(generateOneShotReport, size));
-        // LOG_DEBUG << "Generate COBS encoded: " << &cobsEncoded;
-        // auto cobsDecodedMessage = COBSdecode<1024>(cobsEncoded);
-        // uint8_t messageLength = cobsDecodedMessage.size();
-        // uint8_t* ecssTCBytes = reinterpret_cast<uint8_t*>(cobsDecodedMessage.data());
-        //
-        // for (int i = 0; i < messageLength; i++) {
-        //     eccsBuffer[i] = ecssTCBytes[i];
-        // }
-        __NOP();
-        // CAN::Application::createPacketMessage(CAN::OBC, false, MessageParser::composeECSS(generateOneShotReport, ECSSSecondaryTCHeaderSize + generateOneShotReport.dataSize), Message::PacketType::TC, false);
+        // GNSS_TMbuffer[0];
 
-        // CAN::Application::createRequestParametersMessage(CAN::OBC, false, testPArameters, false);
-        // LOG_DEBUG << "REQUESTING EPS PARAMETERS FROM OBC" ;
-        // CAN::Application::createRequestParametersMessage(CAN::OBC, false, EPSIDs, false);
-        // LOG_DEBUG << "REQUESTING EPS PARAMETERS FROM OBC" ;
-        // CAN::Application::createRequestParametersMessage(CAN::OBC, false, EPSIDs, false);
-        // etl::string<9> string;
-        // etl::format_spec format;
-        // for (uint8_t i : ecssbuf)
-        //     etl::to_string(i, string, format, false);
-        // LOG_DEBUG << string;
-        // CAN::Application::createPacketMessage(CAN::OBC, false, , Message::TC, false);
-        // CAN::TPMessage message = {{CAN::NodeID, CAN::OBC, false}};
-        //
-        // // message.appendUint8(CAN::Application::MessageIDs::TCPacket);
-        // for (int i = 0; i < 9; i++) {
-        //     message.appendUint8(ecssbuf[i]);
-        // }
-        // CAN::TPProtocol::createCANTPMessage(message, false);
-        // LOG_DEBUG << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-        // vTaskDelay(pdMS_TO_TICKS(40));
-        // LOG_DEBUG << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-        // vTaskDelay(pdMS_TO_TICKS(40));
-        // LOG_DEBUG << "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-        // vTaskDelay(pdMS_TO_TICKS(40));
-        // LOG_DEBUG << "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
-        // vTaskDelay(pdMS_TO_TICKS(40));
-        vTaskDelay(pdMS_TO_TICKS(DelayMs));
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
