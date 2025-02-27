@@ -1,5 +1,7 @@
 #pragma once
 #include "etl/vector.h"
+#include <ctime> // For std::tm and std::mktime
+// #include <eMMC.hpp>
 // Task notification defines
 // flags
 #define GNSS_ACK (1 << 0)
@@ -7,7 +9,14 @@
 // indexes
 #define GNSS_INDEX_MESSAGE 1
 #define GNSS_INDEX_ACK 2
+#define GNSS_MEASUREMENTS_PER_STRUCT 25
 
+/**
+ * If there are no data in the emmc  eMMCGNSSDataTailPointer=0
+ * else eMMCGNSSDataTailPointer points to where the next data will be stored,
+ * so last available data are at eMMCGNSSDataTailPointer - 1
+ */
+inline uint32_t eMMCGNSSDataTailPointer;
 
 namespace GNSSDefinitions {
 
@@ -18,7 +27,7 @@ namespace GNSSDefinitions {
         NACKReceived,
         MultipleCommandsFail
     };
-    enum class Status{
+    enum class Status {
         OK,
         ERROR
     };
@@ -47,11 +56,18 @@ namespace GNSSDefinitions {
         int snr[4];
     };
 
+    /**
+     * year/month/day correspond to the last data point.
+     * If the day changed during sampling.
+     * the receiver must compensate for it.
+     */
     struct StoredGNSSData {
-        int32_t utc_time;
-        int32_t latitudeI;
-        int32_t longitudeI;
-        int32_t altitudeI;
+        uint64_t usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT];
+        int32_t latitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
+        int32_t longitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
+        int32_t altitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
+        uint8_t valid;
+        uint8_t padding[512 - ((GNSS_MEASUREMENTS_PER_STRUCT * 20) + 1)]; //make it's size exactly one eMMC page
     };
 
 

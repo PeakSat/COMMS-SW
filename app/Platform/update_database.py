@@ -98,6 +98,7 @@ hhp_lines.append('#include "Helpers/Parameter.hpp"')
 # Process each subsystem separately
 namespace_blocks = {acronym: [] for acronym in subsystem_config.keys()}
 valid_rows = []
+numberOfParameters = 0
 
 # Collect all valid rows across all sheets
 for sheet_name in workbook.sheetnames:
@@ -155,6 +156,9 @@ for idx, row in enumerate(valid_rows):
             # Encode the ID with the new encoding rule
             encoded_id = encode_id(numeric_id, variable_type)
 
+            # increase parameter counter
+            numberOfParameters = numberOfParameters + 1
+
             # Skip duplicates
             if encoded_id in processed_ids:
                 continue
@@ -206,6 +210,7 @@ for idx, row in enumerate(valid_rows):
 cpp_lines.append("    };")
 cpp_lines.append("}")
 cpp_lines.append("#endif")
+hhp_lines.append(f"#define NUMBER_OF_PARAMETERS {numberOfParameters}")
 
 # Build the .hhp file
 for acronym, block_lines in namespace_blocks.items():
