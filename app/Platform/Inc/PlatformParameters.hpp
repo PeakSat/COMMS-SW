@@ -2,6 +2,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpsabi" // Suppress: parameter passing for argument of type 'Time::DefaultCUC' {aka 'TimeStamp<4, 0, 1, 10>'} changed in GCC 7.1
 #include "Helpers/Parameter.hpp"
+#define NUMBER_OF_PARAMETERS 859
 namespace OBDHParameters {
     enum ParameterID : uint16_t {
         DEBUG_COUNTERID = 20,
