@@ -132,6 +132,7 @@ void RF_RXTask::ensureRxMode() {
     ensureRxMode();
 
     while (true) {
+        transceiver.rx_actual = false;
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_AGC, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                 auto result = transceiver.get_received_length(RF09, error);
@@ -143,20 +144,32 @@ void RF_RXTask::ensureRxMode() {
                 if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
                 if (corrected_received_length > 0 && corrected_received_length <= 256) {
+                    transceiver.rx_actual = true;
                     LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                     drop_counter = 0;
                     for (int i = 0; i < corrected_received_length; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
+                        LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
                         if (error != NO_ERRORS)
                             LOG_ERROR << "ERROR" ;
                     }
                     /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
-                    if (RX_BUFF[1] == Message::PacketType::TM) {
-                        LOG_DEBUG << "[RX AGC] NEW TM FROM OBC";
+                    uint8_t packet_version_number = (RX_BUFF[0] >> 5) & 0x07;  // Top 3 bits
+                    uint8_t packet_type = (RX_BUFF[0] >> 4) & 0x01;            // 4th bit
+                    uint8_t secondary_header_flag = (RX_BUFF[0] >> 3) & 0x01;  // 5th bit
+                    uint16_t application_process_ID = ((RX_BUFF[0] & 0x07) << 8) | RX_BUFF[1];  // Last 3 bits + full RX_BUFF[1]
+
+                    LOG_DEBUG << "Packet Version Number: %u" << packet_version_number ;
+                    LOG_DEBUG << "Packet Type: %u\n" << packet_type;
+                    LOG_DEBUG << "Secondary Header Flag: %u\n" << secondary_header_flag;
+                    LOG_DEBUG << "Application Process ID: %u\n" << application_process_ID;
+
+                    if (packet_type == Message::PacketType::TM) {
+                        LOG_DEBUG << "[RX] TM RECEIVED" ;
                     }
-                    else if (RX_BUFF[1] == Message::PacketType::TC) {
+                    else if (packet_type == Message::PacketType::TC) {
                         LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
                         rf_rx_tx_queue_handler.size = corrected_received_length;
                         auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
@@ -201,32 +214,40 @@ void RF_RXTask::ensureRxMode() {
                         break;
                     }
                     case TX_ONG: {
-                        LOG_DEBUG << "[RX] TX_ONG";
-                        if (xSemaphoreTake(transceiver_handler.txfeSemaphore_rx, pdMS_TO_TICKS(500))) {
-                            ensureRxMode();
-                            LOG_INFO << "[RX] TXFE RECEIVED";
-
+                        if (transceiver.tx_actual) {
+                            LOG_DEBUG << "[RX] TX_ONG";
+                            if (xSemaphoreTake(transceiver_handler.txfeSemaphore_rx, pdMS_TO_TICKS(500))) {
+                                ensureRxMode();
+                                LOG_INFO << "[RX] TXFE RECEIVED";
+                                transceiver.tx_actual = false;
+                            }
+                            else {
+                                LOG_ERROR << "[RX] TXFE NOT RECEIVED";
+                                transceiver.print_state(RF09, error);
+                                transceiver.set_state(RF09, RF_TRXOFF, error);
+                                transceiver.chip_reset(error);
+                                transceiver.tx_ongoing = false;
+                                transceiver.tx_actual = false;
+                                ensureRxMode();
+                            }
+                            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                         }
                         else {
-                            LOG_ERROR << "[RX] TXFE NOT RECEIVED";
+                            LOG_ERROR << "[RX] tx_actual false";
                             transceiver.print_state(RF09, error);
-                            transceiver.set_state(RF09, RF_TRXOFF, error);
-                            transceiver.chip_reset(error);
-                            transceiver.tx_ongoing = false;
-                            ensureRxMode();
                         }
-                        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+
                         break;
                     }
                     case RX_ONG: {
                         LOG_DEBUG << "[RX] RX_ONG";
+                        vTaskSuspend(rf_txtask->taskHandle);
                         if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_rx, pdMS_TO_TICKS(500))) {
                             LOG_INFO << "[RX] RXFE RECEIVED";
                             trx_state = transceiver.get_state(RF09, error);
                             if (trx_state != RF_RX) {
                                 ensureRxMode();
                             }
-
                         }
                         else {
                             LOG_ERROR << "[RX] RXFE NOT RECEIVED";
@@ -235,6 +256,7 @@ void RF_RXTask::ensureRxMode() {
                             transceiver.rx_ongoing = false;
                             ensureRxMode();
                         }
+                        vTaskResume(rf_txtask->taskHandle);
                         break;
                     }
                     case RX_TX_ONG: {
@@ -264,11 +286,13 @@ void RF_RXTask::ensureRxMode() {
                 }
                 if (transceiver.TransmitterFrameEnd_flag) {
                     transceiver.TransmitterFrameEnd_flag = false;
-                    LOG_INFO << "[RX] Transceiver FRAME END";
+                    LOG_INFO << "[RX] Transceiver FRAME END FLAG";
                     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+                    transceiver.tx_actual = false;
                 }
                 xSemaphoreGive(transceiver_handler.resources_mtx);
             }
         }
+        transceiver.rx_actual = false;
     }
 }

@@ -1524,6 +1524,7 @@ void At86rf215::print_error(Error& err) {
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
+            transceiver.tx_actual = false;
             xHigherPriorityTaskWoken = pdFALSE;
             tx_ongoing = false;
             xSemaphoreGiveFromISR(transceiver_handler.txfeSemaphore_tx, &xHigherPriorityTaskWoken);
