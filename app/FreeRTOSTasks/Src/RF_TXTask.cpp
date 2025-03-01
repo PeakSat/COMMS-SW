@@ -105,7 +105,6 @@ void RF_TXTask::ensureTxMode() {
                                     LOG_INFO << "[TX READY] TXFE RECEIVED " ;
                                     txfe_counter++;
                                     LOG_DEBUG << "[TX READY] TXFE COUNTER: " << txfe_counter;
-                                    rf_rxtask->ensureRxMode();
                                 }
                                 else {
                                     LOG_ERROR << "[TX READY] TXFE NOT RECEIVED ";
@@ -117,15 +116,14 @@ void RF_TXTask::ensureTxMode() {
                                     LOG_INFO << "[TX READY] resending the packet...";
                                     LOG_ERROR << "[TX READY] TXFE NOT RECEIVED COUNTER: " << txfe_not_received_counter;
                                     transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
-                                    rf_rxtask->ensureRxMode();
                                 }
+                                rf_rxtask->ensureRxMode();
                                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                             }
                             break;
                         }
                         case TX_ONG: {
                                 LOG_DEBUG << "[TX] TX_ONG";
-                                vTaskSuspend(rf_rxtask->taskHandle);
                                 if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(500))) {
                                     if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
                                         ensureTxMode();
@@ -141,7 +139,6 @@ void RF_TXTask::ensureTxMode() {
                                     transceiver.tx_ongoing = false;
                                     // TODO: Send it again
                                 }
-                                vTaskResume(rf_rxtask->taskHandle);
                                 rf_rxtask->ensureRxMode();
                             break;
                         }

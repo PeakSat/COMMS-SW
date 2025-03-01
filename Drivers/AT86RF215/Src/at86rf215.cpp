@@ -1512,15 +1512,15 @@ void At86rf215::print_error(Error& err) {
         }
         if ((irq & InterruptMask::AGCRelease) != 0) {
             // AGC Release handling
-            xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_AGC_RELEASE, AGC_RELEASE, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            // xHigherPriorityTaskWoken = pdFALSE;
+            // xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_AGC_RELEASE, AGC_RELEASE, eSetBits, &xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::AGCHold) != 0) {
             // AGC Hold handling
-            xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_AGC, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            // xHigherPriorityTaskWoken = pdFALSE;
+            // xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_AGC, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
@@ -1530,8 +1530,8 @@ void At86rf215::print_error(Error& err) {
             xSemaphoreGiveFromISR(transceiver_handler.txfeSemaphore_tx, &xHigherPriorityTaskWoken);
             xHigherPriorityTaskWoken = pdFALSE;
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-            xSemaphoreGiveFromISR(transceiver_handler.txfeSemaphore_rx, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            // xSemaphoreGiveFromISR(transceiver_handler.txfeSemaphore_rx, &xHigherPriorityTaskWoken);
+            // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
             // Receiver Extended Match handling
@@ -1545,8 +1545,9 @@ void At86rf215::print_error(Error& err) {
             ReceiverFrameEnd_flag = true;
             if (rx_ongoing)
                 rx_ongoing = false;
-            xSemaphoreGiveFromISR(transceiver_handler.rxfeSemaphore_rx, &xHigherPriorityTaskWoken);
+            // xSemaphoreGiveFromISR(transceiver_handler.rxfeSemaphore_rx, &xHigherPriorityTaskWoken);
             xHigherPriorityTaskWoken = pdFALSE;
+            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_RXFE_RX, RXFE_RX, eSetBits, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             xSemaphoreGiveFromISR(transceiver_handler.rxfeSemaphore_tx, &xHigherPriorityTaskWoken);
             xHigherPriorityTaskWoken = pdFALSE;
