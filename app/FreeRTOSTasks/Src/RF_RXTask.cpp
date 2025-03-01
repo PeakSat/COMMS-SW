@@ -199,8 +199,6 @@ void RF_RXTask::ensureRxMode() {
                     rx_total_drop_packets++;
                     LOG_DEBUG << "[RX DROP] c: " << drop_counter;
                     LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
-                    vTaskDelay(pdMS_TO_TICKS((50)));
-                    ensureRxMode();
                 }
                 xSemaphoreGive(transceiver_handler.resources_mtx);
                 vTaskDelay(pdMS_TO_TICKS((50)));

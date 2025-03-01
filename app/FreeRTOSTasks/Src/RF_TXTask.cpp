@@ -31,7 +31,7 @@ void RF_TXTask::ensureTxMode() {
             // LOG_DEBUG << "[TX ENSURE] STATE: RX";
             break;
         case RF_TRANSITION:
-            vTaskDelay(10);
+            vTaskDelay(pdMS_TO_TICKS(10));
             LOG_DEBUG << "[TX ENSURE] STATE: TRANSITION";
         break;
         case RF_RESET:
@@ -40,9 +40,9 @@ void RF_TXTask::ensureTxMode() {
         case RF_INVALID:
             LOG_DEBUG << "[TX ENSURE] STATE: INVALID";
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
-            vTaskDelay(20);
+            vTaskDelay(pdMS_TO_TICKS(20));
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
-            vTaskDelay(10);
+            vTaskDelay(pdMS_TO_TICKS(10));
             transceiver.set_state(RF09, RF_TRXOFF, error);
         break;
         case RF_TXPREP:
@@ -130,6 +130,7 @@ void RF_TXTask::ensureTxMode() {
                                         transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
                                         tx_counter++;
                                         LOG_INFO << "[TXFE] TX counter: " << tx_counter;
+                                        rf_rxtask->ensureRxMode();
                                     }
                                 }
                                 else {
@@ -137,9 +138,10 @@ void RF_TXTask::ensureTxMode() {
                                     transceiver.set_state(RF09, RF_TRXOFF, error);
                                     transceiver.chip_reset(error);
                                     transceiver.tx_ongoing = false;
+                                    vTaskDelay(pdMS_TO_TICKS(100));
+                                    rf_rxtask->ensureRxMode();
                                     // TODO: Send it again
                                 }
-                                rf_rxtask->ensureRxMode();
                             break;
                         }
                         case RX_ONG: {
