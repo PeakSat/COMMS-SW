@@ -23,7 +23,7 @@ namespace AT86RF215 {
         SemaphoreHandle_t rxfeSemaphore_tx = nullptr;
 
         StaticSemaphore_t mtx_buf = {};
-        uint16_t RX_REFRESH_PERIOD_MS = 100;
+        uint16_t RX_REFRESH_PERIOD_MS = 1000;
         uint16_t BEACON_PERIOD_MS = 5000;
         void initialize_semaphore();
     };

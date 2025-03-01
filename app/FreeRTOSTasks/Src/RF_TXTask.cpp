@@ -62,19 +62,21 @@ void RF_TXTask::ensureTxMode() {
     vQueueAddToRegistry(TXQueue, "RF TX queue");
     uint8_t state = 0;
     uint32_t receivedEventsTransmit = 0;
-    uint32_t tx_counter = 0;
+
+    uint32_t tx_counter = 0, txfe_counter = 0, txfe_not_received_counter = 0;
+
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, portMAX_DELAY) == pdTRUE) {
             while (uxQueueMessagesWaiting(TXQueue)) {
                 /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
                 xQueueReceive(TXQueue, &tx_handler, portMAX_DELAY);
-                if (receivedEventsTransmit & TC_UART_TC_HANDLING_TASK) {
+                if (receivedEventsTransmit & TC_UART_TC_HANDLING_TASK ) {
                     for (int i = 0 ; i < tx_handler.data_length; i++) {
                         outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
                         LOG_INFO << "[TX] Data to send to the air from UART: " << outgoing_TX_BUFF[i];
-                        transceiver.tx_actual = true;
-                        LOG_DEBUG << "[TX UART] tx_actual:  " << transceiver.tx_actual;
+                        // transceiver.tx_actual = true;
+                        // LOG_DEBUG << "[TX UART] tx_actual:  " << transceiver.tx_actual;
                     }
                 }
                 if (receivedEventsTransmit & TM_OBC) {
@@ -83,9 +85,9 @@ void RF_TXTask::ensureTxMode() {
                     for (int i = 0; i < tx_handler.data_length; i++) {
                         LOG_DEBUG << "[TX] TM DATA: " << tx_handler.pointer_to_data[i];
                         outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
-                        transceiver.tx_actual = true;
-                        LOG_DEBUG << "[TX UART] tx_actual:  " << transceiver.tx_actual;
-                        transceiver.tx_actual = true;
+                        // transceiver.tx_actual = true;
+                        // LOG_DEBUG << "[TX UART] tx_actual:  " << transceiver.tx_actual;
+                        // transceiver.tx_actual = true;
                     }
                 }
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
@@ -99,14 +101,26 @@ void RF_TXTask::ensureTxMode() {
                                 transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
                                 tx_counter++;
                                 LOG_INFO << "[TX] TX counter: " << tx_counter;
-                                if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(250))) {
-                                    LOG_DEBUG << "[TX READY]: TXFE RECEIVED ";
+                                if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(200)) == pdTRUE) {
+                                    LOG_INFO << "[TX READY] TXFE RECEIVED " ;
+                                    txfe_counter++;
+                                    LOG_DEBUG << "[TX READY] TXFE COUNTER: " << txfe_counter;
+                                    rf_rxtask->ensureRxMode();
                                 }
                                 else {
-                                    LOG_ERROR << "[TX READY]: TXFE NOT RECEIVED ";
+                                    LOG_ERROR << "[TX READY] TXFE NOT RECEIVED ";
+                                    // TODO : RESEND THE PACKET
+                                    txfe_not_received_counter++;
+                                    transceiver.set_state(RF09, RF_TRXOFF, error);
+                                    transceiver.chip_reset(error);
+                                    ensureTxMode();
+                                    LOG_INFO << "[TX READY] resending the packet...";
+                                    LOG_ERROR << "[TX READY] TXFE NOT RECEIVED COUNTER: " << txfe_not_received_counter;
+                                    transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
+                                    rf_rxtask->ensureRxMode();
                                 }
+                                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                             }
-                            // TODO: Okay what if you send it and you don´t receive TXFE
                             break;
                         }
                         case TX_ONG: {
@@ -128,10 +142,10 @@ void RF_TXTask::ensureTxMode() {
                                     // TODO: Send it again
                                 }
                                 vTaskResume(rf_rxtask->taskHandle);
+                                rf_rxtask->ensureRxMode();
                             break;
                         }
                         case RX_ONG: {
-                            if (transceiver.rx_actual) {
                                 LOG_DEBUG << "[TX] RX_ONG";
                                 if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_tx, pdMS_TO_TICKS(500))) {
                                     if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
@@ -148,10 +162,7 @@ void RF_TXTask::ensureTxMode() {
                                     transceiver.rx_ongoing = false;
                                     // TODO: Send it again
                                 }
-                            }
-                            else {
-                                LOG_ERROR << "[TX] rx_actual false";
-                            }
+                            rf_rxtask->ensureRxMode();
                             break;
                         }
                         case RX_TX_ONG: {
