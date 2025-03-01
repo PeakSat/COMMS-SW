@@ -21,17 +21,17 @@ void RF_RXTask::ensureRxMode() {
             LOG_DEBUG << "[RX ENSURE] STATE: TRXOFF";
             transceiver.set_state(RF09, RF_TXPREP, error);
             /// the delay here is essential
-            vTaskDelay(20);
+            vTaskDelay(pdMS_TO_TICKS(20));
             transceiver.set_state(RF09, RF_RX, error);
             break;
         case RF_TX:
             LOG_DEBUG << "[RX ENSURE] STATE: TX";
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
-            vTaskDelay(20);
+            vTaskDelay(pdMS_TO_TICKS(20));
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
             transceiver.set_state(RF09, RF_TXPREP, error);
             /// the delay here is essential
-            vTaskDelay(20);
+            vTaskDelay(pdMS_TO_TICKS(20));
             transceiver.set_state(RF09, RF_RX, error);
             // transceiver.print_state(RF09, error);
             break;
@@ -46,14 +46,14 @@ void RF_RXTask::ensureRxMode() {
             break;
         case RF_INVALID:
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
-            vTaskDelay(20);
+            vTaskDelay(pdMS_TO_TICKS(20));
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
-            vTaskDelay(10);
+            vTaskDelay(pdMS_TO_TICKS(20));
             transceiver.set_state(RF09, RF_TRXOFF, error);
-            vTaskDelay(10);
+            vTaskDelay(pdMS_TO_TICKS(20));
             transceiver.set_state(RF09, RF_TXPREP, error);
             /// the delay here is essential
-            vTaskDelay(20);
+            vTaskDelay(pdMS_TO_TICKS(20));
             transceiver.set_state(RF09, RF_RX, error);
             LOG_DEBUG << "[RX ENSURE] STATE: INVALID";
             transceiver.print_state(RF09, error);
@@ -69,7 +69,7 @@ void RF_RXTask::ensureRxMode() {
 }
 
 [[noreturn]] void RF_RXTask::execute() {
-    vTaskDelay(4000);
+    vTaskDelay(pdMS_TO_TICKS(4000));
     LOG_INFO << "[RF RX TASK]";
     incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
                                             &incomingTCQueueBuffer);
@@ -81,7 +81,7 @@ void RF_RXTask::ensureRxMode() {
     /// Essential for the trx to be able to send and receive packets
     /// (If you have it HIGH from the CubeMX the trx will not be able to send)
     HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
-    vTaskDelay(20);
+    vTaskDelay(pdMS_TO_TICKS(20));
     HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
     transceiver.freqSynthesizerConfig.setFrequency_FineResolution_CMN_1(FrequencyUHFRX);
     constexpr int MAX_RETRIES = 3;
@@ -201,7 +201,7 @@ void RF_RXTask::ensureRxMode() {
                     LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
                 }
                 xSemaphoreGive(transceiver_handler.resources_mtx);
-                vTaskDelay(pdMS_TO_TICKS((50)));
+                vTaskDelay(pdMS_TO_TICKS(50));
                 ensureRxMode();
             }
         }

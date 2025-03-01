@@ -62,7 +62,6 @@ void RF_TXTask::ensureTxMode() {
     vQueueAddToRegistry(TXQueue, "RF TX queue");
     uint8_t state = 0;
     uint32_t receivedEventsTransmit = 0;
-
     uint32_t tx_counter = 0, txfe_counter = 0, txfe_not_received_counter = 0;
 
     while (true) {
@@ -117,6 +116,7 @@ void RF_TXTask::ensureTxMode() {
                                     LOG_ERROR << "[TX READY] TXFE NOT RECEIVED COUNTER: " << txfe_not_received_counter;
                                     transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
                                 }
+                                vTaskDelay(pdMS_TO_TICKS(50));
                                 rf_rxtask->ensureRxMode();
                                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                             }
