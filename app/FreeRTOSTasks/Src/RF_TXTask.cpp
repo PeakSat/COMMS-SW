@@ -82,7 +82,7 @@ void RF_TXTask::ensureTxMode() {
                     // TODO: Do that inside of the TMHandlingTask
                     LOG_DEBUG << "[TX] New TM received with size: " << tx_handler.data_length;
                     for (int i = 0; i < tx_handler.data_length; i++) {
-                        LOG_DEBUG << "[TX] TM DATA: " << tx_handler.pointer_to_data[i];
+                        // LOG_DEBUG << "[TX] TM DATA: " << tx_handler.pointer_to_data[i];
                         outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
                         // transceiver.tx_actual = true;
                         // LOG_DEBUG << "[TX UART] tx_actual:  " << transceiver.tx_actual;
@@ -100,23 +100,27 @@ void RF_TXTask::ensureTxMode() {
                                 transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
                                 tx_counter++;
                                 LOG_INFO << "[TX] TX counter: " << tx_counter;
-                                if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(200)) == pdTRUE) {
+                                if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(500)) == pdTRUE) {
                                     LOG_INFO << "[TX READY] TXFE RECEIVED " ;
                                     txfe_counter++;
                                     LOG_DEBUG << "[TX READY] TXFE COUNTER: " << txfe_counter;
+                                    transceiver.tx_ongoing = false;
                                 }
                                 else {
                                     LOG_ERROR << "[TX READY] TXFE NOT RECEIVED ";
                                     // TODO : RESEND THE PACKET
                                     txfe_not_received_counter++;
+                                    HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
+                                    vTaskDelay(pdMS_TO_TICKS(20));
+                                    HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
+                                    LOG_ERROR << "[TX READY] TXFE NOT RECEIVED COUNTER: " << txfe_not_received_counter;
+                                    vTaskDelay(pdMS_TO_TICKS(100));
                                     transceiver.set_state(RF09, RF_TRXOFF, error);
                                     transceiver.chip_reset(error);
-                                    ensureTxMode();
-                                    LOG_INFO << "[TX READY] resending the packet...";
-                                    LOG_ERROR << "[TX READY] TXFE NOT RECEIVED COUNTER: " << txfe_not_received_counter;
-                                    transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
+                                    transceiver.tx_ongoing = false;
+                                    /// TODO: RESEND
+                                    // LOG_INFO << "[TX READY] resending the packet...";
                                 }
-                                vTaskDelay(pdMS_TO_TICKS(50));
                                 rf_rxtask->ensureRxMode();
                                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                             }

@@ -66,7 +66,7 @@ void app_main(void) {
     rf_rxtask->createTask();
     rf_txtask->createTask();
     eMMCTask->createTask();
-    gnssTask->createTask();
+    // gnssTask->createTask();
     // testTask->createTask();
     ina3221Task->createTask();
     canGatekeeperTask->createTask();

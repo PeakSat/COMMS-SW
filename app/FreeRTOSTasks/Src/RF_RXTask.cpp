@@ -151,7 +151,7 @@ void RF_RXTask::ensureRxMode() {
                     drop_counter = 0;
                     for (int i = 0; i < corrected_received_length; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                        LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
+                        // LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
                         if (error != NO_ERRORS)
                             LOG_ERROR << "ERROR" ;
                     }
@@ -161,10 +161,10 @@ void RF_RXTask::ensureRxMode() {
                     uint8_t secondary_header_flag = (RX_BUFF[0] >> 3) & 0x01;  // 5th bit
                     uint16_t application_process_ID = ((RX_BUFF[0] & 0x07) << 8) | RX_BUFF[1];  // Last 3 bits + full RX_BUFF[1]
 
-                    LOG_DEBUG << "Packet Version Number: %u" << packet_version_number ;
-                    LOG_DEBUG << "Packet Type: %u\n" << packet_type;
-                    LOG_DEBUG << "Secondary Header Flag: %u\n" << secondary_header_flag;
-                    LOG_DEBUG << "Application Process ID: %u\n" << application_process_ID;
+                    LOG_DEBUG << "Packet Version Number: " << packet_version_number ;
+                    LOG_DEBUG << "Packet Type: " << packet_type;
+                    LOG_DEBUG << "Secondary Header Flag: " << secondary_header_flag;
+                    LOG_DEBUG << "Application Process ID: " << application_process_ID;
 
                     if (packet_type == Message::PacketType::TM) {
                         LOG_DEBUG << "[RX] TM RECEIVED" ;
@@ -199,9 +199,9 @@ void RF_RXTask::ensureRxMode() {
                     rx_total_drop_packets++;
                     LOG_DEBUG << "[RX DROP] c: " << drop_counter;
                     LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
+                    vTaskDelay(pdMS_TO_TICKS(50));
                 }
                 xSemaphoreGive(transceiver_handler.resources_mtx);
-                vTaskDelay(pdMS_TO_TICKS(50));
                 ensureRxMode();
             }
         }
