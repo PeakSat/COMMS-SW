@@ -66,6 +66,8 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
     if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(wait_ms_for_txfe)) == pdTRUE) {
         txfe_counter++;
         LOG_DEBUG << "[TX] TXFE: " << txfe_counter << " [TX] LENGTH: " << length - MAGIC_NUMBER;
+        LOG_DEBUG << "[TX] TXFE NOT RECEIVED: " << txfe_not_received;
+        LOG_DEBUG << "[TX] RXFE: " << rxfe_received << "[TX] RXFE NOT RECEIVED: " << rxfe_not_received; ;
         transceiver.tx_ongoing = false;
     }
     else {
@@ -124,34 +126,16 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                         }
                         case TX_ONG: {
                                 LOG_DEBUG << "[TX] TX_ONG";
-                                // if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(500))) {
-                                //     if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
-                                //         ensureTxMode();
-                                //         transceiver.transmitBasebandPacketsTx(RF09, outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, error);
-                                //         tx_counter++;
-                                //         LOG_INFO << "[TXFE] TX counter: " << tx_counter;
-                                //         rf_rxtask->ensureRxMode();
-                                //     }
-                                // }
-                                // else {
-                                //     LOG_ERROR << "[TX] TXFE NOT RECEIVED";
-                                //     transceiver.set_state(RF09, RF_TRXOFF, error);
-                                //     transceiver.chip_reset(error);
-                                //     transceiver.tx_ongoing = false;
-                                //     vTaskDelay(pdMS_TO_TICKS(100));
-                                //     rf_rxtask->ensureRxMode();
-                                //     // TODO: Send it again
-                                // }
-                            break;
+                                break;
                         }
                         case RX_ONG: {
                                 LOG_DEBUG << "[TX] RX_ONG";
                                 if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_tx, pdMS_TO_TICKS(250))) {
+                                    rxfe_received++;
                                     transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
-                                    LOG_INFO << "[RXFE] TX counter: " << tx_counter;
                                 }
                                 else {
-                                    LOG_ERROR << "[TX] RXFE NOT RECEIVED";
+                                    rxfe_not_received++;
                                     transceiver.set_state(RF09, RF_TRXOFF, error);
                                     transceiver.chip_reset(error);
                                     transceiver.rx_ongoing = false;

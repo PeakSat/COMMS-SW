@@ -34,7 +34,7 @@ public:
     [[noreturn]]void execute();
     void ensureTxMode();
     void transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait_ms_for_txfe, AT86RF215::Error& error);
-    uint32_t txfe_counter = 0, tx_counter = 0, txfe_not_received = 0;
+    uint32_t txfe_counter = 0, tx_counter = 0, txfe_not_received, rxfe_received, rxfe_not_received = 0;
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_TXTask>, this->TaskName,
                                              this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
