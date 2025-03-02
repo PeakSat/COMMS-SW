@@ -132,7 +132,7 @@ void RF_RXTask::ensureRxMode() {
     ensureRxMode();
 
     while (true) {
-        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, pdMS_TO_TICKS(transceiver_handler.RX_REFRESH_PERIOD_MS)) == pdTRUE) {
+        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, portMAX_DELAY) == pdTRUE) {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                 auto result = transceiver.get_received_length(RF09, error);
@@ -141,11 +141,9 @@ void RF_RXTask::ensureRxMode() {
                 int8_t rssi = transceiver.get_rssi(RF09, error);
                 uint8_t RX_BUFF[1024]{};
                 LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
-
                 if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
                 if (corrected_received_length > 0 && corrected_received_length <= 256) {
-                    LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                     drop_counter = 0;
@@ -195,14 +193,15 @@ void RF_RXTask::ensureRxMode() {
                     /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
                 }
                 else {
+                    vTaskDelay(pdMS_TO_TICKS(200));
                     drop_counter++;
                     rx_total_drop_packets++;
                     LOG_DEBUG << "[RX DROP] c: " << drop_counter;
                     LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
-                    vTaskDelay(pdMS_TO_TICKS(50));
+                    ensureRxMode();
                 }
-                xSemaphoreGive(transceiver_handler.resources_mtx);
                 ensureRxMode();
+                xSemaphoreGive(transceiver_handler.resources_mtx);
             }
         }
         // else {
