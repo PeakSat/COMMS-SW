@@ -2,7 +2,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpsabi" // Suppress: parameter passing for argument of type 'Time::DefaultCUC' {aka 'TimeStamp<4, 0, 1, 10>'} changed in GCC 7.1
 #include "Helpers/Parameter.hpp"
-#define NUMBER_OF_PARAMETERS 859
+#define NUMBER_OF_PARAMETERS 881
 namespace OBDHParameters {
     enum ParameterID : uint16_t {
         DEBUG_COUNTERID = 20,
@@ -330,6 +330,28 @@ namespace ADCSParameters {
         Fss0PowerID = 39634,
         Hss0PowerID = 39650,
         Str0PowerID = 39666,
+        Mag0McuTempID = 41491,
+        Mag0McuCurrentID = 41506,
+        Mag1McuTempID = 41523,
+        Mag1McuCurrentID = 41538,
+        Fss0McuTempID = 41555,
+        Fss0McuCurrentID = 41570,
+        Hss0McuTempID = 41587,
+        Hss0McuCurrentID = 41602,
+        Str0McuTempID = 41619,
+        Str0McuCurrentID = 41634,
+        Rwl0McuTempID = 41651,
+        Rwl0McuCurrentID = 41666,
+        Rwl1McuTempID = 41683,
+        Rwl1McuCurrenID = 41698,
+        Rwl2McuTempID = 41715,
+        Rwl2McuCurrentID = 41730,
+        McuTempID = 41747,
+        McuCurrentID = 41762,
+        GyroCurrentID = 41778,
+        Mtq1TotalCurrentAveragePosID = 41800,
+        Mtq1TotalCurrentAveragePosID = 41816,
+        Mtq1TotalCurrentAveragePosID = 41832,
         RwlFailIdID = 39680,
         MountStackXID = 39696,
         MountStackYID = 39712,
@@ -489,6 +511,28 @@ PowerOffUpgrade = 5
     inline Parameter<RWL0_power_state_enum> Fss0Power(PowerOff);
     inline Parameter<RWL0_power_state_enum> Hss0Power(PowerOff);
     inline Parameter<RWL0_power_state_enum> Str0Power(PowerOff);
+    inline Parameter<int16_t> Mag0McuTemp(0);
+    inline Parameter<uint16_t> Mag0McuCurrent(0);
+    inline Parameter<int16_t> Mag1McuTemp(0);
+    inline Parameter<uint16_t> Mag1McuCurrent(0);
+    inline Parameter<int16_t> Fss0McuTemp(0);
+    inline Parameter<uint16_t> Fss0McuCurrent(0);
+    inline Parameter<int16_t> Hss0McuTemp(0);
+    inline Parameter<uint16_t> Hss0McuCurrent(0);
+    inline Parameter<int16_t> Str0McuTemp(0);
+    inline Parameter<uint16_t> Str0McuCurrent(0);
+    inline Parameter<int16_t> Rwl0McuTemp(0);
+    inline Parameter<uint16_t> Rwl0McuCurrent(0);
+    inline Parameter<int16_t> Rwl1McuTemp(0);
+    inline Parameter<uint16_t> Rwl1McuCurren(0);
+    inline Parameter<int16_t> Rwl2McuTemp(0);
+    inline Parameter<uint16_t> Rwl2McuCurrent(0);
+    inline Parameter<int16_t> McuTemp(0);
+    inline Parameter<uint16_t> McuCurrent(0);
+    inline Parameter<uint16_t> GyroCurrent(0);
+    inline Parameter<float> Mtq1TotalCurrentAveragePos(0);
+    inline Parameter<float> Mtq1TotalCurrentAveragePos(0);
+    inline Parameter<float> Mtq1TotalCurrentAveragePos(0);
     enum RwlFailId_enum : uint8_t {
         RwlFailNone = 0,
 RwlFail0 = 1,
