@@ -9,6 +9,9 @@
 #include "main.h"
 #include <Frame.hpp>
 
+#define MIN_TC_SIZE 11
+#define MAX_TC_SIZE 256
+
 using namespace AT86RF215;
 
 

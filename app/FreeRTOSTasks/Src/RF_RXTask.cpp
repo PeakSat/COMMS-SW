@@ -137,7 +137,7 @@ void RF_RXTask::ensureRxMode() {
                 LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                 if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
-                if (corrected_received_length >= 11 && corrected_received_length <= 256) {
+                if (corrected_received_length >= MIN_TC_SIZE && corrected_received_length <= MAX_TC_SIZE) {
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                     drop_counter = 0;

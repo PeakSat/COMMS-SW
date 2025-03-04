@@ -711,7 +711,7 @@ void ParameterService::initializeParameterMap() {
         {OBDHParameters::USE_CANID, OBDHParameters::USE_CAN},
         {OBDHParameters::HEARTBEAT_PERIODID, OBDHParameters::HEARTBEAT_PERIOD},
         {OBDHParameters::LAST_RESET_CAUSEID, OBDHParameters::LAST_RESET_CAUSE},
-         {OBDHParameters::RTC_OFFSET_THRESHOLDID, OBDHParameters::RTC_OFFSET_THRESHOLD},
+        {OBDHParameters::RTC_OFFSET_THRESHOLDID, OBDHParameters::RTC_OFFSET_THRESHOLD},
         {OBDHParameters::USE_GNSS_PPSID, OBDHParameters::USE_GNSS_PPS},
         {ADCSParameters::ResetTypeID, ADCSParameters::ResetType},
         {ADCSParameters::UnixTimeSecondsID, ADCSParameters::UnixTimeSeconds},
