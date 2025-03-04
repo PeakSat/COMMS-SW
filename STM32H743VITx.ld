@@ -206,10 +206,10 @@ SECTIONS
          . = ALIGN(4);
       } >DTCMRAM
 
-    .dtcmram_incomingTCBuffer :
+    .dtcmram_incomingTMBuffer :
         {
             . = ALIGN(4);
-           *(.dtcmram_incomingTCBuffer )
+           *(.dtcmram_incomingTMBuffer )
            . = ALIGN(4);
         } >DTCMRAM
 
