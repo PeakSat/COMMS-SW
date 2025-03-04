@@ -28,7 +28,7 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     startReceiveFromUARTwithIdle(tc_buf_dma_pointer, 1024);
     uint32_t received_events_tc = 0;
     TCUARTQueueHandle = xQueueCreateStatic(TCUARTQueueSize, TCUARTItemSize, incomingTCUARTQueueStorageArea,
-                                        &incomingTCUARTQueueBuffer);
+                                           &incomingTCUARTQueueBuffer);
     vQueueAddToRegistry(TCUARTQueueHandle, "TC UART queue");
 
     LOG_INFO << "TCHandlingTask::execute()";
@@ -85,15 +85,14 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                         message.messageType <= MAX_SUBSERVICE_TYPE_NUMBER &&
                         message.dataSize < (rf_rx_tx_queue_handler.size - ECSSSecondaryTCHeaderSize)) {
                         for (int i = 5; i < rf_rx_tx_queue_handler.size; i++) {
-                            ECSS_TC_BUF[i-5] = local_tc_rx_bf[i];
+                            ECSS_TC_BUF[i - 5] = local_tc_rx_bf[i];
                             new_size++;
                         }
                         auto cobsDecodedMessage = COBSdecode<512>(ECSS_TC_BUF, new_size);
                         LOG_INFO << "Transmitting the TC to the OBC through CAN...";
-                        CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage,  Message::TC, false);
+                        CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage, Message::TC, false);
                         received_events_tc &= ~TC_RF_RX;
-                    }
-                    else {
+                    } else {
                         LOG_ERROR << "[TCHANDLING - FROM RX] Received an invalid message type!";
                     }
                 }
@@ -105,15 +104,15 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                 while (uxQueueMessagesWaiting(TCUARTQueueHandle)) {
                     if (xQueueReceive(TCUARTQueueHandle, &local_tc_uart_bf, pdMS_TO_TICKS(1000)) == pdTRUE) {
                         new_size = 0;
-                        for (uint16_t i = 1; i < size-1; i++) {
+                        for (uint16_t i = 1; i < size - 1; i++) {
                             LOG_DEBUG << "Received TC data: " << local_tc_uart_bf[i];
-                            ECSS_TC_BUF[i-1] = local_tc_uart_bf[i];
+                            ECSS_TC_BUF[i - 1] = local_tc_uart_bf[i];
                             new_size++;
                         }
                         // For some reason the script puts a 5 on the 4th pos, so we make it zero
                         ECSS_TC_BUF[4] = 0;
                         LOG_DEBUG << "RECEIVED TC FROM UART-YAMCS, size: " << new_size;
-                        if(ECSS_TC_BUF[1] == Message::TC) {
+                        if (ECSS_TC_BUF[1] == Message::TC) {
                             // Parse the message
                             Message message = MessageParser::parse(ECSS_TC_BUF, new_size);
                             etl::format_spec formatSpec;
@@ -150,16 +149,18 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                                 xQueueSendToBack(TXQueue, &tx_handler, 0);
                                 if (rf_txtask->taskHandle != nullptr) {
                                     xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
-                                }
-                                else
+                                } else
                                     LOG_ERROR << "TASK HANDLE NULL";
-                            }
-                            else if (message.applicationId == COMMS_APPLICATION_ID) {
+                            } else if (message.applicationId == COMMS_APPLICATION_ID) {
                                 /// TODO: Forward the TC to the COMMS Execution Task
                                 LOG_DEBUG << "Received TC from UART destined for COMMS";
+
+                                // CAN::Application::parseTCMessage(message);
+                                Message teleCommand = MessageParser::parseECSSTC(message.data.begin() + 1);
+
+                                MessageParser::execute(teleCommand);
                             }
-                        }
-                        else {
+                        } else {
                             LOG_ERROR << "Message is not a TC message";
                         }
                         xQueueReset(TCUARTQueueHandle);
