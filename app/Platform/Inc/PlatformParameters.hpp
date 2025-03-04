@@ -2,7 +2,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpsabi" // Suppress: parameter passing for argument of type 'Time::DefaultCUC' {aka 'TimeStamp<4, 0, 1, 10>'} changed in GCC 7.1
 #include "Helpers/Parameter.hpp"
-#define NUMBER_OF_PARAMETERS 881
+#define NUMBER_OF_PARAMETERS 883
 namespace OBDHParameters {
     enum ParameterID : uint16_t {
         DEBUG_COUNTERID = 20,
@@ -40,7 +40,9 @@ namespace OBDHParameters {
         USE_UARTID = 784,
         USE_CANID = 800,
         HEARTBEAT_PERIODID = 820,
-        LAST_RESET_CAUSEID = 836
+        LAST_RESET_CAUSEID = 836,
+        RTC_OFFSET_THRESHOLDID = 848,
+        USE_GNSS_PPSID = 864
     };
     inline Parameter<uint32_t> DEBUG_COUNTER(0);
     inline Parameter<float> PCB_TEMPERATURE_1(0);
@@ -100,6 +102,8 @@ Redundant = 1
     inline Parameter<bool> USE_CAN(false);
     inline Parameter<uint32_t> HEARTBEAT_PERIOD(3000);
     inline Parameter<uint32_t> LAST_RESET_CAUSE(0);
+    inline Parameter<uint8_t> RTC_OFFSET_THRESHOLD(2);
+    inline Parameter<bool> USE_GNSS_PPS(true);
 }
 namespace COMMSParameters {
     enum ParameterID : uint16_t {
@@ -108,7 +112,7 @@ namespace COMMSParameters {
         GNSS_TEMPID = 13160,
         ANTENNA_DEPLOYMENT_STATUSID = 13184,
         CW_INTERVALID = 13234,
-        BFSK_BEAKON_INTERVALID = 13250,
+        BFSK_BEACON_INTERVALID = 13250,
         UHF_TX_POWERID = 13268,
         RSSIID = 13352,
         GNSS_LATID = 13605,
@@ -138,7 +142,7 @@ namespace COMMSParameters {
     };
     inline Parameter<ANTENNA_DEPLOYMENT_STATUS_enum> ANTENNA_DEPLOYMENT_STATUS(Closed);
     inline Parameter<uint16_t> CW_INTERVAL(0);
-    inline Parameter<uint16_t> BFSK_BEAKON_INTERVAL(0);
+    inline Parameter<uint16_t> BFSK_BEACON_INTERVAL(0);
     inline Parameter<uint32_t> UHF_TX_POWER(0);
     inline Parameter<float> RSSI(0);
     inline Parameter<int32_t> GNSS_LAT(0);

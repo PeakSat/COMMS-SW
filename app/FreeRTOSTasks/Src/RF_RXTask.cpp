@@ -137,7 +137,7 @@ void RF_RXTask::ensureRxMode() {
                 LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                 if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
-                if (corrected_received_length > 0 && corrected_received_length <= 256) {
+                if (corrected_received_length >= MIN_TC_SIZE && corrected_received_length <= MAX_TC_SIZE) {
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                     drop_counter = 0;
@@ -161,7 +161,7 @@ void RF_RXTask::ensureRxMode() {
                     if (packet_type == Message::PacketType::TM) {
                         LOG_DEBUG << "[RX] TM RECEIVED" ;
                     }
-                    else if (packet_type == Message::PacketType::TC) {
+                    else if (packet_type == Message::PacketType::TC && application_process_ID == (OBC_APPLICATION_ID || COMMS_APPLICATION_ID) && secondary_header_flag){
                         LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
                         rf_rx_tx_queue_handler.size = corrected_received_length;
                         auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
