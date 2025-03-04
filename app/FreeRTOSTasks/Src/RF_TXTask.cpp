@@ -65,11 +65,12 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
         LOG_DEBUG << "[TX] TXFE: " << txfe_counter << " [TX] LENGTH: " << length - MAGIC_NUMBER;
         LOG_DEBUG << "[TX] TXFE NOT RECEIVED: " << txfe_not_received;
         LOG_DEBUG << "[TX] RXFE: " << rxfe_received << "[TX] RXFE NOT RECEIVED: " << rxfe_not_received;
-        LOG_DEBUG <<  "[FROM RX] DROP: " << rf_rxtask->drop_counter << "[FROM RX] TOT DROP:" << rf_rxtask->rx_total_drop_packets;
+        LOG_DEBUG <<  "[TX] TX_ONG COUNTER: " << tx_ong_counter;
         transceiver.tx_ongoing = false;
         HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
     }
     else {
+        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
         txfe_not_received++;
         // TODO : RESEND THE PACKET
         HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
@@ -79,7 +80,6 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
         transceiver.set_state(RF09, RF_TRXOFF, error);
         transceiver.chip_reset(error);
         transceiver.tx_ongoing = false;
-        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
         /// TODO: RESEND
     }
 }
@@ -117,41 +117,44 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     switch (state) {
                         case READY: {
-                                LOG_DEBUG << "[TX] READY";
-                                transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
-                                rf_rxtask->ensureRxMode();
-                                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-                                break;
+                            LOG_DEBUG << "[TX] READY";
+                            transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
+                            rf_rxtask->ensureRxMode();
+                            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+                            break;
                         }
                         case TX_ONG: {
-                                LOG_DEBUG << "[TX] TX_ONG";
-                                break;
+                            LOG_DEBUG << "[TX] TX_ONG";
+                            tx_ong_counter++;
+                            break;
                         }
                         case RX_ONG: {
-                                LOG_DEBUG << "[TX] RX_ONG";
-                                if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_tx, pdMS_TO_TICKS(250))) {
-                                    rxfe_received++;
-                                    transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
-                                }
-                                else {
-                                    rxfe_not_received++;
-                                    transceiver.set_state(RF09, RF_TRXOFF, error);
-                                    transceiver.chip_reset(error);
-                                    transceiver.rx_ongoing = false;
-                                    // TODO: Send it again
-                                }
-                                rf_rxtask->ensureRxMode();
+                            LOG_DEBUG << "[TX] RX_ONG";
+                            if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_tx, pdMS_TO_TICKS(250))) {
+                                rxfe_received++;
+                                transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
+                                transceiver.rx_ongoing = false;
+                            }
+                            else {
+                                rxfe_not_received++;
+                                transceiver.set_state(RF09, RF_TRXOFF, error);
+                                transceiver.chip_reset(error);
+                                transceiver.rx_ongoing = false;
+                                // TODO: Send it again
+                            }
+                            break;
+                            case RX_TX_ONG: {
+                                LOG_ERROR << "[TX] RXONG TXONG";
                                 break;
-                        }
-                        case RX_TX_ONG: {
-                            LOG_ERROR << "[TX] RXONG TXONG";
-                            break;
-                        }
-                        default: {
-                            LOG_ERROR << "[TX] Unknown state!";
-                            break;
+                            }
+                            default: {
+                                LOG_ERROR << "[TX] Unknown state!";
+                                break;
+                            }
                         }
                     }
+                    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+                    rf_rxtask->ensureRxMode();
                     xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
             }

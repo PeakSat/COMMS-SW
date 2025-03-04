@@ -134,6 +134,7 @@ void RF_RXTask::ensureRxMode() {
                 int16_t corrected_received_length = received_length - MAGIC_NUMBER;
                 int8_t rssi = transceiver.get_rssi(RF09, error);
                 uint8_t RX_BUFF[1024]{};
+                LOG_DEBUG << "[RX] DROP: " << drop_counter << "[RX] TOT DROP: " << rx_total_drop_packets;
                 LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                 if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;

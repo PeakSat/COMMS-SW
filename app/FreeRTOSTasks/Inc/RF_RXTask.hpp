@@ -14,8 +14,6 @@ using namespace AT86RF215;
 
 class RF_RXTask : public Task {
 public:
-    uint32_t rx_total_drop_packets = 0;
-    uint32_t drop_counter = 0;
     RF_RXTask() : Task("RF RX TASK"){}
     void ensureRxMode();
     [[noreturn]] void execute();
