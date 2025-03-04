@@ -21,10 +21,7 @@ namespace AT86RF215 {
         SemaphoreHandle_t txfeSemaphore_tx = nullptr;
         SemaphoreHandle_t rxfeSemaphore_rx = nullptr;
         SemaphoreHandle_t rxfeSemaphore_tx = nullptr;
-
         StaticSemaphore_t mtx_buf = {};
-        uint16_t RX_REFRESH_PERIOD_MS = 1000;
-        uint16_t BEACON_PERIOD_MS = 5000;
         void initialize_semaphore();
     };
 
@@ -92,10 +89,6 @@ namespace AT86RF215 {
         bool cca_ongoing;
         /// Flag for checking whether the AGC is locked
         bool agc_held;
-        /// This becomes true if the rf_txtask is notified
-        bool tx_actual;
-        /// This becomes true if the rf_rxtask is notified
-        bool rx_actual;
         SPI_HandleTypeDef* hspi;
 
         /*
@@ -107,7 +100,7 @@ namespace AT86RF215 {
         // Constructor with general config only
         At86rf215(SPI_HandleTypeDef* hspim)
             : hspi(hspim),
-              tx_ongoing(false), rx_ongoing(false), agc_held(false), cca_ongoing(false), tx_actual(false), rx_actual(false) {}
+              tx_ongoing(false), rx_ongoing(false), agc_held(false), cca_ongoing(false){}
 
         void setGeneralConfig(GeneralConfiguration&& GeneralConfig) {
             generalConfig = std::move(GeneralConfig);

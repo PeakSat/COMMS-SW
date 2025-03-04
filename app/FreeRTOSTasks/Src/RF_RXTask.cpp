@@ -124,7 +124,6 @@ void RF_RXTask::ensureRxMode() {
     uint32_t receivedEvents = 0;
     memoryQueueItemHandler rf_rx_tx_queue_handler{};
     ensureRxMode();
-
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_RX, pdFALSE, pdTRUE, &receivedEvents, portMAX_DELAY) == pdTRUE) {
             if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {

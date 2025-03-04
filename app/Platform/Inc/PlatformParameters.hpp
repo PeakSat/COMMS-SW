@@ -350,6 +350,8 @@ namespace ADCSParameters {
         McuCurrentID = 41762,
         GyroCurrentID = 41778,
         Mtq1TotalCurrentAveragePosID = 41800,
+        Mtq2TotalCurrentAveragePosID = 41816,
+        Mtq3TotalCurrentAveragePosID = 41832,
         RwlFailIdID = 39680,
         MountStackXID = 39696,
         MountStackYID = 39712,
@@ -529,6 +531,8 @@ PowerOffUpgrade = 5
     inline Parameter<uint16_t> McuCurrent(0);
     inline Parameter<uint16_t> GyroCurrent(0);
     inline Parameter<float> Mtq1TotalCurrentAveragePos(0);
+    inline Parameter<float> Mtq2TotalCurrentAveragePos(0);
+    inline Parameter<float> Mtq3TotalCurrentAveragePos(0);
     enum RwlFailId_enum : uint8_t {
         RwlFailNone = 0,
 RwlFail0 = 1,
