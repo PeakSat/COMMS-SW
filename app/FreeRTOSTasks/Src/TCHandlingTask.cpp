@@ -23,17 +23,15 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
 
 [[noreturn]] void TCHandlingTask::execute() {
     /// TODO: Be sure that the memory is available (eMMC)
-    vTaskDelay(2200);
+    vTaskDelay(pdMS_TO_TICKS(2500));
     tc_buf_dma_pointer = TC_UART_BUF;
     startReceiveFromUARTwithIdle(tc_buf_dma_pointer, 1024);
     uint32_t received_events_tc = 0;
     TCUARTQueueHandle = xQueueCreateStatic(TCUARTQueueSize, TCUARTItemSize, incomingTCUARTQueueStorageArea,
-                                        &incomingTCQueueBuffer);
+                                        &incomingTCUARTQueueBuffer);
     vQueueAddToRegistry(TCUARTQueueHandle, "TC UART queue");
 
     LOG_INFO << "TCHandlingTask::execute()";
-    CAN::StoredPacket TC_PACKET;
-    uint8_t* tc_buf_from_queue_pointer;
     uint16_t new_size = 0;
     while (true) {
         if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_INCOMING_TC, pdFALSE, pdTRUE, &received_events_tc, portMAX_DELAY) == pdTRUE) {
@@ -95,7 +93,6 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                         LOG_ERROR << "[TCHANDLING - FROM RX] Received an invalid message type!";
                     }
                 }
-                xQueueReset(incomingTCQueue);
             }
             if ((received_events_tc & TC_UART) && tc_uart_var) {
                 tc_uart_var = false;

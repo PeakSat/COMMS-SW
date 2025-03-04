@@ -9,6 +9,8 @@
 extern UART_HandleTypeDef huart4;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 
+inline TX_PACKET_HANDLER tm_handler;
+
 inline QueueHandle_t TMQueue;
 inline StaticQueue_t TMQueueBuffer;
 constexpr uint8_t TMQueueItemNum = 50;

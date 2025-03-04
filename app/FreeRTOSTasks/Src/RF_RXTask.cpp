@@ -71,9 +71,6 @@ void RF_RXTask::ensureRxMode() {
 [[noreturn]] void RF_RXTask::execute() {
     vTaskDelay(pdMS_TO_TICKS(4000));
     LOG_INFO << "[RF RX TASK]";
-    incomingTCQueue = xQueueCreateStatic(TCQueueSize, sizeof(CAN::StoredPacket), incomingTCQueueStorageArea,
-                                            &incomingTCQueueBuffer);
-    vQueueAddToRegistry(incomingTCQueue, "TC queue");
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     /// ENABLE THE RX SWITCH
     HAL_GPIO_WritePin(EN_RX_UHF_GPIO_Port, EN_RX_UHF_Pin, GPIO_PIN_RESET);
@@ -125,9 +122,6 @@ void RF_RXTask::ensureRxMode() {
     uint32_t rx_total_packets = 0;
     uint32_t rx_total_drop_packets = 0;
     uint32_t receivedEvents = 0;
-    uint32_t eMMCPacketTailPointer = 0;
-    State trx_state;
-    CAN::StoredPacket PacketToBeStored;
     memoryQueueItemHandler rf_rx_tx_queue_handler{};
     ensureRxMode();
 
@@ -193,103 +187,14 @@ void RF_RXTask::ensureRxMode() {
                     /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
                 }
                 else {
-                    vTaskDelay(pdMS_TO_TICKS(200));
+                    vTaskDelay(pdMS_TO_TICKS(100));
                     drop_counter++;
                     rx_total_drop_packets++;
-                    LOG_DEBUG << "[RX DROP] c: " << drop_counter;
-                    LOG_DEBUG << "[RX DROP] total packets c: " << rx_total_drop_packets;
                     ensureRxMode();
                 }
                 ensureRxMode();
                 xSemaphoreGive(transceiver_handler.resources_mtx);
             }
         }
-        // else {
-        //     if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-        //         switch (uint8_t rf_state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing) {
-        //             case READY: {
-        //                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-        //                 trx_state = transceiver.get_state(RF09, error);
-        //                 if (trx_state != RF_RX) {
-        //                     ensureRxMode();
-        //                 }
-        //                 break;
-        //             }
-        //             case TX_ONG: {
-        //
-        //                     LOG_DEBUG << "[RX] TX_ONG";
-        //                     if (xSemaphoreTake(transceiver_handler.txfeSemaphore_rx, pdMS_TO_TICKS(500))) {
-        //                         ensureRxMode();
-        //                         LOG_INFO << "[RX] TXFE RECEIVED";
-        //                         transceiver.tx_ongoing = false;
-        //                     }
-        //                     else {
-        //                         LOG_ERROR << "[RX] TXFE NOT RECEIVED";
-        //                         transceiver.print_state(RF09, error);
-        //                         transceiver.set_state(RF09, RF_TRXOFF, error);
-        //                         transceiver.chip_reset(error);
-        //                         transceiver.tx_ongoing = false;
-        //                         ensureRxMode();
-        //                     }
-        //                     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-        //                 break;
-        //             }
-        //             case RX_ONG: {
-        //                 LOG_DEBUG << "[RX] RX_ONG";
-        //                 // // vTaskSuspend(rf_txtask->taskHandle);
-        //                 // if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_rx, pdMS_TO_TICKS(500))) {
-        //                 //     LOG_INFO << "[RX] RXFE RECEIVED";
-        //                 //     trx_state = transceiver.get_state(RF09, error);
-        //                 //     if (trx_state != RF_RX) {
-        //                 //         ensureRxMode();
-        //                 //     }
-        //                 //     transceiver.rx_ongoing = false;
-        //                 // }
-        //                 // else {
-        //                 //     LOG_ERROR << "[RX] RXFE NOT RECEIVED";
-        //                 //     transceiver.set_state(RF09, RF_TRXOFF, error);
-        //                 //     transceiver.chip_reset(error);
-        //                 //     transceiver.rx_ongoing = false;
-        //                 //     ensureRxMode();
-        //                 // }
-        //                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-        //
-        //                 // vTaskResume(rf_txtask->taskHandle);
-        //                 break;
-        //             }
-        //             case RX_TX_ONG: {
-        //                 LOG_ERROR << "[RX] RXONG AND TXONG";
-        //                 break;
-        //             }
-        //             default: {
-        //                 LOG_ERROR << "[RX] UNEXPECTED CASE";
-        //                 break;
-        //             }
-        //         }
-        //         if (transceiver.TransceiverError_flag) {
-        //             transceiver.TransceiverError_flag = false;
-        //             LOG_ERROR << "[RX] Transceiver Error";
-        //         }
-        //         if (transceiver.FrameBufferLevelIndication_flag) {
-        //             transceiver.FrameBufferLevelIndication_flag = false;
-        //             LOG_ERROR << "[RX] FrameBuffer Level Indication";
-        //         }
-        //         if (transceiver.IFSynchronization_flag) {
-        //             transceiver.IFSynchronization_flag = false;
-        //             LOG_ERROR << "[RX] IF Synchronization";
-        //         }
-                // if (transceiver.Voltage_Drop) {
-                //     transceiver.Voltage_Drop = false;
-                //     LOG_ERROR << "[RX] Voltage Drop";
-                // }
-                // if (transceiver.TransmitterFrameEnd_flag) {
-                //     transceiver.TransmitterFrameEnd_flag = false;
-                //     LOG_INFO << "[RX] Transceiver FRAME END FLAG";
-                //     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-                //     transceiver.tx_actual = false;
-                // }
-                // xSemaphoreGive(transceiver_handler.resources_mtx);
-            // }
-        // }
     }
 }

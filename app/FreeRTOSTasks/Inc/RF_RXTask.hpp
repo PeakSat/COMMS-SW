@@ -9,19 +9,13 @@
 #include "main.h"
 #include <Frame.hpp>
 
-#define MAGIC_NUMBER 4
-
-inline QueueHandle_t incomingTCQueue;
-inline StaticQueue_t incomingTCQueueBuffer;
-constexpr uint8_t TCQueueSize = 50;
-inline uint8_t incomingTCQueueStorageArea[TCQueueSize * sizeof(CAN::StoredPacket)] __attribute__((section(".dtcmram_incomingTC ")));
 using namespace AT86RF215;
 
 
-using namespace AT86RF215;
 class RF_RXTask : public Task {
 public:
-
+    uint32_t rx_total_drop_packets = 0;
+    uint32_t drop_counter = 0;
     RF_RXTask() : Task("RF RX TASK"){}
     void ensureRxMode();
     [[noreturn]] void execute();

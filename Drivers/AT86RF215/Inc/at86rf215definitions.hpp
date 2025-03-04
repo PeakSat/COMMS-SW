@@ -1,7 +1,7 @@
 #pragma once
 
 namespace AT86RF215 {
-
+    #define MAGIC_NUMBER 4
     #define FBLI (1 << 0)
     #define RXFE_RX (1 << 1)
     #define RXFE_TX (1 << 2)

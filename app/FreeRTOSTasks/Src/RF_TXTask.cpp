@@ -1,10 +1,8 @@
 #include "RF_TXTask.hpp"
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
-#include <timers.h>
 #include "main.h"
 #include "app_main.h"
-
 #include <ApplicationLayer.hpp>
 #include <eMMC.hpp>
 
@@ -62,19 +60,18 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
         __NOP();
         // LOG_DEBUG << "[TX DATA] " << tx_buf[i];
     }
-
     if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(wait_ms_for_txfe)) == pdTRUE) {
         txfe_counter++;
         LOG_DEBUG << "[TX] TXFE: " << txfe_counter << " [TX] LENGTH: " << length - MAGIC_NUMBER;
         LOG_DEBUG << "[TX] TXFE NOT RECEIVED: " << txfe_not_received;
-        LOG_DEBUG << "[TX] RXFE: " << rxfe_received << "[TX] RXFE NOT RECEIVED: " << rxfe_not_received; ;
+        LOG_DEBUG << "[TX] RXFE: " << rxfe_received << "[TX] RXFE NOT RECEIVED: " << rxfe_not_received;
+        LOG_DEBUG <<  "[FROM RX] DROP: " << rf_rxtask->drop_counter << "[FROM RX] TOT DROP:" << rf_rxtask->rx_total_drop_packets;
         transceiver.tx_ongoing = false;
+        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
     }
     else {
-        vTaskDelay(pdMS_TO_TICKS(1000));
         txfe_not_received++;
         // TODO : RESEND THE PACKET
-        LOG_ERROR << "[TX READY] TXFE **NOT** RECEIVED: " << txfe_not_received;
         HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
         vTaskDelay(pdMS_TO_TICKS(20));
         HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
@@ -82,6 +79,7 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
         transceiver.set_state(RF09, RF_TRXOFF, error);
         transceiver.chip_reset(error);
         transceiver.tx_ongoing = false;
+        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
         /// TODO: RESEND
     }
 }
@@ -114,6 +112,7 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                         outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
                     }
                 }
+
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     switch (state) {
