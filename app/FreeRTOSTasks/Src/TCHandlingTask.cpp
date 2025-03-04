@@ -79,7 +79,11 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                     LOG_DEBUG << output.c_str();
                     // TODO
                     new_size = 0;
-                    if (message.applicationId == OBC_APPLICATION_ID && message.packetType == Message::TC && message.serviceType <= 23 && message.messageType <= 40 && message.dataSize < rf_rx_tx_queue_handler.size) {
+                    if (message.applicationId == OBC_APPLICATION_ID &&
+                        message.packetType == Message::TC &&
+                        (message.serviceType == HOUSEKEEPING || message.serviceType == FUNCTION_MANAGEMENT || message.serviceType == TEST) &&
+                        message.messageType <= 40 &&
+                        message.dataSize < (rf_rx_tx_queue_handler.size - 5)) {
                         for (int i = 5; i < rf_rx_tx_queue_handler.size; i++) {
                             ECSS_TC_BUF[i-5] = local_tc_rx_bf[i];
                             new_size++;
