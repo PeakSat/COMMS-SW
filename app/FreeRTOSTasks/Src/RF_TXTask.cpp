@@ -1,10 +1,8 @@
 #include "RF_TXTask.hpp"
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
-#include <timers.h>
 #include "main.h"
 #include "app_main.h"
-
 #include <ApplicationLayer.hpp>
 #include <eMMC.hpp>
 
@@ -31,7 +29,7 @@ void RF_TXTask::ensureTxMode() {
             // LOG_DEBUG << "[TX ENSURE] STATE: RX";
             break;
         case RF_TRANSITION:
-            vTaskDelay(10);
+            vTaskDelay(pdMS_TO_TICKS(10));
             LOG_DEBUG << "[TX ENSURE] STATE: TRANSITION";
         break;
         case RF_RESET:
@@ -40,9 +38,9 @@ void RF_TXTask::ensureTxMode() {
         case RF_INVALID:
             LOG_DEBUG << "[TX ENSURE] STATE: INVALID";
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
-            vTaskDelay(20);
+            vTaskDelay(pdMS_TO_TICKS(20));
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
-            vTaskDelay(10);
+            vTaskDelay(pdMS_TO_TICKS(10));
             transceiver.set_state(RF09, RF_TRXOFF, error);
         break;
         case RF_TXPREP:
@@ -55,103 +53,109 @@ void RF_TXTask::ensureTxMode() {
     }
 }
 
-PacketData RF_TXTask::createRandomPacketData(uint16_t length) {
-    PacketData data{};
-    for (uint16_t i = 0; i < length; i++)
-        data.packet[i] = i % 100;
-    data.length = length;
-    return data;
+void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait_ms_for_txfe, Error& error) {
+    ensureTxMode();
+    transceiver.transmitBasebandPacketsTx(RF09, tx_buf, length, error);
+    for (int i = 0; i < length; i++) {
+        __NOP();
+        // LOG_DEBUG << "[TX DATA] " << tx_buf[i];
+    }
+    if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(wait_ms_for_txfe)) == pdTRUE) {
+        txfe_counter++;
+        LOG_DEBUG << "[TX] TXFE: " << txfe_counter << " [TX] LENGTH: " << length - MAGIC_NUMBER;
+        LOG_DEBUG << "[TX] TXFE NOT RECEIVED: " << txfe_not_received;
+        LOG_DEBUG << "[TX] RXFE: " << rxfe_received << "[TX] RXFE NOT RECEIVED: " << rxfe_not_received;
+        LOG_DEBUG <<  "[TX] TX_ONG COUNTER: " << tx_ong_counter;
+        transceiver.tx_ongoing = false;
+        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+    }
+    else {
+        HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+        txfe_not_received++;
+        // TODO : RESEND THE PACKET
+        HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
+        vTaskDelay(pdMS_TO_TICKS(20));
+        HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        transceiver.set_state(RF09, RF_TRXOFF, error);
+        transceiver.chip_reset(error);
+        transceiver.tx_ongoing = false;
+        /// TODO: RESEND
+    }
 }
 
+
 [[noreturn]] void RF_TXTask::execute() {
-    TXQueue = xQueueCreateStatic(outgoingTXQueueSize, sizeof(CAN::StoredPacket), outgoingTXQueueStorageArea,
-                                            &outgoingTXQueueBuffer);
-    vQueueAddToRegistry(TXQueue, "TM outgoing queue");
-    vTaskDelay(8000);
+    TXQueue = xQueueCreateStatic(TXQueueItemNum, TXItemSize, TXQueueStorageArea,
+                                            &TXQueueBuffer);
+    vQueueAddToRegistry(TXQueue, "RF TX queue");
     uint8_t state = 0;
-    uint8_t counter = 0;
-    uint32_t receivedEventsTransmit;
-    uint32_t tx_counter = 0;
-    CAN::StoredPacket TX_PACKET;
+    uint32_t receivedEventsTransmit = 0;
+
     while (true) {
-        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, pdTICKS_TO_MS(transceiver_handler.BEACON_PERIOD_MS + 1000)) == pdTRUE) {
+        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TRANSMIT, pdFALSE, pdTRUE, &receivedEventsTransmit, portMAX_DELAY) == pdTRUE) {
             while (uxQueueMessagesWaiting(TXQueue)) {
-                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
                 /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
-                xQueueReceive(TXQueue, &TX_PACKET, portMAX_DELAY);
-                if (receivedEventsTransmit & TC_UART_TC_HANDLING_TASK) {
-                    auto status = getItem(eMMC::memoryMap[eMMC::UART_TC], TX_BUFF, 1024, TX_PACKET.pointerToeMMCItemData, 2);
-                    if (status.has_value()) {
-                        LOG_DEBUG << "[TX] Received TC... preparing its transmission to the air";
+                HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
+                xQueueReceive(TXQueue, &tx_handler, portMAX_DELAY);
+                if (receivedEventsTransmit & TC_UART_TC_HANDLING_TASK ) {
+                    for (int i = 0 ; i < tx_handler.data_length; i++) {
+                        outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
+                        LOG_INFO << "[TX] Data to send to the air from UART: " << outgoing_TX_BUFF[i];
                     }
-                    else
-                        LOG_ERROR << "[TX] ERROR: memory";
                 }
                 if (receivedEventsTransmit & TM_OBC) {
-                    CAN::Application::getStoredMessage(&TX_PACKET, TX_BUFF, TX_PACKET.size, sizeof(TX_BUFF) / sizeof(TX_BUFF[0]));
-                    LOG_DEBUG << "Received TM from OBC... preparing the transmission";
+                    // TODO: Do that inside of the TMHandlingTask
+                    LOG_DEBUG << "[TX] New TM received with size: " << tx_handler.data_length;
+                    for (int i = 0; i < tx_handler.data_length; i++) {
+                        // LOG_DEBUG << "[TX] TM DATA: " << tx_handler.pointer_to_data[i];
+                        outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
+                    }
                 }
+
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
+                    switch (state) {
+                        case READY: {
+                            LOG_DEBUG << "[TX] READY";
+                            transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
+                            rf_rxtask->ensureRxMode();
+                            HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+                            break;
+                        }
+                        case TX_ONG: {
+                            LOG_DEBUG << "[TX] TX_ONG";
+                            tx_ong_counter++;
+                            break;
+                        }
+                        case RX_ONG: {
+                            LOG_DEBUG << "[TX] RX_ONG";
+                            if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_tx, pdMS_TO_TICKS(250))) {
+                                rxfe_received++;
+                                transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
+                                transceiver.rx_ongoing = false;
+                            }
+                            else {
+                                rxfe_not_received++;
+                                transceiver.set_state(RF09, RF_TRXOFF, error);
+                                transceiver.chip_reset(error);
+                                transceiver.rx_ongoing = false;
+                                // TODO: Send it again
+                            }
+                            break;
+                            case RX_TX_ONG: {
+                                LOG_ERROR << "[TX] RXONG TXONG";
+                                break;
+                            }
+                            default: {
+                                LOG_ERROR << "[TX] Unknown state!";
+                                break;
+                            }
+                        }
+                    }
+                    HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
+                    rf_rxtask->ensureRxMode();
                     xSemaphoreGive(transceiver_handler.resources_mtx);
-                }
-                for (uint32_t i = 0; i < TX_PACKET.size; i++) {
-                    LOG_INFO << "TX PACKET to be sent: " << TX_BUFF[i];
-                }
-                switch (state) {
-                    case READY: {
-                        if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-                            if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
-                                ensureTxMode();
-                                LOG_DEBUG << "[TX] TX PACKET SIZE: " << TX_PACKET.size;
-                                transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TX_PACKET.size + 4, error);
-                                tx_counter++;
-                                LOG_INFO << "[TX] TX counter: " << tx_counter;
-                            }
-                            xSemaphoreGive(transceiver_handler.resources_mtx);
-                        }
-                        break;
-                    }
-                    case TX_ONG: {
-                        uint32_t receivedEventsTXFE;
-                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_TXFE_TX, pdFALSE, pdTRUE, &receivedEventsTXFE, pdTICKS_TO_MS(1000)) == pdTRUE) {
-                            if (receivedEventsTXFE & TXFE) {
-                                if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-                                    if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
-                                        ensureTxMode();
-                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TX_PACKET.size + 4, error);
-                                        tx_counter++;
-                                        LOG_INFO << "[TXFE] TX counter: " << tx_counter;
-                                    }
-                                    xSemaphoreGive(transceiver_handler.resources_mtx);
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    case RX_ONG: {
-                        uint32_t receivedEventsRXFE;
-                        if (xTaskNotifyWaitIndexed(NOTIFY_INDEX_RXFE_TX, pdFALSE, pdTRUE, &receivedEventsRXFE, pdTICKS_TO_MS(1000)) == pdTRUE) {
-                                if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
-                                    if (!transceiver.rx_ongoing && !transceiver.tx_ongoing) {
-                                        ensureTxMode();
-                                        transceiver.transmitBasebandPacketsTx(RF09, TX_BUFF, TX_PACKET.size + 4, error);
-                                        tx_counter++;
-                                        LOG_INFO << "[RXFE] TX counter: " << tx_counter;
-                                    }
-                                    xSemaphoreGive(transceiver_handler.resources_mtx);
-                                }
-                        }
-                        break;
-                    }
-                    case RX_TX_ONG: {
-                        LOG_ERROR << "[TX] RXONG TXONG";
-                        break;
-                    }
-                    default: {
-                        LOG_ERROR << "[TX] Unknown state!";
-                        break;
-                    }
                 }
             }
         }

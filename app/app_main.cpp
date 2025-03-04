@@ -24,6 +24,9 @@
 #include "at86rf215.hpp"
 #include "HeartbeatTask.hpp"
 #include "TCHandlingTask.hpp"
+#include "TMHandlingTask.hpp"
+
+#define ENABLE_UART4_RX
 
 #include <stm32h7xx_it.h>
 
@@ -55,20 +58,22 @@ void app_main(void) {
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
     canParserTask.emplace();
-    heartbeatTask.emplace();
     tcHandlingTask.emplace();
+    tmhandlingTask.emplace();
+    heartbeatTask.emplace();
 
     uartGatekeeperTask->createTask();
     // rf_rxtask->createTask();
     // rf_txtask->createTask();
     eMMCTask->createTask();
     gnssTask->createTask();
-    testTask->createTask();
+    // testTask->createTask();
     ina3221Task->createTask();
     canGatekeeperTask->createTask();
     tmp117Task->createTask();
     canParserTask->createTask();
     tcHandlingTask->createTask();
+    tmhandlingTask->createTask();
     heartbeatTask->createTask();
     // HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     LOG_INFO << "####### This board runs COMMS_Software, commit " << kGitHash << " #######";
@@ -78,9 +83,13 @@ void app_main(void) {
     can_ack_handler.initialize_semaphore();
     CAN_TRANSMIT_Handler.initialize_semaphore();
     transceiver_handler.initialize_semaphore();
+    HAL_NVIC_DisableIRQ(DMA1_Stream2_IRQn);
+#ifdef ENABLE_UART4_RX
+    HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
+#endif
 
     vTaskStartScheduler();
-
     /* Should not get here. */
     for (;;)
         ;
@@ -216,13 +225,17 @@ extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef* huart, uint16_t S
     // UART4 -> Logger
     if (huart->Instance == UART4) {
         if (huart->RxEventType == HAL_UART_RXEVENT_IDLE) {
-            tcHandlingTask->send_to_tc_queue = huart4.pRxBuffPtr;
-            tcHandlingTask->size = Size;
-            xHigherPriorityTaskWoken = pdFALSE;
-            xQueueSendFromISR(tcHandlingTask->TCUARTQueueHandle, &tcHandlingTask->send_to_tc_queue, &xHigherPriorityTaskWoken);
-            xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, TC_UART, eSetBits, &xHigherPriorityTaskWoken);
-            TCHandlingTask::startReceiveFromUARTwithIdle(tcHandlingTask->tc_buf_dma_pointer, 512);
+            if (Size >= 5 && Size <= 1024) {
+                tcHandlingTask->tc_uart_var = true;
+                tcHandlingTask->send_to_tc_queue = huart4.pRxBuffPtr;
+                tcHandlingTask->size = Size;
+                xHigherPriorityTaskWoken = pdFALSE;
+                xQueueSendFromISR(tcHandlingTask->TCUARTQueueHandle, &tcHandlingTask->send_to_tc_queue, &xHigherPriorityTaskWoken);
+                xHigherPriorityTaskWoken = pdFALSE;
+                xTaskNotifyIndexedFromISR(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 18), eSetBits, &xHigherPriorityTaskWoken);
+                portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            }
+            TCHandlingTask::startReceiveFromUARTwithIdle(tcHandlingTask->tc_buf_dma_pointer, 1024);
         }
     }
 }

@@ -1512,24 +1512,18 @@ void At86rf215::print_error(Error& err) {
         }
         if ((irq & InterruptMask::AGCRelease) != 0) {
             // AGC Release handling
-            xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_AGC_RELEASE, AGC_RELEASE, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::AGCHold) != 0) {
             // AGC Hold handling
-            xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_AGC, AGC_HOLD, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::TransmitterFrameEnd) != 0) {
             TransmitterFrameEnd_flag = true;
             xHigherPriorityTaskWoken = pdFALSE;
             tx_ongoing = false;
-            xTaskNotifyIndexedFromISR(rf_txtask->taskHandle, NOTIFY_INDEX_TXFE_TX, TXFE, eSetBits, &xHigherPriorityTaskWoken);
+            xSemaphoreGiveFromISR(transceiver_handler.txfeSemaphore_tx, &xHigherPriorityTaskWoken);
             xHigherPriorityTaskWoken = pdFALSE;
-            xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_TXFE_RX, TXFE, eSetBits, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);}
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        }
         if ((irq & InterruptMask::ReceiverExtendMatch) != 0) {
             // Receiver Extended Match handling
             ReceiverExtendMatch_flag = true;
@@ -1544,6 +1538,9 @@ void At86rf215::print_error(Error& err) {
                 rx_ongoing = false;
             xHigherPriorityTaskWoken = pdFALSE;
             xTaskNotifyIndexedFromISR(rf_rxtask->taskHandle, NOTIFY_INDEX_RXFE_RX, RXFE_RX, eSetBits, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            xHigherPriorityTaskWoken = pdFALSE;
+            xSemaphoreGiveFromISR(transceiver_handler.rxfeSemaphore_tx, &xHigherPriorityTaskWoken);
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
         if ((irq & InterruptMask::ReceiverFrameStart) != 0) {

@@ -16,7 +16,7 @@
 void TestTask::execute() {
     LOG_DEBUG << "TestTask::execute()";
     // ServicePool::functionManagement.include()
-    Services.functionManagement.include(String<ECSSFunctionNameLength>("foo").data(), &TestTask::myFunction);
+    // Services.functionManagement.include(String<ECSSFunctionNameLength>("foo").data(), &TestTask::myFunction);
     // functionManagement
     while (true) {
         myFunction();

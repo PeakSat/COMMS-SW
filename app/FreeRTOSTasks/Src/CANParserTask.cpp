@@ -2,13 +2,13 @@
 #include "ApplicationLayer.hpp"
 #include "CANGatekeeperTask.hpp"
 
+#include <TCHandlingTask.hpp>
+#include <TMHandlingTask.hpp>
 #include <TPProtocol.hpp>
 #include <eMMC.hpp>
 
 void CANParserTask::execute() {
 
-    uint32_t eMMCPacketTailPointer = 0;
-    int counter = 0;
     uint32_t ulNotifiedValue;
     while (true) {
 
@@ -16,14 +16,13 @@ void CANParserTask::execute() {
         while (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue)) {
 
             // Get packet from eMMC
-            CAN::StoredPacket StoredPacket;
+            CAN::StoredPacket StoredPacket{};
             xQueueReceive(canGatekeeperTask->storedPacketQueue, &StoredPacket, portMAX_DELAY);
 
             if (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue) == 0) {
 
                 // Get packet from eMMC
-                uint8_t messageBuff[1024];
-
+                uint8_t messageBuff[1024]{};
                 CAN::Application::getStoredMessage(&StoredPacket, messageBuff, StoredPacket.size, sizeof(messageBuff) / sizeof(messageBuff[0]));
                 LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << StoredPacket.size;
 
@@ -37,9 +36,17 @@ void CANParserTask::execute() {
 
                 uint8_t messageID = static_cast<CAN::Application::MessageIDs>(StoredPacket.Identifier);
                 if (messageID == CAN::Application::CCSDSPacket) {
-                    xQueueSendToBack(TXQueue, &StoredPacket, NULL);
-                    xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TM_OBC, eSetBits);
-                    LOG_DEBUG << "New TM received: ";
+                    for (int i = 0 ; i < StoredPacket.size ; i++) {
+                        TX_BUF_CAN[i] = messageBuff[i];
+                        // LOG_DEBUG << "[CAN-PARSER] TM DATA: " << messageBuff[i];
+                    }
+
+                    tm_handler.pointer_to_data = TX_BUF_CAN;
+                    tm_handler.data_length = StoredPacket.size;
+                    xQueueSendToBack(TMQueue, &tm_handler, NULL);
+                    if (tmhandlingTask->taskHandle != nullptr) {
+                        xTaskNotifyIndexed(tmhandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TM, TM_OBC_TM_HANDLING, eSetBits);
+                    }
                 } else {
                     CAN::TPMessage message;
                     message.appendUint8(StoredPacket.Identifier);
@@ -54,28 +61,5 @@ void CANParserTask::execute() {
                 LOG_DEBUG << "Old message discarded";
             }
         }
-
-
-        // if (counter == 0) {
-        //     counter = 1;
-        //     // CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
-        //     CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload1.data(), false);
-        //
-        //     LOG_DEBUG << "REDUNDANT CAN is sending";
-        // } else {
-        //     counter = 0;
-        //     // CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
-        //     CAN::Application::createLogMessage(CAN::NodeIDs::OBC, false, testPayload2.data(), false);
-        //
-        //     LOG_DEBUG << "MAIN CAN is sending";
-        // }
-        // while (uxQueueMessagesWaiting(canGatekeeperTask->storedPacketQueue)) {
-        //     CAN::StoredPacket StoredPacket;
-        //     xQueueReceive(canGatekeeperTask->storedPacketQueue, &StoredPacket, portMAX_DELAY);
-        //     uint8_t messageBuff[StoredPacket.size];
-        //     CAN::Application::getStoredMessage(&StoredPacket, messageBuff, StoredPacket.size, sizeof(messageBuff) / sizeof(messageBuff[0]));
-        //     LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << StoredPacket.size;
-        // }
-        // vTaskDelay(3000);
     }
 }
