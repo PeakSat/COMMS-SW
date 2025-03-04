@@ -30,45 +30,22 @@ CANGatekeeperTask::CANGatekeeperTask() : Task("CANGatekeeperTask") {
     incomingFrameQueue = xQueueCreateStatic(sizeOfIncommingFrameBuffer, sizeof(CAN::Frame), incomingFrameQueueStorageArea,
                                             &incomingFrameQueueBuffer);
     vQueueAddToRegistry(incomingFrameQueue, "CAN Incoming Frame");
-
-
-    storedPacketQueue = xQueueCreateStatic(128, sizeof(CAN::StoredPacket), storedPacketQueueStorageArea,
-                                           &storedPacketQueueBuffer);
-    vQueueAddToRegistry(storedPacketQueue, "CAN stored packet");
 }
 
-static uint32_t thread_notification;
 
 void CANGatekeeperTask::execute() {
     CAN::Packet out_message = {};
-    // CAN::Packet in_message = {};
     CAN::Frame in_frame_handler = {};
 
     taskHandle = xTaskGetCurrentTaskHandle();
 
     uint32_t ulNotifiedValue;
 
-
-    // Variables for Rx message processing/storing
-    uint8_t localPacketBuffer[1024];
-    uint32_t localPacketBufferTailPointer = 0;
-    uint32_t currentMFPacketSize = 0;
-    uint8_t currenConsecutiveFrameCounter = 0;
-    uint8_t currentMFPacketID = 0;
-    uint32_t eMMCPacketTailPointer = 0;
-    int j = 0;
-
-
     while (true) {
         // LOG_DEBUG << "{START OF" << this->TaskName << "}";
         xTaskNotifyWait(0, 0, &ulNotifiedValue, pdMS_TO_TICKS(1000));
-        //
-        // xSemaphoreTake(can_ack_handler.CAN_ACK_SEMAPHORE, portMAX_DELAY);
 
         while (uxQueueMessagesWaiting(incomingFrameQueue)) {
-            if (eMMCPacketTailPointer + 2 > eMMC::memoryMap[eMMC::CANMessages].size / eMMC::memoryPageSize) {
-                eMMCPacketTailPointer = 0;
-            }
             // Get the message pointer from the queue
             xQueueReceive(incomingFrameQueue, &in_frame_handler, portMAX_DELAY);
 
@@ -106,7 +83,7 @@ void CANGatekeeperTask::execute() {
                     for (uint32_t i = 0; i < (CAN::MaxPayloadLength - 2); i++) {
                         __NOP();
                         if (i + FrameNumber == 0) {
-                            CANPacketHandler->PacketID = in_frame_handler.pointerToData[2];
+                            CANPacketHandler->MessageID = in_frame_handler.pointerToData[2];
                         } else {
                             if (sizeof(CANPacketHandler->Buffer) / sizeof(CANPacketHandler->Buffer[0]) > (FrameNumber * (CAN::MaxPayloadLength - 2)) + i - 1) {
                                 CANPacketHandler->Buffer[(FrameNumber * (CAN::MaxPayloadLength - 2)) + i - 1] = in_frame_handler.pointerToData[i + 2];
@@ -124,7 +101,7 @@ void CANGatekeeperTask::execute() {
                         for (uint32_t i = 0; (CANPacketHandler->PacketSize > CANPacketHandler->TailPointer); i++) {
                             uint8_t FrameNumber = in_frame_handler.pointerToData[1] - 1;
                             if (i + FrameNumber == 0) {
-                                CANPacketHandler->PacketID = in_frame_handler.pointerToData[2];
+                                CANPacketHandler->MessageID = in_frame_handler.pointerToData[2];
                             } else if (sizeof(CANPacketHandler->Buffer) / sizeof(CANPacketHandler->Buffer[0]) > CANPacketHandler->TailPointer) {
                                 CANPacketHandler->Buffer[CANPacketHandler->TailPointer] = in_frame_handler.pointerToData[i + 2];
                                 CANPacketHandler->TailPointer = CANPacketHandler->TailPointer + 1;
@@ -135,22 +112,24 @@ void CANGatekeeperTask::execute() {
                         }
 
                         // Write message to eMMC
-                        auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::CANMessages], &CANPacketHandler->Buffer[0], 1024, eMMCPacketTailPointer, 2);
-                        // Add message to queue
-                        CAN::StoredPacket PacketToBeStored;
-                        PacketToBeStored.pointerToeMMCItemData = eMMCPacketTailPointer;
-                        eMMCPacketTailPointer += 2;
-                        PacketToBeStored.Identifier = CANPacketHandler->PacketID;
-                        PacketToBeStored.size = CANPacketHandler->PacketSize;
+
+                        //get item ready to be stored to eMMC queue
+                        memoryQueueItemHandler enqueueHandler{};
+                        enqueueHandler.size = sizeof(localPacketHandler);
                         if (in_frame_handler.bus->Instance == FDCAN1) {
-                            PacketToBeStored.CANInstance = CAN::CAN1;
+                            CANPacketHandler->CANInstance = CAN1;
                             __NOP();
                         } else if (in_frame_handler.bus->Instance == FDCAN2) {
-                            PacketToBeStored.CANInstance = CAN::CAN2;
+                            CANPacketHandler->CANInstance = CAN2;
                             __NOP();
                         }
-
-                        xQueueSendToBack(storedPacketQueue, &PacketToBeStored, NULL);
+                        eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::CANRx], &enqueueHandler, reinterpret_cast<uint8_t*>(CANPacketHandler), enqueueHandler.size);
+                        if (uxQueueSpacesAvailable(CANRxQueue) > 0) {
+                            xQueueSendToBack(CANRxQueue, &enqueueHandler, portMAX_DELAY);
+                        } else {
+                            // Queue is full, handle the error (e.g., drop packet, log, etc.)
+                            LOG_ERROR << "CAN Rx queue is full";
+                        }
                         xTaskNotifyGive(canParserTask->taskHandle);
                         // LOG_DEBUG << "message came at : " << xTaskGetTickCount();
                     } else {

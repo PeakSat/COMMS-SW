@@ -104,12 +104,12 @@ void RF_RXTask::ensureRxMode() {
             xSemaphoreGive(transceiver_handler.resources_mtx);
 
             if (success) {
-                break;  // Exit loop if successful
+                break; // Exit loop if successful
             }
 
             attempt++;
             LOG_ERROR << "Retrying connection attempt " << attempt << "/" << MAX_RETRIES;
-            vTaskDelay(pdMS_TO_TICKS(100));  // Small delay before retrying
+            vTaskDelay(pdMS_TO_TICKS(100)); // Small delay before retrying
         }
     }
     if (!success) {
@@ -136,7 +136,7 @@ void RF_RXTask::ensureRxMode() {
                 LOG_DEBUG << "[RX] DROP: " << drop_counter << "[RX] TOT DROP: " << rx_total_drop_packets;
                 LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                 if (rssi != 127)
-                    LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi ;
+                    LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi;
                 if (corrected_received_length >= MIN_TC_SIZE && corrected_received_length <= MAX_TC_SIZE) {
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
@@ -145,23 +145,22 @@ void RF_RXTask::ensureRxMode() {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                         // LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
                         if (error != NO_ERRORS)
-                            LOG_ERROR << "ERROR" ;
+                            LOG_ERROR << "ERROR";
                     }
                     /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
-                    uint8_t packet_version_number = (RX_BUFF[0] >> 5) & 0x07;  // Top 3 bits
-                    uint8_t packet_type = (RX_BUFF[0] >> 4) & 0x01;            // 4th bit
-                    uint8_t secondary_header_flag = (RX_BUFF[0] >> 3) & 0x01;  // 5th bit
-                    uint16_t application_process_ID = ((RX_BUFF[0] & 0x07) << 8) | RX_BUFF[1];  // Last 3 bits + full RX_BUFF[1]
+                    uint8_t packet_version_number = (RX_BUFF[0] >> 5) & 0x07;                  // Top 3 bits
+                    uint8_t packet_type = (RX_BUFF[0] >> 4) & 0x01;                            // 4th bit
+                    uint8_t secondary_header_flag = (RX_BUFF[0] >> 3) & 0x01;                  // 5th bit
+                    uint16_t application_process_ID = ((RX_BUFF[0] & 0x07) << 8) | RX_BUFF[1]; // Last 3 bits + full RX_BUFF[1]
 
-                    LOG_DEBUG << "Packet Version Number: " << packet_version_number ;
+                    LOG_DEBUG << "Packet Version Number: " << packet_version_number;
                     LOG_DEBUG << "Packet Type: " << packet_type;
                     LOG_DEBUG << "Secondary Header Flag: " << secondary_header_flag;
                     LOG_DEBUG << "Application Process ID: " << application_process_ID;
 
                     if (packet_type == Message::PacketType::TM) {
-                        LOG_DEBUG << "[RX] TM RECEIVED" ;
-                    }
-                    else if (packet_type == Message::PacketType::TC && application_process_ID == (OBC_APPLICATION_ID || COMMS_APPLICATION_ID) && secondary_header_flag){
+                        LOG_DEBUG << "[RX] TM RECEIVED";
+                    } else if (packet_type == Message::PacketType::TC && application_process_ID == (OBC_APPLICATION_ID || COMMS_APPLICATION_ID) && secondary_header_flag) {
                         LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
                         rf_rx_tx_queue_handler.size = corrected_received_length;
                         auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
@@ -171,22 +170,18 @@ void RF_RXTask::ensureRxMode() {
                                 if (tcHandlingTask->taskHandle != nullptr) {
                                     tcHandlingTask->tc_rf_rx_var = true;
                                     xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
-                                }
-                                else {
+                                } else {
                                     LOG_ERROR << "[RX] TC_HANDLING not started yet";
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
                         }
-                    }
-                    else {
+                    } else {
                         LOG_DEBUG << "[RX AGC] Neither TC nor TM";
                     }
                     /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
-                }
-                else {
+                } else {
                     vTaskDelay(pdMS_TO_TICKS(100));
                     drop_counter++;
                     rx_total_drop_packets++;

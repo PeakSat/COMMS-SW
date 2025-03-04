@@ -12,18 +12,18 @@ void RF_TXTask::ensureTxMode() {
         case RF_NOP:
             LOG_DEBUG << "[TX ENSURE] STATE: NOP";
             transceiver.set_state(RF09, RF_TRXOFF, error);
-        break;
+            break;
         case RF_SLEEP:
             LOG_DEBUG << "[TX ENSURE] STATE: SLEEP";
             transceiver.set_state(RF09, RF_TRXOFF, error);
-        break;
+            break;
         case RF_TRXOFF:
             LOG_DEBUG << "[TX ENSURE] STATE: TRXOFF";
-        break;
+            break;
         case RF_TX:
             LOG_DEBUG << "[TX ENSURE] STATE: TX";
             transceiver.set_state(RF09, RF_TRXOFF, error);
-        break;
+            break;
         case RF_RX:
             transceiver.set_state(RF09, RF_TRXOFF, error);
             // LOG_DEBUG << "[TX ENSURE] STATE: RX";
@@ -31,10 +31,10 @@ void RF_TXTask::ensureTxMode() {
         case RF_TRANSITION:
             vTaskDelay(pdMS_TO_TICKS(10));
             LOG_DEBUG << "[TX ENSURE] STATE: TRANSITION";
-        break;
+            break;
         case RF_RESET:
             LOG_DEBUG << "[TX ENSURE] STATE: RESET";
-        break;
+            break;
         case RF_INVALID:
             LOG_DEBUG << "[TX ENSURE] STATE: INVALID";
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_RESET);
@@ -42,14 +42,14 @@ void RF_TXTask::ensureTxMode() {
             HAL_GPIO_WritePin(RF_RST_GPIO_Port, RF_RST_Pin, GPIO_PIN_SET);
             vTaskDelay(pdMS_TO_TICKS(10));
             transceiver.set_state(RF09, RF_TRXOFF, error);
-        break;
+            break;
         case RF_TXPREP:
             // LOG_DEBUG << "[TX ENSURE] STATE: TXPREP";
             transceiver.set_state(RF09, RF_TRXOFF, error);
-        break;
+            break;
         default:
             LOG_ERROR << "UNDEFINED";
-        break;
+            break;
     }
 }
 
@@ -65,11 +65,10 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
         LOG_DEBUG << "[TX] TXFE: " << txfe_counter << " [TX] LENGTH: " << length - MAGIC_NUMBER;
         LOG_DEBUG << "[TX] TXFE NOT RECEIVED: " << txfe_not_received;
         LOG_DEBUG << "[TX] RXFE: " << rxfe_received << "[TX] RXFE NOT RECEIVED: " << rxfe_not_received;
-        LOG_DEBUG <<  "[TX] TX_ONG COUNTER: " << tx_ong_counter;
+        LOG_DEBUG << "[TX] TX_ONG COUNTER: " << tx_ong_counter;
         transceiver.tx_ongoing = false;
         HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
-    }
-    else {
+    } else {
         HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
         txfe_not_received++;
         // TODO : RESEND THE PACKET
@@ -87,7 +86,7 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
 
 [[noreturn]] void RF_TXTask::execute() {
     TXQueue = xQueueCreateStatic(TXQueueItemNum, TXItemSize, TXQueueStorageArea,
-                                            &TXQueueBuffer);
+                                 &TXQueueBuffer);
     vQueueAddToRegistry(TXQueue, "RF TX queue");
     uint8_t state = 0;
     uint32_t receivedEventsTransmit = 0;
@@ -98,8 +97,8 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                 /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
                 xQueueReceive(TXQueue, &tx_handler, portMAX_DELAY);
-                if (receivedEventsTransmit & TC_UART_TC_HANDLING_TASK ) {
-                    for (int i = 0 ; i < tx_handler.data_length; i++) {
+                if (receivedEventsTransmit & TC_UART_TC_HANDLING_TASK) {
+                    for (int i = 0; i < tx_handler.data_length; i++) {
                         outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
                         LOG_INFO << "[TX] Data to send to the air from UART: " << outgoing_TX_BUFF[i];
                     }
@@ -134,8 +133,7 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                                 rxfe_received++;
                                 transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
                                 transceiver.rx_ongoing = false;
-                            }
-                            else {
+                            } else {
                                 rxfe_not_received++;
                                 transceiver.set_state(RF09, RF_TRXOFF, error);
                                 transceiver.chip_reset(error);
@@ -161,4 +159,3 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
         }
     }
 }
-

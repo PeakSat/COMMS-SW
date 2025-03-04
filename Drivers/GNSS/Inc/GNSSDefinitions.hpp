@@ -56,18 +56,12 @@ namespace GNSSDefinitions {
         int snr[4];
     };
 
-    /**
-     * year/month/day correspond to the last data point.
-     * If the day changed during sampling.
-     * the receiver must compensate for it.
-     */
     struct StoredGNSSData {
         uint64_t usFromEpoch_NofSat[GNSS_MEASUREMENTS_PER_STRUCT];
         int32_t latitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
         int32_t longitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
         int32_t altitudeI[GNSS_MEASUREMENTS_PER_STRUCT];
         uint8_t valid;
-        uint8_t padding[512 - ((GNSS_MEASUREMENTS_PER_STRUCT * 20) + 1)]; //make it's size exactly one eMMC page
     };
 
 

@@ -4,12 +4,19 @@
 #include "CANDriver.hpp"
 #include "Logger.hpp"
 
+#include <ECSS_Definitions.hpp>
 #include <optional>
+enum CANInstance {
+    CAN1,
+    CAN2
+};
 struct localPacketHandler {
-    uint8_t Buffer[1024];
+    uint8_t Buffer[ECSSMaxMessageSize];
+    enum CANInstance CANInstance;
+    uint32_t Identifier;
     uint32_t TailPointer = 0;
     uint16_t PacketSize = 0;
-    uint8_t PacketID = 0;
+    uint8_t MessageID = 0;
 };
 /**
 * Every variable needed to control the incoming frames' fifo buffer
@@ -24,7 +31,6 @@ struct incomingFIFO {
 };
 
 extern incomingFIFO incomingFIFO;
-static inline uint8_t storedPacketQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)] __attribute__((section(".dtcmram_data")));
 static inline uint8_t incomingFrameQueueStorageArea[sizeOfIncommingFrameBuffer * sizeof(CAN::Frame)] __attribute__((section(".dtcmram_data")));
 static const uint8_t PacketQueueSize = 20;
 static inline uint8_t outgoingQueueStorageArea[PacketQueueSize * sizeof(CAN::Packet)] __attribute__((section(".dtcmram_data")));
@@ -66,24 +72,6 @@ public:
    * The variable used to hold the queue's data structure.
    */
     static inline StaticQueue_t incomingFrameQueueBuffer;
-
-    /**
-   * Storage area given to freeRTOS to manage the queue items.
-   */
-
-
-    /**
-* A freeRTOS queue to handle incoming Packets part of a CAN-TP message, since they need to be parsed as a whole.
-*/
-    QueueHandle_t storedPacketQueue;
-    /**
-   * The variable used to hold the queue's data structure.
-   */
-    static inline StaticQueue_t storedPacketQueueBuffer;
-
-    /**
-   * Storage area given to freeRTOS to manage the queue items.
-   */
 
     const static inline uint16_t TaskStackDepth = 7000;
 
