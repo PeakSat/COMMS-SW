@@ -2,7 +2,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpsabi" // Suppress: parameter passing for argument of type 'Time::DefaultCUC' {aka 'TimeStamp<4, 0, 1, 10>'} changed in GCC 7.1
 #include "Helpers/Parameter.hpp"
-#define NUMBER_OF_PARAMETERS 859
+#define NUMBER_OF_PARAMETERS 882
 namespace OBDHParameters {
     enum ParameterID : uint16_t {
         DEBUG_COUNTERID = 20,
@@ -40,7 +40,8 @@ namespace OBDHParameters {
         USE_UARTID = 784,
         USE_CANID = 800,
         HEARTBEAT_PERIODID = 820,
-        LAST_RESET_CAUSEID = 836
+        LAST_RESET_CAUSEID = 836,
+        RTC_OFFSET_THRESHOLDID = 848
     };
     inline Parameter<uint32_t> DEBUG_COUNTER(0);
     inline Parameter<float> PCB_TEMPERATURE_1(0);
@@ -100,6 +101,7 @@ Redundant = 1
     inline Parameter<bool> USE_CAN(false);
     inline Parameter<uint32_t> HEARTBEAT_PERIOD(3000);
     inline Parameter<uint32_t> LAST_RESET_CAUSE(0);
+    inline Parameter<uint8_t> RTC_OFFSET_THRESHOLD(2);
 }
 namespace COMMSParameters {
     enum ParameterID : uint16_t {
@@ -108,7 +110,7 @@ namespace COMMSParameters {
         GNSS_TEMPID = 13160,
         ANTENNA_DEPLOYMENT_STATUSID = 13184,
         CW_INTERVALID = 13234,
-        BFSK_BEAKON_INTERVALID = 13250,
+        BFSK_BEACON_INTERVALID = 13250,
         UHF_TX_POWERID = 13268,
         RSSIID = 13352,
         GNSS_LATID = 13605,
@@ -138,7 +140,7 @@ namespace COMMSParameters {
     };
     inline Parameter<ANTENNA_DEPLOYMENT_STATUS_enum> ANTENNA_DEPLOYMENT_STATUS(Closed);
     inline Parameter<uint16_t> CW_INTERVAL(0);
-    inline Parameter<uint16_t> BFSK_BEAKON_INTERVAL(0);
+    inline Parameter<uint16_t> BFSK_BEACON_INTERVAL(0);
     inline Parameter<uint32_t> UHF_TX_POWER(0);
     inline Parameter<float> RSSI(0);
     inline Parameter<int32_t> GNSS_LAT(0);
@@ -330,6 +332,28 @@ namespace ADCSParameters {
         Fss0PowerID = 39634,
         Hss0PowerID = 39650,
         Str0PowerID = 39666,
+        Mag0McuTempID = 41491,
+        Mag0McuCurrentID = 41506,
+        Mag1McuTempID = 41523,
+        Mag1McuCurrentID = 41538,
+        Fss0McuTempID = 41555,
+        Fss0McuCurrentID = 41570,
+        Hss0McuTempID = 41587,
+        Hss0McuCurrentID = 41602,
+        Str0McuTempID = 41619,
+        Str0McuCurrentID = 41634,
+        Rwl0McuTempID = 41651,
+        Rwl0McuCurrentID = 41666,
+        Rwl1McuTempID = 41683,
+        Rwl1McuCurrenID = 41698,
+        Rwl2McuTempID = 41715,
+        Rwl2McuCurrentID = 41730,
+        McuTempID = 41747,
+        McuCurrentID = 41762,
+        GyroCurrentID = 41778,
+        Mtq1TotalCurrentAveragePosID = 41800,
+        Mtq2TotalCurrentAveragePosID = 41816,
+        Mtq3TotalCurrentAveragePosID = 41832,
         RwlFailIdID = 39680,
         MountStackXID = 39696,
         MountStackYID = 39712,
@@ -489,6 +513,28 @@ PowerOffUpgrade = 5
     inline Parameter<RWL0_power_state_enum> Fss0Power(PowerOff);
     inline Parameter<RWL0_power_state_enum> Hss0Power(PowerOff);
     inline Parameter<RWL0_power_state_enum> Str0Power(PowerOff);
+    inline Parameter<int16_t> Mag0McuTemp(0);
+    inline Parameter<uint16_t> Mag0McuCurrent(0);
+    inline Parameter<int16_t> Mag1McuTemp(0);
+    inline Parameter<uint16_t> Mag1McuCurrent(0);
+    inline Parameter<int16_t> Fss0McuTemp(0);
+    inline Parameter<uint16_t> Fss0McuCurrent(0);
+    inline Parameter<int16_t> Hss0McuTemp(0);
+    inline Parameter<uint16_t> Hss0McuCurrent(0);
+    inline Parameter<int16_t> Str0McuTemp(0);
+    inline Parameter<uint16_t> Str0McuCurrent(0);
+    inline Parameter<int16_t> Rwl0McuTemp(0);
+    inline Parameter<uint16_t> Rwl0McuCurrent(0);
+    inline Parameter<int16_t> Rwl1McuTemp(0);
+    inline Parameter<uint16_t> Rwl1McuCurren(0);
+    inline Parameter<int16_t> Rwl2McuTemp(0);
+    inline Parameter<uint16_t> Rwl2McuCurrent(0);
+    inline Parameter<int16_t> McuTemp(0);
+    inline Parameter<uint16_t> McuCurrent(0);
+    inline Parameter<uint16_t> GyroCurrent(0);
+    inline Parameter<float> Mtq1TotalCurrentAveragePos(0);
+    inline Parameter<float> Mtq2TotalCurrentAveragePos(0);
+    inline Parameter<float> Mtq3TotalCurrentAveragePos(0);
     enum RwlFailId_enum : uint8_t {
         RwlFailNone = 0,
 RwlFail0 = 1,
