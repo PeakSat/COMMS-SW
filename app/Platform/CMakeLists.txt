@@ -1,6 +1,7 @@
 add_subdirectory(Inc)
 
-add_library(platform)
+add_library(platform
+        Src/FunctionManagementWrappers.cpp)
 
 target_sources(platform PRIVATE Src/PlatformParameters.cpp Src/Service.cpp Src/ErrorHandler.cpp Src/cobs.c)
 
