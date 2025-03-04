@@ -24,9 +24,9 @@ void CANParserTask::execute() {
             if (uxQueueMessagesWaiting(CANRxQueue) == 0) {
 
                 // Get packet from eMMC
-                uint8_t messageBuff[1024]{};
+                // uint8_t messageBuff[1024]{};
                 eMMC::getItemFromQueue(eMMC::memoryQueueMap[eMMC::testData], dequeueHandler, reinterpret_cast<uint8_t*>(&CANPacketHandler), dequeueHandler.size);
-                LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << dequeueHandler.size;
+                LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << CANPacketHandler.PacketSize;
 
                 // Send ACK
                 CAN::TPMessage ACKmessage = {{CAN::NodeID, CAN::NodeIDs::OBC, false}};
@@ -39,7 +39,7 @@ void CANParserTask::execute() {
                 uint8_t messageID = static_cast<CAN::Application::MessageIDs>(CANPacketHandler.Identifier);
                 if (messageID == CAN::Application::CCSDSPacket) {
                     for (int i = 0; i < CANPacketHandler.PacketSize; i++) {
-                        TX_BUF_CAN[i] = messageBuff[i];
+                        TX_BUF_CAN[i] = CANPacketHandler.Buffer[i];
                         // LOG_DEBUG << "[CAN-PARSER] TM DATA: " << messageBuff[i];
                     }
 
@@ -51,9 +51,9 @@ void CANParserTask::execute() {
                     }
                 } else {
                     CAN::TPMessage message;
-                    message.appendUint8(CANPacketHandler.Identifier);
+                    message.appendUint8(CANPacketHandler.MessageID);
                     for (int i = 0; i < CANPacketHandler.PacketSize; i++) {
-                        message.appendUint8(messageBuff[i]);
+                        message.appendUint8(CANPacketHandler.Buffer[i]);
                     }
                     message.idInfo.sourceAddress = CAN::OBC;
                     CAN::TPProtocol::parseMessage(message);
