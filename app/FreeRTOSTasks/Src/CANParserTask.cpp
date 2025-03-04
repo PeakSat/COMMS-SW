@@ -36,7 +36,7 @@ void CANParserTask::execute() {
 
                 // parse
 
-                uint8_t messageID = static_cast<CAN::Application::MessageIDs>(CANPacketHandler.Identifier);
+                uint8_t messageID = static_cast<CAN::Application::MessageIDs>(CANPacketHandler.MessageID);
                 if (messageID == CAN::Application::CCSDSPacket) {
                     for (int i = 0; i < CANPacketHandler.PacketSize; i++) {
                         TX_BUF_CAN[i] = CANPacketHandler.Buffer[i];
