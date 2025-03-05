@@ -7,7 +7,7 @@
 #include <Frame.hpp>
 
 struct TX_PACKET_HANDLER {
-    uint8_t* pointer_to_data;
+    uint8_t buf[2048];
     uint16_t data_length;
 };
 
@@ -16,7 +16,7 @@ inline TX_PACKET_HANDLER tx_handler;
 
 inline QueueHandle_t TXQueue;
 inline StaticQueue_t TXQueueBuffer;
-constexpr uint8_t TXQueueItemNum = 20;
+constexpr uint8_t TXQueueItemNum = 4;
 constexpr size_t TXItemSize  = sizeof(tx_handler);
 inline uint8_t TXQueueStorageArea[TXQueueItemNum * TXItemSize] __attribute__((section(".dtcmram_outgoingTMQueueStorageArea")));
 inline uint8_t outgoing_TX_BUFF[1024] __attribute__((section(".dtcmram_tx_buff"), aligned(4)));

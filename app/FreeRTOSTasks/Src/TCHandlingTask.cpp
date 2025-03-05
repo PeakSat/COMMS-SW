@@ -144,7 +144,9 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                             LOG_DEBUG << output.c_str();
                             if (message.applicationId == OBC_APPLICATION_ID) {
                                 LOG_DEBUG << "Received TC from UART destined for OBC";
-                                tx_handler.pointer_to_data = ECSS_TC_BUF;
+                                for (int i = 0 ; i < new_size; i++) {
+                                    tx_handler.buf[i]= ECSS_TC_BUF[i];
+                                }
                                 tx_handler.data_length = new_size;
                                 xQueueSendToBack(TXQueue, &tx_handler, 0);
                                 if (rf_txtask->taskHandle != nullptr) {

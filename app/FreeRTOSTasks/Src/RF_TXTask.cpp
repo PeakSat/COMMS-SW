@@ -99,7 +99,7 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                 xQueueReceive(TXQueue, &tx_handler, portMAX_DELAY);
                 if (receivedEventsTransmit & TC_UART_TC_HANDLING_TASK) {
                     for (int i = 0; i < tx_handler.data_length; i++) {
-                        outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
+                        outgoing_TX_BUFF[i] = tx_handler.buf[i];
                         LOG_INFO << "[TX] Data to send to the air from UART: " << outgoing_TX_BUFF[i];
                     }
                 }
@@ -108,7 +108,7 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                     LOG_DEBUG << "[TX] New TM received with size: " << tx_handler.data_length;
                     for (int i = 0; i < tx_handler.data_length; i++) {
                         // LOG_DEBUG << "[TX] TM DATA: " << tx_handler.pointer_to_data[i];
-                        outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
+                        outgoing_TX_BUFF[i] = tx_handler.buf[i];
                     }
                 }
                 uint32_t crc_value;

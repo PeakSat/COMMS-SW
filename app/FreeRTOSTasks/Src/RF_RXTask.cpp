@@ -168,7 +168,6 @@ ParsedPacket RF_RXTask::parsePacket(uint8_t* RX_BUFF) {
                 auto result = transceiver.get_received_length(RF09, error);
                 received_length = result.value();
                 int16_t corrected_received_length = received_length - MAGIC_NUMBER;
-                int8_t rssi = transceiver.get_rssi(RF09, error);
                 uint8_t RX_BUFF[1024]{};
                 LOG_DEBUG << "[RX] DROP: " << drop_counter << "[RX] TOT DROP: " << rx_total_drop_packets;
                 LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;

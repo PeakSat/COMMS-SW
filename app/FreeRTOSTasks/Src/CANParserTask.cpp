@@ -23,8 +23,6 @@ void CANParserTask::execute() {
 
             if (uxQueueMessagesWaiting(CANRxQueue) == 0) {
 
-                // Get packet from eMMC
-                // uint8_t messageBuff[1024]{};
                 eMMC::getItemFromQueue(eMMC::memoryQueueMap[eMMC::testData], dequeueHandler, reinterpret_cast<uint8_t*>(&CANPacketHandler), dequeueHandler.size);
                 LOG_DEBUG << "INCOMING CAN MESSAGE OF SIZE: " << CANPacketHandler.PacketSize;
 
@@ -38,12 +36,10 @@ void CANParserTask::execute() {
 
                 uint8_t messageID = static_cast<CAN::Application::MessageIDs>(CANPacketHandler.MessageID);
                 if (messageID == CAN::Application::CCSDSPacket) {
+                    TX_PACKET_HANDLER tm_handler{};
                     for (int i = 0; i < CANPacketHandler.PacketSize; i++) {
-                        TX_BUF_CAN[i] = CANPacketHandler.Buffer[i];
-                        // LOG_DEBUG << "[CAN-PARSER] TM DATA: " << messageBuff[i];
+                        tm_handler.buf[i] = CANPacketHandler.Buffer[i];
                     }
-
-                    tm_handler.pointer_to_data = TX_BUF_CAN;
                     tm_handler.data_length = CANPacketHandler.PacketSize;
                     xQueueSendToBack(TMQueue, &tm_handler, NULL);
                     if (tmhandlingTask->taskHandle != nullptr) {

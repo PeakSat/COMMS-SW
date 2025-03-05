@@ -20,10 +20,11 @@
                     LOG_INFO << "[TM_Handling] parsing of the TM...";
                     // TODO parse the TM
                     while (uxQueueMessagesWaiting(TMQueue)) {
+                        TX_PACKET_HANDLER tm_handler{};
                         xQueueReceive(TMQueue, &tm_handler, portMAX_DELAY);
                         uint16_t new_size = 0;
                         for (int i = 0; i < tm_handler.data_length; i++) {
-                            TM_BUFF[i] = tm_handler.pointer_to_data[i];
+                            TM_BUFF[i] = tm_handler.buf[i];
                             // LOG_DEBUG << TM_BUFF[i];
                             new_size++;
                         }
@@ -57,7 +58,9 @@
                         output.append(", API: ");
                         output.append(messageApplicationId);
                         LOG_DEBUG << output.c_str();
-                        tx_handler.pointer_to_data = TX_BUF_CAN;
+                        for (int i = 0 ; i < new_size; i++) {
+                            tx_handler.buf[i]= TM_BUFF[i];
+                        }
                         tx_handler.data_length = new_size;
                         if (message.applicationId == 1 && message.packetType == Message::TM && message.serviceType <= 23 && message.messageType <= 40 && message.dataSize < tm_handler.data_length) {
                             xQueueSendToBack(TXQueue, &tx_handler, NULL);

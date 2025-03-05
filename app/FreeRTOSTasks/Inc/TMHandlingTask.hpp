@@ -9,12 +9,10 @@
 extern UART_HandleTypeDef huart4;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 
-inline TX_PACKET_HANDLER tm_handler;
-
 inline QueueHandle_t TMQueue;
 inline StaticQueue_t TMQueueBuffer;
-constexpr uint8_t TMQueueItemNum = 50;
-constexpr size_t TMItemSize  = sizeof(tm_handler);
+constexpr uint8_t TMQueueItemNum = 4;
+constexpr size_t TMItemSize  = sizeof(tx_handler);
 inline uint8_t TMQueueStorageArea[TMQueueItemNum * TMItemSize];
 inline uint8_t TM_BUFF[1024];
 class TMHandling : public Task {
