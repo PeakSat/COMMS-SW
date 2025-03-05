@@ -12,7 +12,7 @@ extern DMA_HandleTypeDef hdma_uart4_rx;
 inline QueueHandle_t TMQueue;
 inline StaticQueue_t TMQueueBuffer;
 constexpr uint8_t TMQueueItemNum = 4;
-constexpr size_t TMItemSize  = sizeof(tx_handler);
+constexpr size_t TMItemSize  = sizeof(TX_PACKET_HANDLER);
 inline uint8_t TMQueueStorageArea[TMQueueItemNum * TMItemSize];
 inline uint8_t TM_BUFF[1024];
 class TMHandling : public Task {

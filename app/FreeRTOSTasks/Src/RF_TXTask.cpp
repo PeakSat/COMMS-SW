@@ -96,6 +96,7 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
             while (uxQueueMessagesWaiting(TXQueue)) {
                 /// TODO: If you don't receive a TXFE from the transceiver you have to resend the message somehow
                 HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_RESET);
+                TX_PACKET_HANDLER tx_handler{};
                 xQueueReceive(TXQueue, &tx_handler, portMAX_DELAY);
                 if (receivedEventsTransmit & TC_UART_TC_HANDLING_TASK) {
                     for (int i = 0; i < tx_handler.data_length; i++) {

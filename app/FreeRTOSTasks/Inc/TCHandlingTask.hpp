@@ -1,6 +1,8 @@
 #pragma once
 #include "Task.hpp"
 #include "etl/optional.h"
+
+#include <Message.hpp>
 #include <queue.h>
 #include <stm32h7xx_hal.h>
 
@@ -36,6 +38,7 @@ public:
     QueueHandle_t TCUARTQueueHandle{};
     uint8_t* send_to_tc_queue{};
     static void startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size);
+    void logParsedMessage(const Message& message);
     TCHandlingTask() : Task("TC Handling Task"){}
     [[noreturn]] void execute();
     void createTask() {

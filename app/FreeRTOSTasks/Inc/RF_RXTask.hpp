@@ -22,12 +22,14 @@ struct ParsedPacket {
     uint16_t application_process_ID;
 };
 
+inline uint8_t RX_BUFF[1024] __attribute__((section(".dtcmram_rx_buff"), aligned(4)));
+
 
 class RF_RXTask : public Task {
 public:
     RF_RXTask() : Task("RF RX TASK"){}
     void ensureRxMode();
-    bool verifyCRC(uint8_t* RX_BUFF, int16_t corrected_received_length);
+    static bool verifyCRC(uint8_t* RX_BUFF, int32_t corrected_received_length);
     static ParsedPacket parsePacket(uint8_t* RX_BUFF);
     [[noreturn]] void execute();
     void createTask() {

@@ -192,6 +192,13 @@ SECTIONS
         . = ALIGN(4);
     } >DTCMRAM
 
+  .dtcmram_rx_buff :
+    {
+        . = ALIGN(4);
+        *(.dtcmram_rx_buff)
+        . = ALIGN(4);
+    } >DTCMRAM
+
   .dtcmram_outgoingTMQueueStorageArea :
      {
          . = ALIGN(4);

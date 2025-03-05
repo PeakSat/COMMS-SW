@@ -58,6 +58,7 @@
                         output.append(", API: ");
                         output.append(messageApplicationId);
                         LOG_DEBUG << output.c_str();
+                        TX_PACKET_HANDLER tx_handler{};
                         for (int i = 0 ; i < new_size; i++) {
                             tx_handler.buf[i]= TM_BUFF[i];
                         }
