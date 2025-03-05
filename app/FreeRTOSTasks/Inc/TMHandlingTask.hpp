@@ -18,7 +18,7 @@ inline uint8_t TM_BUFF[1024];
 class TMHandling : public Task {
 public:
    TMHandling() : Task("TM Parsing Task"){}
-    [[noreturn]] void execute();
+    [[noreturn]] static void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<TMHandling>, this->TaskName,
                                              this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
