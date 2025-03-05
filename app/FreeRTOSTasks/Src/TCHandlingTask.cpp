@@ -1,3 +1,4 @@
+#pragma once
 #include "TCHandlingTask.hpp"
 #include "RF_RXTask.hpp"
 #include "RF_TXTask.hpp"
@@ -5,12 +6,8 @@
 #include <ApplicationLayer.hpp>
 #include <COBS.hpp>
 #include <MessageParser.hpp>
-#include <Peripheral_Definitions.hpp>
 #include <at86rf215definitions.hpp>
 #include <eMMC.hpp>
-#include "Message.hpp"
-#include <TPProtocol.hpp>
-#include <cstring>
 
 void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
     // start the DMA

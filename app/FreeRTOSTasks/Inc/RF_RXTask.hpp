@@ -1,13 +1,9 @@
 #pragma once
 #include "Task.hpp"
-#include "task.h"
 #include "at86rf215.hpp"
-#include "queue.h"
-#include "etl/array.h"
 #include "etl/optional.h"
-#include <etl/expected.h>
 #include "main.h"
-#include <Frame.hpp>
+
 extern CRC_HandleTypeDef hcrc;
 
 #define MIN_TC_SIZE 11

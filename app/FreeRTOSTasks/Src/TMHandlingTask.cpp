@@ -1,5 +1,4 @@
-// #include <COBS.hpp>
-// #include <Message.hpp>
+#pragma once
 #include <MessageParser.hpp>
 #include <RF_TXTask.hpp>
 #include <TMHandlingTask.hpp>

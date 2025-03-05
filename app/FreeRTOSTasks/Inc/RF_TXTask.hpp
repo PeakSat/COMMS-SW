@@ -1,10 +1,7 @@
 #pragma once
 #include "Task.hpp"
-#include "task.h"
 #include "at86rf215.hpp"
-#include "etl/array.h"
 #include "etl/optional.h"
-#include <Frame.hpp>
 
 struct TX_PACKET_HANDLER {
     uint8_t buf[2048];

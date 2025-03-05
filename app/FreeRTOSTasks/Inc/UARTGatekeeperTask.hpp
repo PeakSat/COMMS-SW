@@ -32,7 +32,7 @@ private:
     StackType_t taskStack[TaskStackDepth];
 
 public:
-    void execute();
+    [[noreturn]] void execute();
 
     UARTGatekeeperTask();
 
