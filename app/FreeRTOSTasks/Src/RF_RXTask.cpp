@@ -179,7 +179,6 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
                             error_rx_buf++;
                         }
                     }
-                    ensureRxMode();
                     if (verifyCRC(RX_BUFF, corrected_received_length)) {
                         correct_packets++;
                         ParsedPacket packet = parsePacket(RX_BUFF);
@@ -214,7 +213,15 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
                         // TODO: ST[05]
                         LOG_ERROR << "[RX] WRONG CRC";
                         rx_total_drop_packets++;
+                        ensureRxMode();
                     }
+                }
+                else {
+                    // TODO: ST[05]
+                    vTaskDelay(pdMS_TO_TICKS(100));
+                    LOG_ERROR << "[RX] WRONG LENGTH";
+                    rx_total_drop_packets++;
+                    ensureRxMode();
                 }
                 ensureRxMode();
                 xSemaphoreGive(transceiver_handler.resources_mtx);
