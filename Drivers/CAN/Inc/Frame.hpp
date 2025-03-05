@@ -2,6 +2,7 @@
 #include "etl/array.h"
 #include "main.h"
 
+
 /**
  * A CAN::Packet is part of a CAN message. The driver can only handle packets of 1024 bytes maximum length.
  * Any bigger messages need to be dissected into packets by the application layer.
@@ -13,11 +14,6 @@ namespace CAN {
  */
     static constexpr uint8_t MaxPayloadLength = 8;
 
-
-    enum CANInstance {
-        CAN1,
-        CAN2
-    };
 
     class Frame {
     public:
@@ -52,7 +48,7 @@ namespace CAN {
         /**
      * Pointer to the bus from which the frame came from
      */
-        enum CANInstance CANInstance;
+        // enum CANInstance CANInstance;
 
         /**
      * The header contains information about the frame,

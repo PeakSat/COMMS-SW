@@ -213,8 +213,19 @@ SECTIONS
            . = ALIGN(4);
         } >DTCMRAM
 
+ .dtcmram_emmcDriverBuffer :
+     {
+         . = ALIGN(4);
+        *(.dtcmram_emmcDriverBuffer )
+        . = ALIGN(4);
+     } >DTCMRAM
 
-
+ .dtcmram_emmcQueuesBuffer :
+     {
+         . = ALIGN(4);
+        *(.dtcmram_emmcQueuesBuffer )
+        . = ALIGN(4);
+     } >DTCMRAM
 
   /* Remove information from the standard libraries */
   /DISCARD/ :

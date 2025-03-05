@@ -58,6 +58,7 @@ void app_main(void) {
     canGatekeeperTask.emplace();
     tmp117Task.emplace();
     canParserTask.emplace();
+    heartbeatTask.emplace();
     tcHandlingTask.emplace();
     tmhandlingTask.emplace();
     heartbeatTask.emplace();
@@ -90,6 +91,7 @@ void app_main(void) {
 #endif
 
     vTaskStartScheduler();
+
     /* Should not get here. */
     for (;;)
         ;

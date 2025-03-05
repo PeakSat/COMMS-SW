@@ -1,7 +1,7 @@
 // MEMORY_ITEM(name, sizeInMB)
 
 MEMORY_ITEM(firmware, 1000000)
-MEMORY_ITEM(CANMessages, 131072) // 128 messages of 1024 bytes
+//MEMORY_ITEM(CANMessages, 131072) // 128 messages of 1024 bytes
 MEMORY_ITEM(GNSSData, 9000000)
 MEMORY_ITEM(COMMS_HOUSEKEEPING, 131072)
 MEMORY_ITEM(RX_TC, 131072)
@@ -10,6 +10,7 @@ MEMORY_ITEM(RECEIVED_TM, 131072)
 MEMORY_ITEM(test2, 1234)
 // Add more items here...
 
-// MEMORY_QUEUE(name, sizeOfItem, numberOfItems)
-MEMORY_QUEUE(testData, 520, 10)
-MEMORY_QUEUE(rf_rx_tc, 1024, 10)
+// MEMORY_QUEUE(name, sizeOfItem, numberOfItems, queueSize)
+MEMORY_QUEUE(testData, 520, 10, 10)
+MEMORY_QUEUE(rf_rx_tc, 1024, 10, 10)
+MEMORY_QUEUE(CANRx, 1036, 100000, 10)

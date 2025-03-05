@@ -3,15 +3,18 @@
 #include <etl/string.h>
 #include "etl/vector.h"
 #include "GNSSMessage.hpp"
-
 #include "GNSSDefinitions.hpp"
+#include <ECSS_Definitions.hpp>
 
 using namespace GNSSDefinitions;
-inline uint8_t GNSS_TMbuffer[1024]; // todo: is max TM size defined somewhere?
+inline uint8_t GNSS_TMbuffer[ECSSMaxMessageSize]; // todo: is this the max TM size?
 
 class GNSSReceiver {
 public:
     GNSSReceiver();
+
+    static void storeDataToEMMC(uint8_t* data, uint32_t block);
+    static void getDataFromEMMC(uint8_t* data, uint32_t block);
 
     static bool isDataValid(int8_t year, int8_t month, int8_t day);
 

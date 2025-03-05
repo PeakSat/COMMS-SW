@@ -89,8 +89,6 @@ void GNSSTask::setCompactGnssDataGGA(GNSSData& compact, const minmea_sentence_gg
 
 
 void GNSSTask::initGNSS() {
-    // starting just once for circular DMA
-    startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GNSS_EN_GPIO_Port, GNSS_EN_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
@@ -99,7 +97,7 @@ void GNSSTask::initGNSS() {
     controlGNSS(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
     etl::vector<uint8_t, 12> interval_vec;
     interval_vec.resize(12, 0);
-    uint8_t seconds = 10;
+    uint8_t seconds = 1;
     // 4 is for RMC, 2 for GSV, 0 is for GGA
     interval_vec[0] = seconds;
     //    interval_vec[2] = seconds;
@@ -230,6 +228,7 @@ void GNSSTask::initQueuesToAcceptPointers() {
     COMMSParameters::ERROR_TIMEOUT_CNT_THRHD.setValue(gnss_handler.ERROR_TIMEOUT_COUNTER_THRD);
     rx_buf_pointer = rx_buf;
     uint8_t* rx_buf_p_from_queue;
+    startReceiveFromUARTwithIdle(rx_buf_pointer, 1024);
     initGNSS();
 
     uint16_t gnss_error_timout_counter = 0;
@@ -282,10 +281,10 @@ void GNSSTask::initQueuesToAcceptPointers() {
                             //send data to eMMC
                             if (NumberOfMeasurementsInStruct >= GNSS_MEASUREMENTS_PER_STRUCT - 1) {
                                 GNSSDataForEMMC.valid = 0xAA;
-                                if (eMMCGNSSDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / eMMC::memoryPageSize) {
+                                if (eMMCGNSSDataTailPointer > eMMC::memoryMap[eMMC::GNSSData].size / EMMC_PAGE_SIZE) {
                                     eMMCGNSSDataTailPointer = 0;
                                 }
-                                auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMC::memoryPageSize, eMMCGNSSDataTailPointer, 1);
+                                GNSSReceiver::storeDataToEMMC(reinterpret_cast<uint8_t*>(&GNSSDataForEMMC), eMMCGNSSDataTailPointer);
 
                                 eMMCGNSSDataTailPointer++;
 
@@ -293,9 +292,10 @@ void GNSSTask::initQueuesToAcceptPointers() {
                             }
                             LOG_DEBUG << "eMMC tail pointer for GNSS = " << eMMCGNSSDataTailPointer;
                             NumberOfMeasurementsInStruct++;
-                            GNSSprint(compact);
+                            // GNSSprint(compact);
                         } else {
-                            GNSSprint(compact);
+                            LOG_DEBUG << "eMMC tail pointer for GNSS = " << eMMCGNSSDataTailPointer;
+                            // GNSSprint(compact);
                         }
                         gnss_error_timout_counter = 0;
                     }

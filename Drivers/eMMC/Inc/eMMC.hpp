@@ -6,6 +6,12 @@
 #include "FreeRTOS.h"
 #include <semphr.h>
 
+#define EMMC_PAGE_SIZE 508ULL
+#define EMMC_CRC_SIZE 4ULL
+#define EMMC_NUMBER_OF_PAGES 0xE90E80ULL
+#define EMMC_SIZE_IN_BYTES (EMMC_NUMBER_OF_PAGES * EMMC_PAGE_SIZE)
+
+inline uint8_t eMMC_WriteRead_Block_Buffer[EMMC_PAGE_SIZE + EMMC_CRC_SIZE] __attribute__((section(".dtcmram_emmcDriverBuffer")));
 
 struct memoryQueueItemHandler {
     uint32_t size;
@@ -13,9 +19,9 @@ struct memoryQueueItemHandler {
 };
 
 #define MEMORY_ITEM(name, size)
-#define MEMORY_QUEUE(queue_name, item_size, queue_size)                                                                                        \
-    static inline uint8_t queue_name##QueueStorageArea[sizeof(memoryQueueItemHandler) * queue_size] __attribute__((section(".dtcmram_data"))); \
-    inline QueueHandle_t queue_name##Queue;                                                                                                    \
+#define MEMORY_QUEUE(queue_name, sizeOfItem, numberOfItems, queueSize)                                                                                    \
+    static inline uint8_t queue_name##QueueStorageArea[sizeof(memoryQueueItemHandler) * queueSize] __attribute__((section(".dtcmram_emmcQueuesBuffer"))); \
+    inline QueueHandle_t queue_name##Queue;                                                                                                               \
     static inline StaticQueue_t queue_name##QueueBuffer;
 
 #include "MemoryItems.def"
@@ -39,12 +45,12 @@ namespace eMMC {
     extern eMMCTransactionHandler eMMCTransactionHandler;
 
     // Declare constants
-    extern uint64_t memoryCapacity;
-    extern const uint32_t memoryPageSize; // bytes
+    // extern uint64_t memoryCapacity;
+    // extern const uint32_t memoryPageSize; // bytes
 
     // Define the enum using the MEMORY_ITEM macro from the definition file
 #define MEMORY_ITEM(name, size) name,
-#define MEMORY_QUEUE(name, item_size, queue_size)
+#define MEMORY_QUEUE(queue_name, sizeOfItem, numberOfItems, queueSize)
     enum memoryItem {
 #include "MemoryItems.def"
         memoryItemCount // This is automatically added after all items
@@ -53,7 +59,7 @@ namespace eMMC {
 #undef MEMORY_QUEUE
 
 #define MEMORY_ITEM(name, size)
-#define MEMORY_QUEUE(queue_name, item_size, queue_size) queue_name,
+#define MEMORY_QUEUE(queue_name, sizeOfItem, numberOfItems, queueSize) queue_name,
     enum memoryQueue {
 #include "MemoryItems.def"
         memoryQueueCount // This is automatically added after all items
@@ -92,7 +98,8 @@ namespace eMMC {
         EMMC_INVALID_NUM_OF_BLOCKS,
         EMMC_INVALID_START_ADDRESS_ON_ERASE,
         EMMC_TRANSACTION_TIMED_OUT,
-        EMMC_BUFFER_TOO_SMALL
+        EMMC_BUFFER_TOO_SMALL,
+        EMMC_READ_CRC_ERROR
     };
 
     extern std::array<memoryItemHandler, memoryItemCount> memoryMap;
