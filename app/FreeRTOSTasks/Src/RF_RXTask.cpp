@@ -68,6 +68,29 @@ void RF_RXTask::ensureRxMode() {
     }
 }
 
+bool RF_RXTask::verifyCRC(uint8_t* RX_BUFF, int16_t corrected_received_length) {
+    if (corrected_received_length < CRC_LENGTH) {
+        LOG_ERROR << "[RX] Packet too short to contain CRC!";
+        return false;
+    }
+    uint32_t crc_received =
+        (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 4]))       |
+        (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 3]) << 8 ) |
+        (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 2]) << 16) |
+        (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 1]) << 24);
+
+    LOG_DEBUG << "[RX]: CRC RECEIVED: " << crc_received;
+    uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(RX_BUFF), corrected_received_length - CRC_LENGTH);
+    LOG_DEBUG << "[RX]: CRC CALCULATION: " << crc_value;
+
+    if (crc_value != crc_received) {
+        LOG_ERROR << "[RX] WRONG CRC RECEPTION";
+        return false;
+    }
+    return true;
+}
+
+
 [[noreturn]] void RF_RXTask::execute() {
     vTaskDelay(pdMS_TO_TICKS(4000));
     LOG_INFO << "[RF RX TASK]";
@@ -116,7 +139,6 @@ void RF_RXTask::ensureRxMode() {
         LOG_ERROR << "Failed to establish connection after " << MAX_RETRIES << " attempts.";
     }
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
-
     uint16_t received_length = 0;
     uint32_t drop_counter = 0;
     uint32_t rx_total_packets = 0;
@@ -137,7 +159,7 @@ void RF_RXTask::ensureRxMode() {
                 LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
                 if (rssi != 127)
                     LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi;
-                if (corrected_received_length >= MIN_TC_SIZE && corrected_received_length <= MAX_TC_SIZE) {
+                if (corrected_received_length >= MIN_TC_SIZE && corrected_received_length <= MAX_TC_SIZE){
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                     drop_counter = 0;
@@ -147,48 +169,81 @@ void RF_RXTask::ensureRxMode() {
                         if (error != NO_ERRORS)
                             LOG_ERROR << "ERROR";
                     }
-                    /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
-                    uint8_t packet_version_number = (RX_BUFF[0] >> 5) & 0x07;                  // Top 3 bits
-                    uint8_t packet_type = (RX_BUFF[0] >> 4) & 0x01;                            // 4th bit
-                    uint8_t secondary_header_flag = (RX_BUFF[0] >> 3) & 0x01;                  // 5th bit
-                    uint16_t application_process_ID = ((RX_BUFF[0] & 0x07) << 8) | RX_BUFF[1]; // Last 3 bits + full RX_BUFF[1]
-
-                    LOG_DEBUG << "Packet Version Number: " << packet_version_number;
-                    LOG_DEBUG << "Packet Type: " << packet_type;
-                    LOG_DEBUG << "Secondary Header Flag: " << secondary_header_flag;
-                    LOG_DEBUG << "Application Process ID: " << application_process_ID;
-
-                    if (packet_type == Message::PacketType::TM) {
-                        LOG_DEBUG << "[RX] TM RECEIVED";
-                    } else if (packet_type == Message::PacketType::TC && application_process_ID == (OBC_APPLICATION_ID || COMMS_APPLICATION_ID) && secondary_header_flag) {
-                        LOG_DEBUG << "[RX AGC] NEW TC FROM COMMS-GS";
-                        rf_rx_tx_queue_handler.size = corrected_received_length;
-                        auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
-                        if (status.has_value()) {
-                            if (rf_rx_tcQueue != nullptr) {
-                                xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
-                                if (tcHandlingTask->taskHandle != nullptr) {
-                                    tcHandlingTask->tc_rf_rx_var = true;
-                                    xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
-                                } else {
-                                    LOG_ERROR << "[RX] TC_HANDLING not started yet";
+                    uint32_t crc_received =
+                    (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 4]))       |
+                    (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 3]) << 8 ) |
+                    (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 2]) << 16) |
+                    (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 1]) << 24);
+                    LOG_DEBUG << "[RX]: CRC RECEIVED: " << crc_received;
+                    uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(RX_BUFF), corrected_received_length - CRC_LENGTH);
+                    LOG_DEBUG << "[RX]: CRC CALCULATION: " << crc_value;
+                    if (crc_value == crc_received) {
+                        /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
+                        uint8_t packet_version_number = (RX_BUFF[0] >> 5) & 0x07;                  // Top 3 bits
+                        uint8_t packet_type = (RX_BUFF[0] >> 4) & 0x01;                            // 4th bit
+                        uint8_t secondary_header_flag = (RX_BUFF[0] >> 3) & 0x01;                  // 5th bit
+                        uint16_t application_process_ID = ((RX_BUFF[0] & 0x07) << 8) | RX_BUFF[1]; // Last 3 bits + full RX_BUFF[1]
+                        LOG_DEBUG << "Packet Version Number: " << packet_version_number;
+                        LOG_DEBUG << "Packet Type: " << packet_type;
+                        LOG_DEBUG << "Secondary Header Flag: " << secondary_header_flag;
+                        LOG_DEBUG << "Application Process ID: " << application_process_ID;
+                        switch (packet_type) {
+                            case Message::PacketType::TC: {
+                                switch (application_process_ID) {
+                                    case OBC_APPLICATION_ID: {
+                                        LOG_DEBUG << "[RX] NEW TC FOR OBC";
+                                        rf_rx_tx_queue_handler.size = corrected_received_length - CRC_LENGTH;
+                                        auto status = eMMC::storeItemInQueue(
+                                            eMMC::memoryQueueMap[eMMC::rf_rx_tc],
+                                            &rf_rx_tx_queue_handler,
+                                            RX_BUFF,
+                                            rf_rx_tx_queue_handler.size
+                                        );
+                                        if (status.has_value()) {
+                                            if (rf_rx_tcQueue != nullptr) {
+                                                xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
+                                                if (tcHandlingTask->taskHandle != nullptr) {
+                                                    tcHandlingTask->tc_rf_rx_var = true;
+                                                    xTaskNotifyIndexed(tcHandlingTask->taskHandle,NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
+                                                } else
+                                                    LOG_ERROR << "[RX] TC_HANDLING not started yet";
+                                            }
+                                        } else
+                                            LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
+                                        break;
+                                    }
+                                    case COMMS_APPLICATION_ID: {
+                                        LOG_DEBUG << "[RX] NEW TC FOR COMMS";
+                                        break;
+                                    }
+                                    default: {
+                                        LOG_ERROR << "[RX] TC FOR UNKNOWN APPLICATION ID: " << application_process_ID;
+                                        break;
+                                    }
                                 }
+                                break;
                             }
-                        } else {
-                            LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
+                            case Message::PacketType::TM: {
+                                LOG_DEBUG << "[RX] NEW TM RECEIVED";
+                                break;
+                            }
+                            default: {
+                                LOG_ERROR << "[RX] UNKNOWN PACKET TYPE: " << packet_type;
+                                break;
+                            }
                         }
-                    } else {
-                        LOG_DEBUG << "[RX AGC] Neither TC nor TM";
+                    }
+                    else {
+                        vTaskDelay(pdMS_TO_TICKS(100));
+                        LOG_ERROR << "[RX] WRONG CRC RECEPTION";
+                        drop_counter++;
+                        rx_total_drop_packets++;
+                        ensureRxMode();
                     }
                     /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
-                } else {
-                    vTaskDelay(pdMS_TO_TICKS(100));
-                    drop_counter++;
-                    rx_total_drop_packets++;
                     ensureRxMode();
+                    xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
-                ensureRxMode();
-                xSemaphoreGive(transceiver_handler.resources_mtx);
             }
         }
     }

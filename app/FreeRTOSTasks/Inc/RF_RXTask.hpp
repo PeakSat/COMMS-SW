@@ -8,6 +8,7 @@
 #include <etl/expected.h>
 #include "main.h"
 #include <Frame.hpp>
+extern CRC_HandleTypeDef hcrc;
 
 #define MIN_TC_SIZE 11
 #define MAX_TC_SIZE 256
@@ -19,6 +20,7 @@ class RF_RXTask : public Task {
 public:
     RF_RXTask() : Task("RF RX TASK"){}
     void ensureRxMode();
+    bool verifyCRC(uint8_t* RX_BUFF, int16_t corrected_received_length);
     [[noreturn]] void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,

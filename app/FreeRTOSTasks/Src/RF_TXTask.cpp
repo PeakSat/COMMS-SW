@@ -111,7 +111,13 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                         outgoing_TX_BUFF[i] = tx_handler.pointer_to_data[i];
                     }
                 }
-
+                uint32_t crc_value;
+                crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(outgoing_TX_BUFF), tx_handler.data_length);
+                outgoing_TX_BUFF[tx_handler.data_length + 1] = static_cast<uint8_t>(crc_value & 0xFF);             // 0x78
+                outgoing_TX_BUFF[tx_handler.data_length + 2] = static_cast<uint8_t>((crc_value >> 8) & 0xFF);  // 0x56
+                outgoing_TX_BUFF[tx_handler.data_length + 3] = static_cast<uint8_t>((crc_value >> 16) & 0xFF); // 0x34
+                outgoing_TX_BUFF[tx_handler.data_length + 4] = static_cast<uint8_t>((crc_value >> 24) & 0xFF); // 0x12
+                tx_handler.data_length = tx_handler.data_length + 4;
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     switch (state) {
