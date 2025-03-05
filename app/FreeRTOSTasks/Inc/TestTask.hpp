@@ -5,7 +5,6 @@
 
 class TestTask : public Task {
 public:
-    static void myFunction();
     void execute();
 
     TestTask() : Task("ECSS TEST") {}

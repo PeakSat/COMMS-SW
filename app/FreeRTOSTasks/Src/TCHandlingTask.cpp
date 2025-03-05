@@ -92,6 +92,14 @@ void TCHandlingTask::startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size) {
                         LOG_INFO << "Transmitting the TC to the OBC through CAN...";
                         CAN::Application::createPacketMessage(CAN::OBC, false, cobsDecodedMessage, Message::TC, false);
                         received_events_tc &= ~TC_RF_RX;
+                    } else if (message.applicationId == COMMS_APPLICATION_ID &&
+                               message.packetType == Message::TC &&
+                               (message.serviceType == HOUSEKEEPING || message.serviceType == FUNCTION_MANAGEMENT || message.serviceType == TEST) &&
+                               message.messageType <= MAX_SUBSERVICE_TYPE_NUMBER &&
+                               message.dataSize < (rf_rx_tx_queue_handler.size - ECSSSecondaryTCHeaderSize)) {
+                        LOG_ERROR << "[TCHANDLING - FROM RX] Received TC for comms";
+                        MessageParser::execute(message);
+
                     } else {
                         LOG_ERROR << "[TCHANDLING - FROM RX] Received an invalid message type!";
                     }
