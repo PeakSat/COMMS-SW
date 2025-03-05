@@ -53,12 +53,25 @@ void RF_TXTask::ensureTxMode() {
     }
 }
 
-void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait_ms_for_txfe, Error& error) {
+void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait_ms_for_txfe, Error& error, bool enableCRC) {
     ensureTxMode();
-    transceiver.transmitBasebandPacketsTx(RF09, tx_buf, length, error);
+    uint8_t local_tx_buf[2048];
     for (int i = 0; i < length; i++) {
-        __NOP();
-        // LOG_DEBUG << "[TX DATA] " << tx_buf[i];
+        local_tx_buf[i] = tx_buf[i];
+    }
+    if (enableCRC) {
+        uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(local_tx_buf), length);
+        LOG_DEBUG << "[TX]: CRC TRANSMIT: " << crc_value;
+        local_tx_buf[length] = static_cast<uint8_t>(crc_value & 0xFF);              // 0x78
+        local_tx_buf[length + 1] = static_cast<uint8_t>((crc_value >> 8)  & 0xFF);  // 0x56
+        local_tx_buf[length + 2] = static_cast<uint8_t>((crc_value >> 16) & 0xFF);  // 0x34
+        local_tx_buf[length + 3] = static_cast<uint8_t>((crc_value >> 24) & 0xFF);  // 0x12
+        length = length + 4;
+    }
+    transceiver.transmitBasebandPacketsTx(RF09, local_tx_buf, length  + MAGIC_NUMBER, error);
+    if (error != NO_ERRORS){
+        //TODO ST[05]
+        LOG_ERROR << "[TX TRANSMIT] ERROR: " << error;
     }
     if (xSemaphoreTake(transceiver_handler.txfeSemaphore_tx, pdMS_TO_TICKS(wait_ms_for_txfe)) == pdTRUE) {
         txfe_counter++;
@@ -79,7 +92,6 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
         transceiver.set_state(RF09, RF_TRXOFF, error);
         transceiver.chip_reset(error);
         transceiver.tx_ongoing = false;
-        /// TODO: RESEND
     }
 }
 
@@ -108,23 +120,15 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                     // TODO: Do that inside of the TMHandlingTask
                     LOG_DEBUG << "[TX] New TM received with size: " << tx_handler.data_length;
                     for (int i = 0; i < tx_handler.data_length; i++) {
-                        // LOG_DEBUG << "[TX] TM DATA: " << tx_handler.pointer_to_data[i];
                         outgoing_TX_BUFF[i] = tx_handler.buf[i];
                     }
                 }
-                uint32_t crc_value;
-                crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(outgoing_TX_BUFF), tx_handler.data_length);
-                outgoing_TX_BUFF[tx_handler.data_length + 1] = static_cast<uint8_t>(crc_value & 0xFF);             // 0x78
-                outgoing_TX_BUFF[tx_handler.data_length + 2] = static_cast<uint8_t>((crc_value >> 8) & 0xFF);  // 0x56
-                outgoing_TX_BUFF[tx_handler.data_length + 3] = static_cast<uint8_t>((crc_value >> 16) & 0xFF); // 0x34
-                outgoing_TX_BUFF[tx_handler.data_length + 4] = static_cast<uint8_t>((crc_value >> 24) & 0xFF); // 0x12
-                tx_handler.data_length = tx_handler.data_length + 4;
                 if (xSemaphoreTake(transceiver_handler.resources_mtx, portMAX_DELAY) == pdTRUE) {
                     state = (transceiver.rx_ongoing << 1) | transceiver.tx_ongoing;
                     switch (state) {
                         case READY: {
                             LOG_DEBUG << "[TX] READY";
-                            transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
+                            transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error, true);
                             rf_rxtask->ensureRxMode();
                             HAL_GPIO_WritePin(EN_PA_UHF_GPIO_Port, EN_PA_UHF_Pin, GPIO_PIN_SET);
                             break;
@@ -138,7 +142,7 @@ void RF_TXTask::transmitWithWait(uint8_t* tx_buf, uint16_t length, uint16_t wait
                             LOG_DEBUG << "[TX] RX_ONG";
                             if (xSemaphoreTake(transceiver_handler.rxfeSemaphore_tx, pdMS_TO_TICKS(250))) {
                                 rxfe_received++;
-                                transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error);
+                                transmitWithWait(outgoing_TX_BUFF, tx_handler.data_length + MAGIC_NUMBER, 250, error, true);
                                 transceiver.rx_ongoing = false;
                             } else {
                                 rxfe_not_received++;

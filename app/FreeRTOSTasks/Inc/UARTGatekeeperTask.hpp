@@ -27,7 +27,7 @@ private:
 
     uint8_t ucQueueStorageArea[UARTQueueSize * sizeof(etl::string<LOGGER_MAX_MESSAGE_SIZE>)];
 
-    const static uint16_t TaskStackDepth = 15000;
+    const static uint16_t TaskStackDepth = 10000;
 
     StackType_t taskStack[TaskStackDepth];
 

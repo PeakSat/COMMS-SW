@@ -33,7 +33,7 @@ void TCHandlingTask::logParsedMessage(const Message& message) {
     etl::to_string(message.dataSize, messageLength, formatSpec, false);
     etl::to_string(message.applicationId, messageApplicationId, formatSpec, false);
 
-    auto output = String<ECSSMaxMessageSize>("[RX SIDE] New ");
+    auto output = String<ECSSMaxMessageSize>("New ");
     output.append(message.packetType == Message::TM ? "TM[" : "TC[");
     output.append(serviceType);
     output.append(",");

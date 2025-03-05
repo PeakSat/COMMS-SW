@@ -30,7 +30,7 @@ public:
     RF_RXTask() : Task("RF RX TASK"){}
     void ensureRxMode();
     static bool verifyCRC(uint8_t* RX_BUFF, int32_t corrected_received_length);
-    static ParsedPacket parsePacket(uint8_t* RX_BUFF);
+    static ParsedPacket parsePacket(const uint8_t* RX_BUFF);
     [[noreturn]] void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,

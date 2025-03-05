@@ -79,18 +79,17 @@ bool RF_RXTask::verifyCRC(uint8_t* RX_BUFF, int32_t corrected_received_length) {
         (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 2]) << 16) |
         (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 1]) << 24);
 
-    LOG_DEBUG << "[RX]: CRC RECEIVED: " << crc_received;
     uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(RX_BUFF), corrected_received_length - CRC_LENGTH);
-    LOG_DEBUG << "[RX]: CRC CALCULATION: " << crc_value;
 
     if (crc_value != crc_received) {
+        //TODO ST[05]
         LOG_ERROR << "[RX] WRONG CRC RECEPTION";
         return false;
     }
     return true;
 }
 
-ParsedPacket RF_RXTask::parsePacket(uint8_t* RX_BUFF) {
+ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
     ParsedPacket packet{};
     packet.packet_version_number = (RX_BUFF[0] >> 5) & 0x07;
     packet.packet_type = (RX_BUFF[0] >> 4) & 0x01;
