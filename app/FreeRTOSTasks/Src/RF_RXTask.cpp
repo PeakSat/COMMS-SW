@@ -90,6 +90,21 @@ bool RF_RXTask::verifyCRC(uint8_t* RX_BUFF, int16_t corrected_received_length) {
     return true;
 }
 
+ParsedPacket RF_RXTask::parsePacket(uint8_t* RX_BUFF) {
+    ParsedPacket packet;
+
+    packet.packet_version_number = (RX_BUFF[0] >> 5) & 0x07;
+    packet.packet_type = (RX_BUFF[0] >> 4) & 0x01;
+    packet.secondary_header_flag = (RX_BUFF[0] >> 3) & 0x01;
+    packet.application_process_ID = ((RX_BUFF[0] & 0x07) << 8) | RX_BUFF[1];
+
+    LOG_DEBUG << "Packet Version Number: " << packet.packet_version_number;
+    LOG_DEBUG << "Packet Type: " << packet.packet_type;
+    LOG_DEBUG << "Secondary Header Flag: " << packet.secondary_header_flag;
+    LOG_DEBUG << "Application Process ID: " << packet.application_process_ID;
+    return packet;
+}
+
 
 [[noreturn]] void RF_RXTask::execute() {
     vTaskDelay(pdMS_TO_TICKS(4000));
@@ -157,39 +172,21 @@ bool RF_RXTask::verifyCRC(uint8_t* RX_BUFF, int16_t corrected_received_length) {
                 uint8_t RX_BUFF[1024]{};
                 LOG_DEBUG << "[RX] DROP: " << drop_counter << "[RX] TOT DROP: " << rx_total_drop_packets;
                 LOG_DEBUG << "[RX AGC] LENGTH: " << corrected_received_length;
-                if (rssi != 127)
-                    LOG_DEBUG << "[RX AGC] RSSI [dBm]: " << rssi;
                 if (corrected_received_length >= MIN_TC_SIZE && corrected_received_length <= MAX_TC_SIZE){
                     rx_total_packets++;
                     LOG_DEBUG << "[RX] total packets c: " << rx_total_packets;
                     drop_counter = 0;
                     for (int i = 0; i < corrected_received_length; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
-                        // LOG_DEBUG << "[RX] DATA: " << RX_BUFF[i];
                         if (error != NO_ERRORS)
                             LOG_ERROR << "ERROR";
                     }
-                    uint32_t crc_received =
-                    (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 4]))       |
-                    (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 3]) << 8 ) |
-                    (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 2]) << 16) |
-                    (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 1]) << 24);
-                    LOG_DEBUG << "[RX]: CRC RECEIVED: " << crc_received;
-                    uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(RX_BUFF), corrected_received_length - CRC_LENGTH);
-                    LOG_DEBUG << "[RX]: CRC CALCULATION: " << crc_value;
-                    if (crc_value == crc_received) {
+                    if (verifyCRC(RX_BUFF, corrected_received_length)) {
                         /// TODO: parse the packet because it could be a TM if we are on the COMMS-GS or TC if we are on the COMMS-GS side
-                        uint8_t packet_version_number = (RX_BUFF[0] >> 5) & 0x07;                  // Top 3 bits
-                        uint8_t packet_type = (RX_BUFF[0] >> 4) & 0x01;                            // 4th bit
-                        uint8_t secondary_header_flag = (RX_BUFF[0] >> 3) & 0x01;                  // 5th bit
-                        uint16_t application_process_ID = ((RX_BUFF[0] & 0x07) << 8) | RX_BUFF[1]; // Last 3 bits + full RX_BUFF[1]
-                        LOG_DEBUG << "Packet Version Number: " << packet_version_number;
-                        LOG_DEBUG << "Packet Type: " << packet_type;
-                        LOG_DEBUG << "Secondary Header Flag: " << secondary_header_flag;
-                        LOG_DEBUG << "Application Process ID: " << application_process_ID;
-                        switch (packet_type) {
+                        ParsedPacket packet = parsePacket(RX_BUFF);
+                        switch (packet.packet_type) {
                             case Message::PacketType::TC: {
-                                switch (application_process_ID) {
+                                switch (packet.application_process_ID) {
                                     case OBC_APPLICATION_ID: {
                                         LOG_DEBUG << "[RX] NEW TC FOR OBC";
                                         rf_rx_tx_queue_handler.size = corrected_received_length - CRC_LENGTH;
@@ -217,18 +214,19 @@ bool RF_RXTask::verifyCRC(uint8_t* RX_BUFF, int16_t corrected_received_length) {
                                         break;
                                     }
                                     default: {
-                                        LOG_ERROR << "[RX] TC FOR UNKNOWN APPLICATION ID: " << application_process_ID;
+                                        LOG_ERROR << "[RX] TC FOR UNKNOWN APPLICATION ID: " << packet.application_process_ID;
                                         break;
                                     }
                                 }
                                 break;
                             }
                             case Message::PacketType::TM: {
+                                // TODO: SEND IT TO TMHANDLING TASK
                                 LOG_DEBUG << "[RX] NEW TM RECEIVED";
                                 break;
                             }
                             default: {
-                                LOG_ERROR << "[RX] UNKNOWN PACKET TYPE: " << packet_type;
+                                LOG_ERROR << "[RX] UNKNOWN PACKET TYPE: " << packet.packet_type;
                                 break;
                             }
                         }
@@ -240,11 +238,10 @@ bool RF_RXTask::verifyCRC(uint8_t* RX_BUFF, int16_t corrected_received_length) {
                         rx_total_drop_packets++;
                         ensureRxMode();
                     }
-                    /// TODO: if the packet is TM print it with the format: New TM [3,25] ... call the TM_HandlingTask
-                    ensureRxMode();
-                    xSemaphoreGive(transceiver_handler.resources_mtx);
+                }
+                ensureRxMode();
+                xSemaphoreGive(transceiver_handler.resources_mtx);
                 }
             }
         }
     }
-}
