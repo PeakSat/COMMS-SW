@@ -3,6 +3,9 @@
 #include "etl/string.h"
 
 #include <Logger.hpp>
+#include <Message.hpp>
+#include <MessageParser.hpp>
+#include <Service.hpp>
 #include <eMMC.hpp>
 #include <ctime> // For std::tm and std::mktime
 
@@ -140,6 +143,17 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
      *   =  5 + (numberOfData * 17)
      */
     uint32_t TMMessageSize = 5 + (numberOfData * 17);
+    __NOP();
+    Message TMMessage;
+    TMMessage.serviceType = 13;
+    TMMessage.messageType = 1;
+    TMMessage.packetType = Message::TM;
+    TMMessage.applicationId = ApplicationId;
+    TMMessage.dataSize = TMMessageSize;
+    String<CCSDSMaxMessageSize> TMString = MessageParser::composeECSS(TMMessage);
+    if (TMString.size() + TMMessageSize < CCSDSMaxMessageSize) {
+        TMString.append(GNSS_TMbuffer, TMMessageSize);
+    }
     __NOP();
     // todo: add to TM queue
 }
