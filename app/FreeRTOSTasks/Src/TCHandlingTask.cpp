@@ -87,6 +87,7 @@ void TCHandlingTask::logParsedMessage(const Message& message) {
                         }
                         case COMMS_APPLICATION_ID:
                             // TODO EXECUTE THE TC
+                            MessageParser::execute(message);
                             break;
                         default: {
                             LOG_DEBUG << "UNKNOWN APPLICATION ID RECEIVED FROM RX";

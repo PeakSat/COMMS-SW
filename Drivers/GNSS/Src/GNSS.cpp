@@ -1,11 +1,13 @@
 #include "GNSS.hpp"
 #include "etl/vector.h"
 #include "etl/string.h"
-
 #include <Logger.hpp>
 #include <Message.hpp>
 #include <MessageParser.hpp>
+#include <RF_TXTask.hpp>
 #include <Service.hpp>
+#include <TCHandlingTask.hpp>
+#include <TMHandlingTask.hpp>
 #include <eMMC.hpp>
 #include <ctime> // For std::tm and std::mktime
 
@@ -144,18 +146,56 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
      */
     uint32_t TMMessageSize = 5 + (numberOfData * 17);
     __NOP();
-    Message TMMessage;
+    Message TMMessage{};
     TMMessage.serviceType = 13;
     TMMessage.messageType = 1;
     TMMessage.packetType = Message::TM;
     TMMessage.applicationId = ApplicationId;
-    TMMessage.dataSize = TMMessageSize;
-    String<CCSDSMaxMessageSize> TMString = MessageParser::composeECSS(TMMessage);
-    if (TMString.size() + TMMessageSize < CCSDSMaxMessageSize) {
-        TMString.append(GNSS_TMbuffer, TMMessageSize);
+    // TMMessage.dataSize = 0;
+    for (int i = 0; i < TMMessageSize; i++) {
+        TMMessage.appendByte(GNSS_TMbuffer[i]);
     }
+
+    String<CCSDSMaxMessageSize> TMString = MessageParser::compose(TMMessage);
+    // if (TMString.size() + TMMessageSize < CCSDSMaxMessageSize) {
+    //     TMString.append(GNSS_TMbuffer, TMMessageSize);
+    // }
+    __NOP();
+    uint8_t buffer[1024]{};
+    for (int i = 0; i < TMString.length(); i++) {
+        buffer[i] = TMString.data()[i];
+    }
+
+    Message message = MessageParser::parse(buffer, TMString.length());
+    tcHandlingTask->logParsedMessage(message);
     __NOP();
     // todo: add to TM queue
+
+    TX_PACKET_HANDLER tm_handler{};
+    for (int i = 0; i < TMString.length(); i++) {
+        tm_handler.buf[i] = TMString.data()[i];
+    }
+    tm_handler.data_length = TMString.length();
+    xQueueSendToBack(TMQueue, &tm_handler, NULL);
+    if (tmhandlingTask->taskHandle != nullptr) {
+        xTaskNotifyIndexed(tmhandlingTask->taskHandle, NOTIFY_INDEX_RECEIVED_TM, TM_COMMS, eSetBits);
+    }
+
+
+    // memoryQueueItemHandler rf_rx_tx_queue_handler{};
+    // rf_rx_tx_queue_handler.size = TMMessageSize;
+    // auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, GNSS_TMbuffer, rf_rx_tx_queue_handler.size);
+    // if (status.has_value()) {
+    //     if (rf_rx_tcQueue != nullptr) {
+    //         xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
+    //         if (tcHandlingTask->taskHandle != nullptr) {
+    //             tcHandlingTask->tc_rf_rx_var = true;
+    //             xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
+    //         } else {
+    //             LOG_ERROR << "[RX] TC_HANDLING not started yet";
+    //         }
+    //     }
+    // }
 }
 
 void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t numberOfSamples) {
