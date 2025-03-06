@@ -14,7 +14,7 @@ void eMMCTask::execute() {
 
     while (true) {
 
-
+        vTaskDelay(pdMS_TO_TICKS(DelayMs));
         // LOG_DEBUG << "Writing to block address: " << block_address_a;
         auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::test2], data_buff, eMMC::memoryMap[eMMC::test2].size, 0, 3);
 
@@ -41,6 +41,6 @@ void eMMCTask::execute() {
             LOG_INFO << "eMMC write and read op completed with success";
         else
             LOG_ERROR << "eMMC read_data_buff contains wrong values";
-        vTaskDelay(pdMS_TO_TICKS(DelayMs));
+
     }
 }

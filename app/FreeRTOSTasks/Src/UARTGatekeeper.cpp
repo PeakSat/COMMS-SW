@@ -3,11 +3,11 @@
 
 extern UART_HandleTypeDef huart4;
 
-UARTGatekeeperTask::UARTGatekeeperTask() : Task("UARTGatekeeperTask") {
+UARTGatekeeperTask::UARTGatekeeperTask() : Task("UARTGatekeeperTask"), taskStack{} {
     xUartQueue = xQueueCreateStatic(UARTQueueSize, sizeof(etl::string<LOGGER_MAX_MESSAGE_SIZE>), this->ucQueueStorageArea, &(this->xStaticQueue));
 }
 
-void UARTGatekeeperTask::execute() {
+[[noreturn]] void UARTGatekeeperTask::execute() {
     UART_Gatekeeper_Semaphore = xSemaphoreCreateBinaryStatic(&UART_Gatekeeper_SemaphoreBuffer);
     etl::string<LOGGER_MAX_MESSAGE_SIZE> output;
     xSemaphoreGive(UART_Gatekeeper_Semaphore);

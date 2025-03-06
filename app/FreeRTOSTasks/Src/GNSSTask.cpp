@@ -97,7 +97,7 @@ void GNSSTask::initGNSS() {
     controlGNSS(GNSSReceiver::configureNMEATalkerID(TalkerIDType::GPMode, Attributes::UpdateSRAMandFLASH));
     etl::vector<uint8_t, 12> interval_vec;
     interval_vec.resize(12, 0);
-    uint8_t seconds = 1;
+    uint8_t seconds = 15;
     // 4 is for RMC, 2 for GSV, 0 is for GGA
     interval_vec[0] = seconds;
     //    interval_vec[2] = seconds;
