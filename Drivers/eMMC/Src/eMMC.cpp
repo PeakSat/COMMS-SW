@@ -167,7 +167,7 @@ etl::expected<void, Error> eMMC::writeBlockEMMC(uint8_t* write_data, uint32_t bl
         eMMC_WriteRead_Block_Buffer[i] = write_data[i];
     }
     // todo: set the CRC bytes
-    uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(write_data), EMMC_PAGE_SIZE / 4);
+    uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(eMMC_WriteRead_Block_Buffer), EMMC_PAGE_SIZE);
     for (int i = 0; i < 4; i++) {
         eMMC_WriteRead_Block_Buffer[EMMC_PAGE_SIZE + i] = static_cast<uint8_t>((crc_value >> (i * 8)) & 0xFF);
     }
@@ -225,7 +225,7 @@ etl::expected<void, Error> eMMC::readBlockEMMC(uint8_t* read_data, uint32_t bloc
         return etl::unexpected<Error>(Error::EMMC_TRANSACTION_TIMED_OUT);
     }
 
-    uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(eMMC_WriteRead_Block_Buffer), EMMC_PAGE_SIZE / 4);
+    uint32_t crc_value = HAL_CRC_Calculate(&hcrc, reinterpret_cast<uint32_t*>(eMMC_WriteRead_Block_Buffer), EMMC_PAGE_SIZE);
     if (eMMCTransactionHandler.ReadComplete == true) {
         for (int i = 0; i < EMMC_PAGE_SIZE; i++) {
             read_data[i] = eMMC_WriteRead_Block_Buffer[i];

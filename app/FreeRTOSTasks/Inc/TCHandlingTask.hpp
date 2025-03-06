@@ -1,15 +1,14 @@
 #pragma once
 #include "Task.hpp"
 #include "etl/optional.h"
+
+#include <Message.hpp>
 #include <queue.h>
 #include <stm32h7xx_hal.h>
 
 #define OBC_APPLICATION_ID 1
 #define COMMS_APPLICATION_ID 2
-#define HOUSEKEEPING 3
-#define FUNCTION_MANAGEMENT 8
-#define TEST 17
-#define MAX_SUBSERVICE_TYPE_NUMBER 40
+
 
 extern UART_HandleTypeDef huart4;
 extern DMA_HandleTypeDef hdma_uart4_rx;
@@ -33,6 +32,7 @@ public:
     QueueHandle_t TCUARTQueueHandle{};
     uint8_t* send_to_tc_queue{};
     static void startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size);
+    void logParsedMessage(const Message& message);
     TCHandlingTask() : Task("TC Handling Task"){}
     [[noreturn]] void execute();
     void createTask() {
