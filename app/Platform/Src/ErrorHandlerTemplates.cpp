@@ -1,4 +1,3 @@
-#include <ErrorHandler.hpp>
 #include <Message.hpp>
 #include <Logger.hpp>
 
