@@ -1,12 +1,10 @@
 #pragma once
 #include <cstdint>
-#include "stm32h7xx.h"
 #include "main.h"
 #include "Frame.hpp"
 #include "etl/vector.h"
 
 #include <FreeRTOS.h>
-#include <semphr.h>
 const uint8_t CANMessageSize = CAN::MaxPayloadLength;
 // const uint8_t CANFrameSize = 64;
 const uint32_t sizeOfIncommingFrameBuffer = 128; // in frames of (CANFrameSize)

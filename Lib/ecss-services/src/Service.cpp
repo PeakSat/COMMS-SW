@@ -1,6 +1,5 @@
 #include <etl/String.hpp>
 #include <Logger.hpp>
-//#include "OBC_Definitions.hpp"
 #include "Service.hpp"
 #include "MessageParser.hpp"
 

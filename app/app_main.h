@@ -27,7 +27,7 @@
 #ifndef __APP_MAIN_H__
 #define __APP_MAIN_H__
 #pragma once
-#include <ParameterService.hpp>
+
 
 /**
  * @brief Main app entry point.
