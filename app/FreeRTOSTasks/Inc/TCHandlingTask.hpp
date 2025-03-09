@@ -1,10 +1,11 @@
 #pragma once
 #include "Task.hpp"
 #include "etl/optional.h"
-
 #include <Message.hpp>
 #include <queue.h>
 #include <stm32h7xx_hal.h>
+#include <TaskConfigs.hpp>
+
 
 #define OBC_APPLICATION_ID 1
 #define TTC_APPLICATION_ID 2
@@ -37,13 +38,12 @@ public:
     [[noreturn]] void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<TCHandlingTask>, this->TaskName,
-                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             TCHandlingTaskStack, this, TCHandlingTaskPriority,
                                              this->taskStack, &(this->taskBuffer));
     }
 
 private:
-    constexpr static uint16_t TaskStackDepth = 12000;
-    StackType_t taskStack[TaskStackDepth]{};
+    StackType_t taskStack[TCHandlingTaskStack]{};
 };
 
 inline etl::optional<TCHandlingTask> tcHandlingTask;

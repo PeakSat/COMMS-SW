@@ -10,7 +10,7 @@
 #include "minmea.h"
 #include "PlatformParameters.hpp"
 #include "ParameterService.hpp"
-
+#include "TaskConfigs.hpp"
 
 #define printing_frequency 1
 
@@ -25,16 +25,12 @@ public:
      * Logger Precision
      */
     static constexpr uint8_t Precision = 6;
-    /**
-    * Depth of the stack allocated for the task, in 16-bit words.
-    */
-    static constexpr uint16_t TaskStackDepth = 7000;
 
     /**
     * Array representing the stack memory for the task.
     * This array is statically allocated with `TaskStackDepth` elements.
     */
-    StackType_t taskStack[TaskStackDepth]{};
+    StackType_t taskStack[GNSSTaskStack]{};
 
     /**
     * Buffer for storing raw GNSS data received via UART.
@@ -206,7 +202,7 @@ public:
     GNSSTask() : Task("GNSS Task") {}
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<GNSSTask>, this->TaskName,
-                                             GNSSTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             GNSSTaskStack, this, GNSSTaskPriority,
                                              this->taskStack, &(this->taskBuffer));
         initQueuesToAcceptPointers();
     }
