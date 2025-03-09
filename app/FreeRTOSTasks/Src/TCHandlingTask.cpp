@@ -85,7 +85,7 @@ void TCHandlingTask::logParsedMessage(const Message& message) {
                             received_events_tc &= ~TC_RF_RX;
                             break;
                         }
-                        case COMMS_APPLICATION_ID:
+                        case TTC_APPLICATION_ID:
                             // TODO EXECUTE THE TC
                             break;
                         default: {
@@ -125,11 +125,11 @@ void TCHandlingTask::logParsedMessage(const Message& message) {
                                     xQueueSendToBack(TXQueue, &tx_handler, 0);
                                     if (rf_txtask->taskHandle != nullptr) {
                                         xTaskNotifyIndexed(rf_txtask->taskHandle, NOTIFY_INDEX_TRANSMIT, TC_UART_TC_HANDLING_TASK, eSetBits);
-                                    } else
+                                    }
                                         LOG_ERROR << "TASK HANDLE NULL";
                                     break;
                                 }
-                                case COMMS_APPLICATION_ID: {
+                                case TTC_APPLICATION_ID: {
                                     LOG_DEBUG << "Received TC from UART destined for COMMS";
                                     break;
                                 }

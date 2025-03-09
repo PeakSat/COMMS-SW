@@ -1,4 +1,4 @@
-# PeakSat COMMS Software
+# PeakSat TTC Software
 
 ### Developer Setup
 To set-up and run pre-commit you need to:
