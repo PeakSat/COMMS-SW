@@ -16,7 +16,7 @@ public:
 
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<TemperatureSensorsTask>, this->TaskName,
-                                             TMP117TaskStack, this, TMHandlingTaskPriority,
+                                             TMP117TaskStack, this, TMP117TaskPriority,
                                              this->taskStack, &(this->taskBuffer));
     }
 
