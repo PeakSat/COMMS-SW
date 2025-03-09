@@ -19,7 +19,7 @@ namespace CAN::Application {
      */
     inline etl::map<NodeIDs, String<LogSource::MaximumLettersInSubsystemName>, LogSource::NumberOfLogSources> nodeIdToString = {
         {OBC, "OBC"},
-        {COMMS, "COMMS"},
+        {TTC, "TTC"},
         {ADCS, "ADCS"},
         {SU, "SU"},
         {ExternalMCU, "External"}};

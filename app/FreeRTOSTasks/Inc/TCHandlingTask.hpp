@@ -7,7 +7,7 @@
 #include <stm32h7xx_hal.h>
 
 #define OBC_APPLICATION_ID 1
-#define COMMS_APPLICATION_ID 2
+#define TTC_APPLICATION_ID 2
 
 
 extern UART_HandleTypeDef huart4;

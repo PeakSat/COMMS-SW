@@ -21,7 +21,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Set the project name
-set(CMAKE_PROJECT_NAME comms-sw)
+set(CMAKE_PROJECT_NAME ttc-flight-software)
 
 # Include toolchain file
 include("cmake/gcc-arm-none-eabi.cmake")
@@ -80,7 +80,7 @@ add_subdirectory(Lib/ecss-services)
 
 include(CheckGit.cmake)
 CheckGitSetup()
-message(STATUS "COMMS Software version: commit $GIT_HASH")
+message(STATUS "TTC Software version: commit $GIT_HASH")
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         # Add user sources here
@@ -148,7 +148,7 @@ execute_process(
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 
-add_compile_definitions(COMMS_SW)
+add_compile_definitions(ttc-flight-software)
 
 target_compile_definitions(log_common PUBLIC LOGLEVEL_TRACE)
 
