@@ -1,24 +1,20 @@
 #pragma once
 #include "Task.hpp"
 #include "etl/optional.h"
+#include "TaskConfigs.hpp"
+
 
 inline bool heartbeatReceived = true;
 
 class HeartbeatTask : public Task {
 public:
     [[noreturn]] void execute();
-
     HeartbeatTask() : Task("HEARTBEAT") {}
-
     void createTask() {
-        this->taskHandle = xTaskCreateStatic(vClassTask<HeartbeatTask>, this->TaskName,
-                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
-                                             this->taskStack, &(this->taskBuffer));
+        this->taskHandle = xTaskCreateStatic(vClassTask<HeartbeatTask>, this->TaskName,HeartbeatTaskStack, this, HeartbeatTaskPriority, this->taskStack, &(this->taskBuffer));
     }
-
 private:
-    const static inline uint16_t TaskStackDepth = 2500;
-    StackType_t taskStack[TaskStackDepth]{};
+    StackType_t taskStack[HeartbeatTaskStack]{};
 };
 
 inline etl::optional<HeartbeatTask> heartbeatTask;

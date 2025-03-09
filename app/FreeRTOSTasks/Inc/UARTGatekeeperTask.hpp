@@ -5,6 +5,9 @@
 #include "queue.h"
 #include "etl/string.h"
 #include "etl/optional.h"
+#include "TaskConfigs.hpp"
+
+
 #define UARTQueueSize 40
 #define LOGGER_MAX_MESSAGE_SIZE 1024
 
@@ -27,9 +30,7 @@ private:
 
     uint8_t ucQueueStorageArea[UARTQueueSize * sizeof(etl::string<LOGGER_MAX_MESSAGE_SIZE>)];
 
-    const static uint16_t TaskStackDepth = 10000;
-
-    StackType_t taskStack[TaskStackDepth];
+    StackType_t taskStack[UARTGatekeeperTaskStack];
 
 public:
     [[noreturn]] void execute();
@@ -51,8 +52,8 @@ public:
     }
 
     void createTask() {
-        this->taskHandle = xTaskCreateStatic(vClassTask<UARTGatekeeperTask>, this->TaskName, UARTGatekeeperTask::TaskStackDepth, this,
-                                             tskIDLE_PRIORITY + 1, this->taskStack, &(this->taskBuffer));
+        this->taskHandle = xTaskCreateStatic(vClassTask<UARTGatekeeperTask>, this->TaskName, UARTGatekeeperTaskStack, this,
+                                             UARTGatekeeperTaskPriority, this->taskStack, &(this->taskBuffer));
     }
 };
 

@@ -2,6 +2,7 @@
 #include "Task.hpp"
 #include "at86rf215.hpp"
 #include "etl/optional.h"
+#include "TaskConfigs.hpp"
 
 struct TX_PACKET_HANDLER {
     uint8_t buf[1024];
@@ -27,15 +28,14 @@ public:
     uint32_t txfe_counter = 0, tx_counter = 0, txfe_not_received, rxfe_received, rxfe_not_received = 0, tx_ong_counter = 0;
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_TXTask>, this->TaskName,
-                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             RF_TXTaskStack, this, RF_TXTaskPriority,
                                              this->taskStack, &(this->taskBuffer));
     }
 private:
-    constexpr static uint16_t TaskStackDepth = 12000;
     /// Frequency in kHz
     constexpr static uint32_t FrequencyUHFTX = 401000;
     AT86RF215::Error error = NO_ERRORS;
-    StackType_t taskStack[TaskStackDepth]{};
+    StackType_t taskStack[RF_TXTaskStack]{};
 };
 
 inline etl::optional<RF_TXTask> rf_txtask;

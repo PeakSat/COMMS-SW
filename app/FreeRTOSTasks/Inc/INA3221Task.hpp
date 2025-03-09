@@ -2,6 +2,7 @@
 #include <etl/optional.h>
 #include "Task.hpp"
 #include "INA3221.hpp"
+#include "TaskConfigs.hpp"
 
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c4;
@@ -43,16 +44,14 @@ public:
 
     void createTask() {
         xTaskCreateStatic(vClassTask<ina3221Task>, this->TaskName,
-                          ina3221Task::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                          INA3221TaskStack, this, INA3221TaskPriority,
                           this->taskStack, &(this->taskBuffer));
     }
 
 private:
     static constexpr uint16_t DelayMs = 4000;
-    static constexpr uint16_t TaskStackDepth = 2000;
     static constexpr uint8_t Precision = 2;
-
-    StackType_t taskStack[TaskStackDepth];
+    StackType_t taskStack[INA3221TaskStack];
 };
 
 

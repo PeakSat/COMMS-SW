@@ -5,6 +5,7 @@
 #include "stm32h7xx_hal.h"
 #include <Frame.hpp>
 #include "Logger.hpp"
+#include "TaskConfigs.hpp"
 
 extern UART_HandleTypeDef huart4;
 extern DMA_HandleTypeDef hdma_uart4_rx;
@@ -21,13 +22,12 @@ public:
     [[noreturn]] static void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<TMHandling>, this->TaskName,
-                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             TMHandlingTaskStack, this, TMHandlingTaskPriority,
                                              this->taskStack, &(this->taskBuffer));
     }
 
 private:
-    constexpr static uint16_t TaskStackDepth = 10000;
-    StackType_t taskStack[TaskStackDepth]{};
+    StackType_t taskStack[TMHandlingTaskStack]{};
 };
 
 inline etl::optional<TMHandling> tmhandlingTask;

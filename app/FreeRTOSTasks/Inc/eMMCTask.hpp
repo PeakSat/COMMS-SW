@@ -1,24 +1,21 @@
 #pragma once
 #include "Task.hpp"
 #include "etl/optional.h"
+#include "TaskConfigs.hpp"
 
 
 class eMMCTask : public Task {
 private:
     const static inline uint16_t DelayMs = 15000;
-    const static inline uint16_t TaskStackDepth = 4000;
 
-    StackType_t taskStack[TaskStackDepth];
+    StackType_t taskStack[eMMCTaskStack]{};
 
 public:
     void execute();
-
     eMMCTask() : Task("eMMC Memory Functions") {}
-
     void createTask() {
         xTaskCreateStatic(vClassTask<eMMCTask>, this->TaskName,
-                          eMMCTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
-                          this->taskStack, &(this->taskBuffer));
+                          eMMCTaskStack, this, eMMCTaskPriority, this->taskStack, &(this->taskBuffer));
     }
 };
 

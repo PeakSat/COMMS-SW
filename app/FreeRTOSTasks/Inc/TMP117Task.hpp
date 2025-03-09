@@ -1,9 +1,10 @@
 #pragma once
-
 #include "Task.hpp"
 #include "main.h"
 #include "TMP117.hpp"
 #include "etl/optional.h"
+#include "TaskConfigs.hpp"
+
 
 extern I2C_HandleTypeDef hi2c1;
 
@@ -15,17 +16,16 @@ public:
 
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<TemperatureSensorsTask>, this->TaskName,
-                                             TemperatureSensorsTask::TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             TMP117TaskStack, this, TMHandlingTaskPriority,
                                              this->taskStack, &(this->taskBuffer));
     }
 
 private:
     static inline constexpr uint16_t DelayMs = 5000;
-    static inline constexpr uint16_t TaskStackDepth = 2000;
     static inline constexpr uint8_t LoggerPrecision = 2;
     static constexpr uint8_t MaxErrorStringSize = 25;
     static constexpr uint8_t MaxSensorNameSize = 16;
-    StackType_t taskStack[TaskStackDepth]{};
+    StackType_t taskStack[TMP117TaskStack]{};
 
     /** A method that maps an error to a string.
      * @param error The type of error
