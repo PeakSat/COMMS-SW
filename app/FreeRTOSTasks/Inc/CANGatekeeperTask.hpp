@@ -3,7 +3,7 @@
 #include "queue.h"
 #include "CANDriver.hpp"
 #include "Logger.hpp"
-
+#include "TaskConfigs.hpp"
 #include <ECSS_Definitions.hpp>
 #include <optional>
 enum CANInstance {
@@ -73,9 +73,8 @@ public:
    */
     static inline StaticQueue_t incomingFrameQueueBuffer;
 
-    const static inline uint16_t TaskStackDepth = 7000;
 
-    StackType_t taskStack[TaskStackDepth];
+    StackType_t taskStack[CANGatekeeperTaskStack];
 
     CAN::ActiveBus ActiveBus = CAN::ActiveBus::Main;
 
@@ -162,8 +161,8 @@ public:
 
 
     void createTask() {
-        this->taskHandle = xTaskCreateStatic(vClassTask<CANGatekeeperTask>, this->TaskName, this->TaskStackDepth, this,
-                                             tskIDLE_PRIORITY + 2, this->taskStack, &(this->taskBuffer));
+        this->taskHandle = xTaskCreateStatic(vClassTask<CANGatekeeperTask>, this->TaskName, CANGatekeeperTaskStack, this,
+                                             CANGatekeeperTaskPriority, this->taskStack, &(this->taskBuffer));
     }
 };
 

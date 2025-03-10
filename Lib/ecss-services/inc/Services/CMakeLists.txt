@@ -1,0 +1,3 @@
+add_library(ecss_services_inc INTERFACE)
+
+target_include_directories(ecss_services_inc INTERFACE .)

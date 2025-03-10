@@ -7,9 +7,8 @@
 
 class CANParserTask : public Task {
 public:
-    const static inline uint16_t TaskStackDepth = 7000;
 
-    StackType_t taskStack[TaskStackDepth];
+    StackType_t taskStack[CANParserTaskStack];
 
     void execute();
 
@@ -21,8 +20,8 @@ public:
      * Create freeRTOS Task
      */
     void createTask() {
-        this->taskHandle = xTaskCreateStatic(vClassTask<CANParserTask>, this->TaskName, this->TaskStackDepth, this,
-                                             tskIDLE_PRIORITY + 2, this->taskStack, &(this->taskBuffer));
+        this->taskHandle = xTaskCreateStatic(vClassTask<CANParserTask>, this->TaskName, CANParserTaskStack, this,
+                                             CANParserTaskPriority, this->taskStack, &(this->taskBuffer));
     }
 };
 

@@ -3,6 +3,7 @@
 #include "at86rf215.hpp"
 #include "etl/optional.h"
 #include "main.h"
+#include "TaskConfigs.hpp"
 
 extern CRC_HandleTypeDef hcrc;
 
@@ -30,7 +31,7 @@ public:
     [[noreturn]] void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<RF_RXTask>, this->TaskName,
-                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 3,
+                                             RF_RXTaskStack, this, RF_RXTaskPriority,
                                              this->taskStack, &(this->taskBuffer));
     }
 
@@ -39,7 +40,7 @@ private:
     /// Frequency in kHz
     constexpr static uint32_t FrequencyUHFRX = 401000;
     AT86RF215::Error error = NO_ERRORS;
-    StackType_t taskStack[TaskStackDepth]{};
+    StackType_t taskStack[RF_RXTaskStack]{};
 };
 
 inline etl::optional<RF_RXTask> rf_rxtask;

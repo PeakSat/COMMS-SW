@@ -11,7 +11,7 @@ namespace CAN {
     /**
      * The ID for the current node as described in DDJF_OBDH
      */
-    inline const CAN::NodeIDs NodeID = COMMS;
+    inline const CAN::NodeIDs NodeID = TTC;
 
     /**
      * The maximum of the length of the queue for incoming/outgoing CAN frames.

@@ -1,13 +1,14 @@
 #pragma once
 #include "Task.hpp"
 #include "etl/optional.h"
-
 #include <Message.hpp>
 #include <queue.h>
 #include <stm32h7xx_hal.h>
+#include <TaskConfigs.hpp>
+
 
 #define OBC_APPLICATION_ID 1
-#define COMMS_APPLICATION_ID 2
+#define TTC_APPLICATION_ID 2
 
 
 extern UART_HandleTypeDef huart4;
@@ -22,6 +23,7 @@ inline constexpr uint8_t TCUARTItemSize = sizeof(uint8_t*);
 inline uint8_t incomingTCUARTQueueStorageArea[TCUARTQueueSize * TCUARTItemSize]{};
 
 
+
 class TCHandlingTask : public Task {
 public:
     uint8_t* tc_buf_dma_pointer = nullptr;
@@ -32,17 +34,16 @@ public:
     uint8_t* send_to_tc_queue{};
     static void startReceiveFromUARTwithIdle(uint8_t* buf, uint16_t size);
     void logParsedMessage(const Message& message);
-    TCHandlingTask() : Task("TC Handling Task") {}
+    TCHandlingTask() : Task("TC Handling Task"){}
     [[noreturn]] void execute();
     void createTask() {
         this->taskHandle = xTaskCreateStatic(vClassTask<TCHandlingTask>, this->TaskName,
-                                             this->TaskStackDepth, this, tskIDLE_PRIORITY + 1,
+                                             TCHandlingTaskStack, this, TCHandlingTaskPriority,
                                              this->taskStack, &(this->taskBuffer));
     }
 
 private:
-    constexpr static uint16_t TaskStackDepth = 20000;
-    StackType_t taskStack[TaskStackDepth]{};
+    StackType_t taskStack[TCHandlingTaskStack]{};
 };
 
 inline etl::optional<TCHandlingTask> tcHandlingTask;
