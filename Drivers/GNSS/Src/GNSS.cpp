@@ -147,6 +147,7 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
     uint32_t TMMessageSize = 5 + (numberOfData * 17);
     __NOP();
     Message TMMessage{};
+    TMMessage.applicationId = 2;
     TMMessage.serviceType = 13;
     TMMessage.messageType = 1;
     TMMessage.packetType = Message::TM;
@@ -155,6 +156,7 @@ void GNSSReceiver::constructGNSSTM(GNSSDefinitions::StoredGNSSData* storedData1,
     for (int i = 0; i < TMMessageSize; i++) {
         TMMessage.appendByte(GNSS_TMbuffer[i]);
     }
+    TMMessage.applicationId = 2;
 
     String<CCSDSMaxMessageSize> TMString = MessageParser::compose(TMMessage);
     // if (TMString.size() + TMMessageSize < CCSDSMaxMessageSize) {
@@ -328,7 +330,7 @@ void GNSSReceiver::parseGNSSData(uint8_t* data, uint32_t size) {
     int32_t altitudeI;
     uint64_t timeFromEpoch;
     uint8_t numberOfSatellites;
-    GNSSReceiver::sendGNSSData(250, 150, 5);
+    // GNSSReceiver::sendGNSSData(250, 150, 5);
 
     uint16_t numberOfData = ((uint16_t) data[0]) << 8 | static_cast<uint16_t>(data[1]);
     for (int i = 0; i < numberOfData; i++) {
@@ -380,6 +382,7 @@ void GNSSReceiver::parseGNSSData(uint8_t* data, uint32_t size) {
             // altitudeI=altitudeI<<8;
             // altitudeI |= dataPointer[j];
         }
+        LOG_DEBUG << "GNSS data " << i << ": "<< "Lat=" << latitudeI << ", Lon=" << longitudeI << ", Alt=" << altitudeI << ", timeFromEpoch=" << timeFromEpoch << ", N of satellites=" << numberOfSatellites;
         __NOP();
     }
 }
