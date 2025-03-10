@@ -87,6 +87,7 @@ void TCHandlingTask::logParsedMessage(const Message& message) {
                         }
                         case TTC_APPLICATION_ID:
                             // TODO EXECUTE THE TC
+                            MessageParser::execute(message);
                             break;
                         default: {
                             LOG_DEBUG << "UNKNOWN APPLICATION ID RECEIVED FROM RX";
@@ -118,7 +119,7 @@ void TCHandlingTask::logParsedMessage(const Message& message) {
                                 case OBC_APPLICATION_ID: {
                                     LOG_DEBUG << "Received TC from UART destined for OBC";
                                     TX_PACKET_HANDLER tx_handler{};
-                                    for (int i = 0 ; i < new_size; i++) {
+                                    for (int i = 0; i < new_size; i++) {
                                         tx_handler.buf[i] = ECSS_TC_BUF[i];
                                     }
                                     tx_handler.data_length = new_size;

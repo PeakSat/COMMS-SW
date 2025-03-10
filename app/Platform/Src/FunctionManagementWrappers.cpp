@@ -1,7 +1,6 @@
 #include "FunctionManagementWrappers.hpp"
-#include "Message.hpp"
-// #include <GNSS.hpp>
-#include <Logger.hpp>
+
+#include <GNSS.hpp>
 
 void GNSS_Data_Download_Wrapper(Message& msg) {
 
@@ -47,5 +46,5 @@ void GNSS_Data_Download_Wrapper(Message& msg) {
     dataPointer += sizeof(numberOfSamples);
 
 
-    // GNSSReceiver::sendGNSSData(period, secondsPrior, numberOfSamples);
+    GNSSReceiver::sendGNSSData(period, secondsPrior, numberOfSamples);
 }

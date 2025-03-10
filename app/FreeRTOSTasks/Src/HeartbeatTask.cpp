@@ -4,7 +4,7 @@
 #include <ApplicationLayer.hpp>
 
 [[noreturn]] void HeartbeatTask::execute() {
-    LOG_DEBUG << "HeartbeatTask::execute()";
+    // LOG_DEBUG << "HeartbeatTask::execute()";
     vTaskDelay(pdMS_TO_TICKS(500));
     CAN::Application::sendHeartbeatMessage();
     uint32_t repetitionCounter = 0;

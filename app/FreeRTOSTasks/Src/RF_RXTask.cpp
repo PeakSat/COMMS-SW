@@ -1,6 +1,7 @@
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
 #include <ECSS_Definitions.hpp>
+#include <GNSS.hpp>
 #include <Message.hpp>
 #include <MessageParser.hpp>
 #include <RF_TXTask.hpp>
@@ -74,8 +75,8 @@ bool RF_RXTask::verifyCRC(uint8_t* RX_BUFF, int32_t corrected_received_length) {
         return false;
     }
     uint32_t crc_received =
-        (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 4]))       |
-        (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 3]) << 8 ) |
+        (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 4])) |
+        (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 3]) << 8) |
         (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 2]) << 16) |
         (static_cast<uint32_t>(RX_BUFF[corrected_received_length - 1]) << 24);
 
@@ -105,7 +106,7 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
 
 
 [[noreturn]] void RF_RXTask::execute() {
-    vTaskDelay(pdMS_TO_TICKS(4000));
+    vTaskDelay(pdMS_TO_TICKS(3000));
     LOG_INFO << "[RF RX TASK]";
     HAL_GPIO_WritePin(P5V_RF_EN_GPIO_Port, P5V_RF_EN_Pin, GPIO_PIN_SET);
     /// ENABLE THE RX SWITCH
@@ -152,7 +153,7 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
         LOG_ERROR << "Failed to establish connection after " << MAX_RETRIES << " attempts.";
     }
     HAL_GPIO_WritePin(EN_UHF_AMP_RX_GPIO_Port, EN_UHF_AMP_RX_Pin, GPIO_PIN_SET);
-    uint32_t rx_total_packets = 0,  rx_total_drop_packets = 0, correct_packets = 0, error_rx_buf = 0;
+    uint32_t rx_total_packets = 0, rx_total_drop_packets = 0, correct_packets = 0, error_rx_buf = 0;
     uint32_t receivedEvents = 0;
     memoryQueueItemHandler rf_rx_tx_queue_handler{};
     ensureRxMode();
@@ -170,7 +171,7 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
                 LOG_DEBUG << "[RX] OKAY(CRC) PACKETS: " << correct_packets;
                 LOG_DEBUG << "[RX] ERROR RX BUF: " << error_rx_buf;
                 // TODO: SPACECRAFT ID FILTERING
-                if (corrected_received_length >= MIN_TC_SIZE && corrected_received_length <= MAX_TC_SIZE){
+                if (corrected_received_length >= MIN_TC_SIZE && corrected_received_length <= MAX_TC_SIZE) {
                     for (int i = 0; i < corrected_received_length; i++) {
                         RX_BUFF[i] = transceiver.spi_read_8((BBC0_FBRXS) + i, error);
                         if (error != NO_ERRORS) {
@@ -190,8 +191,8 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
                                 if (status.has_value()) {
                                     xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
                                     tcHandlingTask->tc_rf_rx_var = true;
-                                    xTaskNotifyIndexed(tcHandlingTask->taskHandle,NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
-                                }else {
+                                    xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
+                                } else {
                                     // TODO: ST[05]
                                     LOG_ERROR << "[RX AGC] Failed to store MMC packet.";
                                 }
@@ -199,6 +200,12 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
                             }
                             case Message::PacketType::TM: {
                                 // TODO: SEND IT TO TM_HANDLING TASK
+                                Message message = MessageParser::parse(RX_BUFF, corrected_received_length);
+                                switch (message.serviceType) {
+                                    case 13: //ST[13]
+                                        GNSSReceiver::parseGNSSData(message.data.data(), message.dataSize);
+                                        break;
+                                }
                                 LOG_DEBUG << "[RX] TM RECEPTION";
                                 break;
                             }
@@ -208,15 +215,13 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
                                 break;
                             }
                         }
-                    }
-                    else {
+                    } else {
                         // TODO: ST[05]
                         LOG_ERROR << "[RX] WRONG CRC";
                         rx_total_drop_packets++;
                         ensureRxMode();
                     }
-                }
-                else {
+                } else {
                     // TODO: ST[05]
                     vTaskDelay(pdMS_TO_TICKS(100));
                     LOG_ERROR << "[RX] WRONG LENGTH";
@@ -225,7 +230,7 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
                 }
                 ensureRxMode();
                 xSemaphoreGive(transceiver_handler.resources_mtx);
-                }
             }
         }
     }
+}

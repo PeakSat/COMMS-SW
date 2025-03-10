@@ -224,7 +224,7 @@ String<CCSDSMaxMessageSize> MessageParser::compose(const Message& message) {
 	packetId |= (1U << 11U);                                              // Secondary header flag
 	packetId |= (message.packetType == Message::TC) ? (1U << 12U) : (0U); // Ignore-MISRA
 	SequenceCount const packetSequenceControl = message.packetSequenceCount | (3U << 14U);
-	uint16_t packetDataLength = ecssMessage.size() - 1;
+	uint16_t packetDataLength = ecssMessage.size();
 
 	// Compile the header
 	header[0] = packetId >> 8U;

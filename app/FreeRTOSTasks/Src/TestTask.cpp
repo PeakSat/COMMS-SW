@@ -5,91 +5,45 @@
 #include "ParameterService.hpp"
 #include "ApplicationLayer.hpp"
 #include "COBS.hpp"
+#include "ServicePool.hpp"
 
 #include <GNSS.hpp>
 #include <GNSSDefinitions.hpp>
 #include <HousekeepingService.hpp>
 #include <RF_TXTask.hpp>
 #include <ServicePool.hpp>
+#include <TCHandlingTask.hpp>
 
 void TestTask::execute() {
     LOG_DEBUG << "TestTask::execute()";
-    vTaskDelay(5000);
-    GNSSDefinitions::StoredGNSSData data{};
-
-    // for (int i=0; i<2600; i++) {
-    //     auto status = eMMC::storeItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&data), EMMC_PAGE_SIZE, i, 1);
-    // }
-
+    vTaskDelay(pdMS_TO_TICKS(5000));
+    memoryQueueItemHandler rf_rx_tx_queue_handler{};
+    uint8_t test_array[] = {24, 2, 1, 10, 0, 20, 47, 8, 1, 2, 5, 0, 2, 3, 0, 0, 0, 5, 0, 0, 0, 100, 0, 0, 0, 5};
+    uint8_t RX_BUFF[1024]{};
     while (true) {
+        LOG_DEBUG << "Sending TC to queue from test task";
+        // tcHandlingTask->tc_rf_rx_var = true;
+        // tcHandlingTask->send_to_tc_queue = test_array;
+        // tcHandlingTask->size = sizeof(test_array)/sizeof(test_array[0]);
+        // xQueueSendToBack(rf_rx_tcQueue, &tcHandlingTask->send_to_tc_queue, 0);
+        // xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 18), eSetBits);
 
-
-        // if (eMMCDataTailPointer > 0) {
-        //     auto status = eMMC::getItem(eMMC::memoryMap[eMMC::GNSSData], reinterpret_cast<uint8_t*>(&data), 512, eMMCDataTailPointer - 1, 1);
+        // for (int i = 0; i < sizeof(test_array) / sizeof(test_array[0]); i++) {
+        //     RX_BUFF[i] = test_array[i];
         // }
-        uint64_t usFromEpoch_NofSat;
-        int32_t latitudeI;
-        int32_t longitudeI;
-        int32_t altitudeI;
-        uint64_t timeFromEpoch;
-        uint8_t numberOfSatellites;
-        GNSSReceiver::sendGNSSData(1, 10, 5);
-
-        uint16_t numberOfData = ((uint16_t) GNSS_TMbuffer[0]) << 8 | static_cast<uint16_t>(GNSS_TMbuffer[1]);
-        for (int i = 0; i < numberOfData; i++) {
-            //get time + num of satellites
-            uint8_t* TimeStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&usFromEpoch_NofSat);
-            uint8_t* dataPointer = (uint8_t*) &GNSS_TMbuffer[5 + (5 * i)];
-            usFromEpoch_NofSat = 0;
-            usFromEpoch_NofSat |= static_cast<uint64_t>(GNSS_TMbuffer[2]);
-            usFromEpoch_NofSat = usFromEpoch_NofSat << 8;
-            usFromEpoch_NofSat |= static_cast<uint64_t>(GNSS_TMbuffer[3]);
-            usFromEpoch_NofSat = usFromEpoch_NofSat << 8;
-            usFromEpoch_NofSat |= static_cast<uint64_t>(GNSS_TMbuffer[4]);
-            usFromEpoch_NofSat = usFromEpoch_NofSat << 8;
-            usFromEpoch_NofSat = usFromEpoch_NofSat << 32;
-            for (int j = 0; j < sizeof(uint64_t) - 3; j++) {
-                TimeStartBytesStoredDataPointer1[j] = dataPointer[j];
-                // usFromEpoch_NofSat=usFromEpoch_NofSat<<8;
-                // usFromEpoch_NofSat |= dataPointer[j];
-            }
-            timeFromEpoch = usFromEpoch_NofSat >> 5;
-            numberOfSatellites = (uint8_t) (usFromEpoch_NofSat & 0x1F);
-
-            //get lat
-            uint8_t* LatStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&latitudeI);
-            dataPointer = (uint8_t*) &GNSS_TMbuffer[5 + (5 * numberOfData)];
-            latitudeI = 0;
-            for (int j = 0; j < sizeof(int32_t); j++) {
-                LatStartBytesStoredDataPointer1[j] = dataPointer[j + (4 * i)];
-                // latitudeI=latitudeI<<8;
-                // latitudeI |= dataPointer[j];
-            }
-
-            //get lon
-            uint8_t* LonStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&longitudeI);
-            dataPointer = (uint8_t*) &GNSS_TMbuffer[(numberOfData * (5 + 4)) + 5];
-            longitudeI = 0;
-            for (int j = 0; j < sizeof(int32_t); j++) {
-                LonStartBytesStoredDataPointer1[j] = dataPointer[j + (4 * i)];
-                // longitudeI=longitudeI<<8;
-                // longitudeI |= dataPointer[j];
-            }
-
-            //get alt
-            uint8_t* AltStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&altitudeI);
-            dataPointer = (uint8_t*) &GNSS_TMbuffer[(numberOfData * (5 + 4 + 4)) + 5];
-            altitudeI = 0;
-            for (int j = 0; j < sizeof(int32_t); j++) {
-                AltStartBytesStoredDataPointer1[j] = dataPointer[j + (4 * i)];
-                // altitudeI=altitudeI<<8;
-                // altitudeI |= dataPointer[j];
-            }
-            __NOP();
-        }
-
-        // GNSS_TMbuffer[0];
-
+        // rf_rx_tx_queue_handler.size = sizeof(test_array) / sizeof(test_array[0]);
+        // auto status = eMMC::storeItemInQueue(eMMC::memoryQueueMap[eMMC::rf_rx_tc], &rf_rx_tx_queue_handler, RX_BUFF, rf_rx_tx_queue_handler.size);
+        // if (status.has_value()) {
+        //     if (rf_rx_tcQueue != nullptr) {
+        //         xQueueSendToBack(rf_rx_tcQueue, &rf_rx_tx_queue_handler, 0);
+        //         if (tcHandlingTask->taskHandle != nullptr) {
+        //             tcHandlingTask->tc_rf_rx_var = true;
+        //             xTaskNotifyIndexed(tcHandlingTask->taskHandle, NOTIFY_INDEX_INCOMING_TC, (1 << 19), eSetBits);
+        //         } else {
+        //             LOG_ERROR << "[RX] TC_HANDLING not started yet";
+        //         }
+        //     }
+        // }
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
