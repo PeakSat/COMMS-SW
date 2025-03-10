@@ -2,7 +2,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpsabi" // Suppress: parameter passing for argument of type 'Time::DefaultCUC' {aka 'TimeStamp<4, 0, 1, 10>'} changed in GCC 7.1
 #include "Helpers/Parameter.hpp"
-#define NUMBER_OF_PARAMETERS 883
+#define NUMBER_OF_PARAMETERS 884
 namespace OBDHParameters {
     enum ParameterID : uint16_t {
         DEBUG_COUNTERID = 20,
@@ -42,7 +42,8 @@ namespace OBDHParameters {
         HEARTBEAT_PERIODID = 820,
         LAST_RESET_CAUSEID = 836,
         RTC_OFFSET_THRESHOLDID = 848,
-        USE_GNSS_PPSID = 864
+        USE_GNSS_PPSID = 864,
+        STORED_TMS_COUNTID = 884
     };
     inline Parameter<uint32_t> DEBUG_COUNTER(0);
     inline Parameter<float> PCB_TEMPERATURE_1(0);
@@ -104,6 +105,7 @@ Redundant = 1
     inline Parameter<uint32_t> LAST_RESET_CAUSE(0);
     inline Parameter<uint8_t> RTC_OFFSET_THRESHOLD(2);
     inline Parameter<bool> USE_GNSS_PPS(true);
+    inline Parameter<uint32_t> STORED_TMS_COUNT(0);
 }
 namespace COMMSParameters {
     enum ParameterID : uint16_t {
