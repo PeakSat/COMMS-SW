@@ -15,6 +15,7 @@ public:
 
     static void storeDataToEMMC(uint8_t* data, uint32_t block);
     static void getDataFromEMMC(uint8_t* data, uint32_t block);
+    static void parseGNSSData(uint8_t* data, uint32_t size);
 
     static bool isDataValid(int8_t year, int8_t month, int8_t day);
 

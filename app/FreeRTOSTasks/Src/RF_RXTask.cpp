@@ -1,6 +1,7 @@
 #include "RF_RXTask.hpp"
 #include "Logger.hpp"
 #include <ECSS_Definitions.hpp>
+#include <GNSS.hpp>
 #include <Message.hpp>
 #include <MessageParser.hpp>
 #include <RF_TXTask.hpp>
@@ -199,7 +200,14 @@ ParsedPacket RF_RXTask::parsePacket(const uint8_t* RX_BUFF) {
                             }
                             case Message::PacketType::TM: {
                                 // TODO: SEND IT TO TM_HANDLING TASK
-
+                                Message message = MessageParser::parse(RX_BUFF, corrected_received_length);
+                                switch (message.packetType) {
+                                    case 13: //ST[13]
+                                        uint32_t headerSize = 15;
+                                        uint8_t* dataPointer = RX_BUFF + headerSize; // ignore headers
+                                        GNSSReceiver::parseGNSSData(dataPointer, corrected_received_length - headerSize);
+                                        break;
+                                }
                                 LOG_DEBUG << "[RX] TM RECEPTION";
                                 break;
                             }

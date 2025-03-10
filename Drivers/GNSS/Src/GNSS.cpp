@@ -320,6 +320,70 @@ void GNSSReceiver::sendGNSSData(uint32_t period, uint32_t secondsPrior, uint32_t
     }
 }
 
+
+void GNSSReceiver::parseGNSSData(uint8_t* data, uint32_t size) {
+    uint64_t usFromEpoch_NofSat;
+    int32_t latitudeI;
+    int32_t longitudeI;
+    int32_t altitudeI;
+    uint64_t timeFromEpoch;
+    uint8_t numberOfSatellites;
+    GNSSReceiver::sendGNSSData(250, 150, 5);
+
+    uint16_t numberOfData = ((uint16_t) data[0]) << 8 | static_cast<uint16_t>(data[1]);
+    for (int i = 0; i < numberOfData; i++) {
+        //get time + num of satellites
+        uint8_t* TimeStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&usFromEpoch_NofSat);
+        uint8_t* dataPointer = (uint8_t*) &data[5 + (5 * i)];
+        usFromEpoch_NofSat = 0;
+        usFromEpoch_NofSat |= static_cast<uint64_t>(data[2]);
+        usFromEpoch_NofSat = usFromEpoch_NofSat << 8;
+        usFromEpoch_NofSat |= static_cast<uint64_t>(data[3]);
+        usFromEpoch_NofSat = usFromEpoch_NofSat << 8;
+        usFromEpoch_NofSat |= static_cast<uint64_t>(data[4]);
+        usFromEpoch_NofSat = usFromEpoch_NofSat << 8;
+        usFromEpoch_NofSat = usFromEpoch_NofSat << 32;
+        for (int j = 0; j < sizeof(uint64_t) - 3; j++) {
+            TimeStartBytesStoredDataPointer1[j] = dataPointer[j];
+            // usFromEpoch_NofSat=usFromEpoch_NofSat<<8;
+            // usFromEpoch_NofSat |= dataPointer[j];
+        }
+        timeFromEpoch = usFromEpoch_NofSat >> 5;
+        numberOfSatellites = (uint8_t) (usFromEpoch_NofSat & 0x1F);
+
+        //get lat
+        uint8_t* LatStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&latitudeI);
+        dataPointer = (uint8_t*) &data[5 + (5 * numberOfData)];
+        latitudeI = 0;
+        for (int j = 0; j < sizeof(int32_t); j++) {
+            LatStartBytesStoredDataPointer1[j] = dataPointer[j + (4 * i)];
+            // latitudeI=latitudeI<<8;
+            // latitudeI |= dataPointer[j];
+        }
+
+        //get lon
+        uint8_t* LonStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&longitudeI);
+        dataPointer = (uint8_t*) &data[(numberOfData * (5 + 4)) + 5];
+        longitudeI = 0;
+        for (int j = 0; j < sizeof(int32_t); j++) {
+            LonStartBytesStoredDataPointer1[j] = dataPointer[j + (4 * i)];
+            // longitudeI=longitudeI<<8;
+            // longitudeI |= dataPointer[j];
+        }
+
+        //get alt
+        uint8_t* AltStartBytesStoredDataPointer1 = reinterpret_cast<uint8_t*>(&altitudeI);
+        dataPointer = (uint8_t*) &data[(numberOfData * (5 + 4 + 4)) + 5];
+        altitudeI = 0;
+        for (int j = 0; j < sizeof(int32_t); j++) {
+            AltStartBytesStoredDataPointer1[j] = dataPointer[j + (4 * i)];
+            // altitudeI=altitudeI<<8;
+            // altitudeI |= dataPointer[j];
+        }
+        __NOP();
+    }
+}
+
 GNSSMessage GNSSReceiver::configureNMEATalkerID(TalkerIDType type, Attributes attributes) {
     Payload payload;
     payload.push_back(GNSSDefinitions::GNSSMessages::ConfigureNMEATalkerID);
